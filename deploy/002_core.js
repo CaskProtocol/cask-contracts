@@ -14,18 +14,12 @@ const deployCore = async ({ethers, getNamedAccounts}) => {
     const {deployerAddr, governorAddr} = await getNamedAccounts();
     const sDeployer = await ethers.provider.getSigner(deployerAddr);
 
-    await deployWithConfirmation('CaskToken', []);
-
-    const caskToken = await ethers.getContract("CaskToken");
-
-    if (!isDaoChain) {
-        await withConfirmation(
-            caskToken.connect(sDeployer).renounceOwnership()
-        );
-        log(`Renounced Ownership of CaskToken since deployed on non-DAO chain`);
+    // skip on non-DAI chains as L2's tend to have own way to handle token mapping
+    if (isDaoChain) {
+        await deployWithConfirmation('CaskToken');
     }
 
-    await deployWithConfirmation('CaskTreasury', []);
+    await deployWithConfirmation('CaskTreasury');
 
     const caskTreasury = await ethers.getContract("CaskTreasury");
 
