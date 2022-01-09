@@ -17,23 +17,23 @@ const { debug } = require("./tasks/debug");
 
 // dao networks
 
-const MAINNET_DEPLOYER = "0x00";
+const MAINNET_DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
 const MAINNET_GOVERNOR = "0x00";
 
-const KOVAN_DEPLOYER = "0xA84650DDE43d8b7E674e06BBFF55F4A030D5890C";
-const KOVAN_GOVERNOR = "0x939Bb832cF8cfD720C746fE25f3d6632fB1442c3";
+const KOVAN_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
+const KOVAN_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
 
 
 // protocol networks
 
-const POLYGON_DEPLOYER = "0x00";
+const POLYGON_DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
 const POLYGON_GOVERNOR = "0x00";
 const POLYGON_STRATEGIST = "0x00";
 
-const MUMBAI_DEPLOYER = "0xA84650DDE43d8b7E674e06BBFF55F4A030D5890C";
-const MUMBAI_GOVERNOR = "0xcB93EFABe8f77C714afD0a5B867dCE1Df3f9073D"; // switch to multisig
-const MUMBAI_STRATEGIST = "0x8009C043330Baf8804A04b804e381929287CAF02";
-const MUMBAI_FAUCET_ADMIN = "0x66c56c215b08E95c26D30F859c6AD1C37324Ae98";
+const MUMBAI_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
+const MUMBAI_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
+const MUMBAI_STRATEGIST = "0x4776e69279A0d500537A5d2241d6fF3189442690";
+const MUMBAI_FAUCET_ADMIN = "0xaA411e7F2daE036f4f75D0a4c21dbCb074641064";
 
 
 
@@ -81,25 +81,30 @@ module.exports = {
       accounts: [
         process.env.KOVAN_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
-      gas: 2100000, gasPrice: 8000000000
+      timeout: 300000,
+      gas: 2100000, gasPrice: 8000000000,
     },
     mainnet: {
       url: `${process.env.MAINNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.MAINNET_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
+      timeout: 300000,
     },
     polygon: {
       url: `${process.env.POLYGON_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.POLYGON_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
+      timeout: 300000,
     },
     mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.MUMBAI_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
+      timeout: 300000,
+      gas: 2100000, gasPrice: 8000000000,
     },
   },
   namedAccounts: {
