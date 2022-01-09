@@ -1,4 +1,8 @@
 const {
+    isDaoChain,
+} = require("../test/_helpers.js");
+
+const {
     log,
     deployWithConfirmation,
     withConfirmation,
@@ -11,6 +15,16 @@ const deployCore = async ({ethers, getNamedAccounts}) => {
     const sDeployer = await ethers.provider.getSigner(deployerAddr);
 
     await deployWithConfirmation('CaskToken', []);
+
+    const caskToken = await ethers.getContract("CaskToken");
+
+    if (!isDaoChain) {
+        await withConfirmation(
+            caskToken.connect(sDeployer).renounceOwnership()
+        );
+        log(`Renounced Ownership of CaskToken since deployed on non-DAO chain`);
+    }
+
     await deployWithConfirmation('CaskTreasury', []);
 
     const caskTreasury = await ethers.getContract("CaskTreasury");
