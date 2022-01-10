@@ -1,7 +1,5 @@
 const {
-    isTestnet,
-    isDevnet,
-    isKovan
+    isMumbai
 } = require("../test/_helpers");
 
 const {
@@ -42,6 +40,6 @@ const main = async (hre) => {
 
 main.id = "000_fakes";
 main.tags = ["fakes"];
-main.skip = () => !(isTestnet || isDevnet) || isKovan;
+main.skip = () => !isMumbai;
 
 module.exports = main
