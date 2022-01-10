@@ -8,7 +8,6 @@ const {
 
 const {isFork} = require("./_helpers.js");
 const addresses = require("../utils/addresses");
-const {withConfirmation, log} = require("../utils/deploy");
 
 async function defaultFixture() {
     await deployments.fixture(); // ensure you start from a fresh deployments
@@ -143,19 +142,6 @@ async function investorVestingFixture() {
     const fixture = await loadFixture(vestingFixture);
 
     fixture.vestingStart = Math.floor(Date.now() / 1000);
-
-
-    // give 150M to governor
-    await fixture.caskToken.connect(fixture.deployer)
-        .transfer(fixture.governor.address, caskUnits('150000000'));
-
-    // allow InvestorVestedEscrow to spend the funds
-    await fixture.caskToken.connect(fixture.governor)
-        .approve(fixture.investorVestedEscrow.address, caskUnits('150000000'));
-
-    // add the tokens to InvestorVestedEscrow
-    await fixture.investorVestedEscrow.connect(fixture.governor)
-        .addTokens(caskUnits('150000000'))
 
     await fixture.investorVestedEscrow.connect(fixture.governor)['fund(uint256,address[],uint256[])'](
         fixture.vestingStart,

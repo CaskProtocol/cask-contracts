@@ -82,7 +82,7 @@ KeeperCompatibleInterface
         gasRefundLimit = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
-//    constructor() initializer {}
+    constructor() initializer {}
 
 
 

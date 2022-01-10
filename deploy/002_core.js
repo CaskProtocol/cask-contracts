@@ -5,29 +5,16 @@ const {
 const {
     log,
     deployWithConfirmation,
-    withConfirmation,
 } = require("../utils/deploy");
 
 
-const deployCore = async ({ethers, getNamedAccounts}) => {
+const deployCore = async ({ethers}) => {
 
-    const {deployerAddr, governorAddr} = await getNamedAccounts();
-    const sDeployer = await ethers.provider.getSigner(deployerAddr);
+    await deployWithConfirmation('CaskToken');
 
-    // skip on non-DAI chains as L2's tend to have own way to handle token mapping
-    if (isDaoChain) {
-        await deployWithConfirmation('CaskToken');
-    }
+    const caskToken = await ethers.getContract("CaskToken");
 
-    await deployWithConfirmation('CaskTreasury');
-
-    const caskTreasury = await ethers.getContract("CaskTreasury");
-
-    await withConfirmation(
-        caskTreasury.connect(sDeployer).transferOwnership(governorAddr)
-    );
-    log(`Transferred CaskTreasury ownership to ${governorAddr}`);
-
+    log(`CaskToken deployed at ${caskToken.address}`);
 }
 
 
@@ -39,6 +26,7 @@ const main = async (hre) => {
 };
 
 main.id = "002_core";
+main.skip = () => !isDaoChain;
 main.tags = ["core"];
 
 module.exports = main;

@@ -128,7 +128,7 @@ const main = async (hre) => {
 
 main.id = "004_protocol";
 main.tags = ["protocol"];
-main.dependencies = ["fakes","mocks","core"];
+main.dependencies = ["fakes","mocks"];
 main.skip = () => !isProtocolChain;
 
 module.exports = main;

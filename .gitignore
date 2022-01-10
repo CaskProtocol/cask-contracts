@@ -12,6 +12,7 @@ typechain
 #Hardhat files
 cache
 artifacts
+deployments/rinkeby
 deployments/localhost*
 deployments/ganache_*
 deployments/fork_*

@@ -1,10 +1,16 @@
 const { parseUnits, formatUnits } = require("ethers").utils;
 
+function caskUnits(amount) {
+    return parseUnits(amount, 18);
+}
+
+function caskUnitsFormat(amount) {
+    return formatUnits(amount, 18);
+}
 
 async function _debug_core(taskArguments, hre) {
 
     const caskToken = await hre.ethers.getContract("CaskToken");
-    const caskTreasury = await hre.ethers.getContract("CaskTreasury");
 
     //
     // Core Addresses
@@ -12,17 +18,18 @@ async function _debug_core(taskArguments, hre) {
     console.log("\nCore Contract addresses");
     console.log("====================");
 
-    console.log(`CASK Token:                             ${caskToken.address}`);
-    console.log(`CaskTreasury:                           ${caskTreasury.address}`);
-    console.log(`CaskTreasury Owner:                     ${await caskTreasury.owner()}`);
-    console.log(`CaskTreasury CASK Balance:              ${formatUnits(await caskToken.balanceOf(caskTreasury.address), 18)}`);
+    console.log(`CASK Token:                                     ${caskToken.address}`);
+    console.log(`CASK totalSupply:                               ${caskUnitsFormat(await caskToken.totalSupply())}`);
 
 }
 
 async function _debug_dao(taskArguments, hre) {
 
-    const caskVestedEscrow = await hre.ethers.getContract("CaskVestedEscrow");
+    const caskToken = await hre.ethers.getContract("CaskToken");
+    const caskTreasury = await hre.ethers.getContract("CaskTreasury");
+    const treasuryVestedEscrow = await hre.ethers.getContract("TreasuryVestedEscrow");
     const teamVestedEscrow = await hre.ethers.getContract("TeamVestedEscrow");
+    const investorVestedEscrow = await hre.ethers.getContract("InvestorVestedEscrow");
 
     //
     // DAO Addresses
@@ -30,21 +37,36 @@ async function _debug_dao(taskArguments, hre) {
     console.log("\nDAO Contract addresses");
     console.log("====================");
 
-    console.log(`CaskVestedEscrow:                       ${caskVestedEscrow.address}`);
-    console.log(`CaskVestedEscrow Admin:                 ${await caskVestedEscrow.admin()}`);
-    console.log(`CaskVestedEscrow FundAdmin:             ${await caskVestedEscrow.fundAdmin()}`);
-    console.log(`CaskVestedEscrow initialLockedSupply:   ${formatUnits(await caskVestedEscrow.initialLockedSupply(), 18)}`);
-    console.log(`CaskVestedEscrow unallocatedSupply:     ${formatUnits(await caskVestedEscrow.unallocatedSupply(), 18)}`);
-    console.log(`CaskVestedEscrow vestedSupply:          ${formatUnits(await caskVestedEscrow.vestedSupply(), 18)}`);
-    console.log(`CaskVestedEscrow lockedSupply:          ${formatUnits(await caskVestedEscrow.lockedSupply(), 18)}`);
+    console.log(`CaskTreasury:                                   ${caskTreasury.address}`);
+    console.log(`CaskTreasury Owner:                             ${await caskTreasury.owner()}`);
+    console.log(`CaskTreasury CASK Balance:                      ${caskUnitsFormat(await caskToken.balanceOf(caskTreasury.address))}`);
 
-    console.log(`TeamVestedEscrow:                       ${teamVestedEscrow.address}`);
-    console.log(`TeamVestedEscrow Admin:                 ${await teamVestedEscrow.admin()}`);
-    console.log(`TeamVestedEscrow FundAdmin:             ${await teamVestedEscrow.fundAdmin()}`);
-    console.log(`TeamVestedEscrow initialLockedSupply:   ${formatUnits(await teamVestedEscrow.initialLockedSupply(), 18)}`);
-    console.log(`TeamVestedEscrow unallocatedSupply:     ${formatUnits(await teamVestedEscrow.unallocatedSupply(), 18)}`);
-    console.log(`TeamVestedEscrow vestedSupply:          ${formatUnits(await teamVestedEscrow.vestedSupply(), 18)}`);
-    console.log(`TeamVestedEscrow lockedSupply:          ${formatUnits(await teamVestedEscrow.lockedSupply(), 18)}`);
+    console.log(`\nTreasuryVestedEscrow:                           ${treasuryVestedEscrow.address}`);
+    console.log(`TreasuryVestedEscrow CASK Balance:              ${caskUnitsFormat(await caskToken.balanceOf(treasuryVestedEscrow.address))}`);
+    console.log(`TreasuryVestedEscrow Admin:                     ${await treasuryVestedEscrow.admin()}`);
+    console.log(`TreasuryVestedEscrow FundAdmin:                 ${await treasuryVestedEscrow.fundAdmin()}`);
+    console.log(`TreasuryVestedEscrow initialLockedSupply:       ${caskUnitsFormat(await treasuryVestedEscrow.initialLockedSupply())}`);
+    console.log(`TreasuryVestedEscrow unallocatedSupply:         ${caskUnitsFormat(await treasuryVestedEscrow.unallocatedSupply())}`);
+    console.log(`TreasuryVestedEscrow vestedSupply:              ${caskUnitsFormat(await treasuryVestedEscrow.vestedSupply())}`);
+    console.log(`TreasuryVestedEscrow lockedSupply:              ${caskUnitsFormat(await treasuryVestedEscrow.lockedSupply())}`);
+
+    console.log(`\nTeamVestedEscrow:                               ${teamVestedEscrow.address}`);
+    console.log(`TeamVestedEscrow CASK Balance:                  ${caskUnitsFormat(await caskToken.balanceOf(teamVestedEscrow.address))}`);
+    console.log(`TeamVestedEscrow Admin:                         ${await teamVestedEscrow.admin()}`);
+    console.log(`TeamVestedEscrow FundAdmin:                     ${await teamVestedEscrow.fundAdmin()}`);
+    console.log(`TeamVestedEscrow initialLockedSupply:           ${caskUnitsFormat(await teamVestedEscrow.initialLockedSupply())}`);
+    console.log(`TeamVestedEscrow unallocatedSupply:             ${caskUnitsFormat(await teamVestedEscrow.unallocatedSupply())}`);
+    console.log(`TeamVestedEscrow vestedSupply:                  ${caskUnitsFormat(await teamVestedEscrow.vestedSupply())}`);
+    console.log(`TeamVestedEscrow lockedSupply:                  ${caskUnitsFormat(await teamVestedEscrow.lockedSupply())}`);
+
+    console.log(`\nInvestorVestedEscrow:                           ${investorVestedEscrow.address}`);
+    console.log(`InvestorVestedEscrow CASK Balance:              ${caskUnitsFormat(await caskToken.balanceOf(investorVestedEscrow.address))}`);
+    console.log(`InvestorVestedEscrow Admin:                     ${await investorVestedEscrow.admin()}`);
+    console.log(`InvestorVestedEscrow FundAdmin:                 ${await investorVestedEscrow.fundAdmin()}`);
+    console.log(`InvestorVestedEscrow initialLockedSupply:       ${caskUnitsFormat(await investorVestedEscrow.initialLockedSupply())}`);
+    console.log(`InvestorVestedEscrow unallocatedSupply:         ${caskUnitsFormat(await investorVestedEscrow.unallocatedSupply())}`);
+    console.log(`InvestorVestedEscrow vestedSupply:              ${caskUnitsFormat(await investorVestedEscrow.vestedSupply())}`);
+    console.log(`InvestorVestedEscrow lockedSupply:              ${caskUnitsFormat(await investorVestedEscrow.lockedSupply())}`);
 
 }
 
@@ -62,28 +84,28 @@ async function _debug_protocol(taskArguments, hre) {
     console.log("\nProtocol Contract addresses");
     console.log("====================");
 
-    console.log(`CaskVaultAdmin:                         ${vaultAdmin.address}`);
-    console.log(`CaskVaultAdmin Proxy Admin:             ${await hre.upgrades.erc1967.getAdminAddress(vaultAdmin.address)}`);
-    console.log(`CaskVaultAdmin Impl:                    ${await hre.upgrades.erc1967.getImplementationAddress(vaultAdmin.address)}`);
-    console.log(`CaskVaultAdmin Owner:                   ${await vaultAdmin.owner()}`);
+    console.log(`CaskVaultAdmin:                                 ${vaultAdmin.address}`);
+    console.log(`CaskVaultAdmin Proxy Admin:                     ${await hre.upgrades.erc1967.getAdminAddress(vaultAdmin.address)}`);
+    console.log(`CaskVaultAdmin Impl:                            ${await hre.upgrades.erc1967.getImplementationAddress(vaultAdmin.address)}`);
+    console.log(`CaskVaultAdmin Owner:                           ${await vaultAdmin.owner()}`);
 
-    console.log(`CaskVault:                              ${vault.address}`);
-    console.log(`CaskVault Proxy Admin:                  ${await hre.upgrades.erc1967.getAdminAddress(vault.address)}`);
-    console.log(`CaskVault Impl:                         ${await hre.upgrades.erc1967.getImplementationAddress(vault.address)}`);
-    console.log(`CaskVault Owner:                        ${await vault.owner()}`);
+    console.log(`CaskVault:                                      ${vault.address}`);
+    console.log(`CaskVault Proxy Admin:                          ${await hre.upgrades.erc1967.getAdminAddress(vault.address)}`);
+    console.log(`CaskVault Impl:                                 ${await hre.upgrades.erc1967.getImplementationAddress(vault.address)}`);
+    console.log(`CaskVault Owner:                                ${await vault.owner()}`);
 
-    console.log(`CaskSubscriptionPlans:                  ${subscriptionPlans.address}`);
-    console.log(`CaskSubscriptionPlans Proxy Admin:      ${await hre.upgrades.erc1967.getAdminAddress(subscriptionPlans.address)}`);
-    console.log(`CaskSubscriptionPlans Impl:             ${await hre.upgrades.erc1967.getImplementationAddress(subscriptionPlans.address)}`);
-    console.log(`CaskSubscriptionPlans Owner:            ${await subscriptionPlans.owner()}`);
+    console.log(`CaskSubscriptionPlans:                          ${subscriptionPlans.address}`);
+    console.log(`CaskSubscriptionPlans Proxy Admin:              ${await hre.upgrades.erc1967.getAdminAddress(subscriptionPlans.address)}`);
+    console.log(`CaskSubscriptionPlans Impl:                     ${await hre.upgrades.erc1967.getImplementationAddress(subscriptionPlans.address)}`);
+    console.log(`CaskSubscriptionPlans Owner:                    ${await subscriptionPlans.owner()}`);
 
-    console.log(`CaskSubscriptions:                      ${subscriptions.address}`);
-    console.log(`CaskSubscriptions Proxy Admin:          ${await hre.upgrades.erc1967.getAdminAddress(subscriptions.address)}`);
-    console.log(`CaskSubscriptions Impl:                 ${await hre.upgrades.erc1967.getImplementationAddress(subscriptions.address)}`);
-    console.log(`CaskSubscriptions Owner:                ${await subscriptions.owner()}`);
+    console.log(`CaskSubscriptions:                              ${subscriptions.address}`);
+    console.log(`CaskSubscriptions Proxy Admin:                  ${await hre.upgrades.erc1967.getAdminAddress(subscriptions.address)}`);
+    console.log(`CaskSubscriptions Impl:                         ${await hre.upgrades.erc1967.getImplementationAddress(subscriptions.address)}`);
+    console.log(`CaskSubscriptions Owner:                        ${await subscriptions.owner()}`);
 
-    console.log(`DefaultProxyAdmin:                      ${defaultProxyAdmin.address}`);
-    console.log(`DefaultProxyAdmin Owner:                ${await defaultProxyAdmin.owner()}`);
+    console.log(`DefaultProxyAdmin:                              ${defaultProxyAdmin.address}`);
+    console.log(`DefaultProxyAdmin Owner:                        ${await defaultProxyAdmin.owner()}`);
 
     //
     // Config
@@ -93,20 +115,20 @@ async function _debug_protocol(taskArguments, hre) {
 
     console.log("\nProtocol Configuration");
     console.log("====================");
-    console.log(`CaskVaultAdmin vault:                   ${await vaultAdmin.vault()}`);
-    console.log(`CaskVaultAdmin strategist:              ${await vaultAdmin.strategist()}`);
-    console.log(`CaskVault baseAsset:                    ${await vault.getBaseAsset()}`);
-    console.log(`CaskVault vaultAdmin:                   ${await vault.vaultAdmin()}`);
+    console.log(`CaskVaultAdmin vault:                           ${await vaultAdmin.vault()}`);
+    console.log(`CaskVaultAdmin strategist:                      ${await vaultAdmin.strategist()}`);
+    console.log(`CaskVault baseAsset:                            ${await vault.getBaseAsset()}`);
+    console.log(`CaskVault vaultAdmin:                           ${await vault.vaultAdmin()}`);
     const operatorCount = await vault.operatorCount();
-    console.log(`CaskVault operatorCount:                ${operatorCount}`);
+    console.log(`CaskVault operatorCount:                        ${operatorCount}`);
     for (let i = 0; i < operatorCount; i++) {
-        console.log(`   operator ${i}:                          ${await vault.operators(i)}`);
+        console.log(`   operator ${i}:                                  ${await vault.operators(i)}`);
     }
-    console.log(`CaskSubscriptionPlans protocol:         ${await subscriptionPlans.protocol()}`);
-    console.log(`CaskSubscriptions vault:                ${await subscriptions.vault()}`);
-    console.log(`CaskSubscriptions subscriptionPlans:    ${await subscriptions.subscriptionPlans()}`);
-    console.log(`CaskSubscriptions paymentFeeFixed:      ${paymentFeeFixed}`);
-    console.log(`CaskSubscriptions paymentFeeRate:       ${paymentFeeRate} (${paymentFeeRate / 100}%)`);
+    console.log(`CaskSubscriptionPlans protocol:                 ${await subscriptionPlans.protocol()}`);
+    console.log(`CaskSubscriptions vault:                        ${await subscriptions.vault()}`);
+    console.log(`CaskSubscriptions subscriptionPlans:            ${await subscriptions.subscriptionPlans()}`);
+    console.log(`CaskSubscriptions paymentFeeFixed:              ${paymentFeeFixed}`);
+    console.log(`CaskSubscriptions paymentFeeRate:               ${paymentFeeRate} (${paymentFeeRate / 100}%)`);
 
 
     //
@@ -114,14 +136,14 @@ async function _debug_protocol(taskArguments, hre) {
     //
     console.log("\nVault");
     console.log("====================");
-    console.log(`paused:                                 ${await vault.paused()}`);
-    console.log(`totalSupply:                            ${await vault.totalSupply()}`);
+    console.log(`paused:                                         ${await vault.paused()}`);
+    console.log(`totalSupply:                                    ${await vault.totalSupply()}`);
     const allAssets = await vault.getAllAssets();
-    console.log(`allowedAssets count:                    ${allAssets.length}`);
+    console.log(`allowedAssets count:                            ${allAssets.length}`);
     for (let i = 0; i < allAssets.length; i++) {
         const assetInfo = await vault.getAsset(allAssets[i]);
         const assetBalance = await vault.totalAssetBalance(allAssets[i]);
-        console.log(`Asset ${allAssets[i]}:     Balance: ${assetBalance}`)
+        console.log(`Asset ${allAssets[i]}:             Balance: ${formatUnits(assetBalance, assetInfo.assetDecimals)}`)
     }
 
 

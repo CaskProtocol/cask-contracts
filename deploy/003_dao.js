@@ -17,7 +17,6 @@ const deployDao = async ({ethers, getNamedAccounts}) => {
     const sDeployer = await ethers.provider.getSigner(deployerAddr);
 
     const caskToken = await ethers.getContract("CaskToken");
-    const caskTreasury = await ethers.getContract("CaskTreasury");
 
 
 
@@ -66,15 +65,27 @@ const deployDao = async ({ethers, getNamedAccounts}) => {
     log(`Minted initial CASK token supply of ${tokenSupply} tokens to ${deployerAddr}`);
 
 
-    /** immediate treasury funding of 100M + 50M LBP funds **/
+    /** deploy treasury  **/
+
+    await deployWithConfirmation('CaskTreasury');
+
+    const caskTreasury = await ethers.getContract("CaskTreasury");
 
     await withConfirmation(
-        caskToken.connect(sDeployer).transfer(caskTreasury.address, caskUnits('150000000'))
+        caskTreasury.connect(sDeployer).transferOwnership(governorAddr)
     );
-    log(`Sent 150M CASK to treasury at ${caskTreasury.address}`);
+    log(`Transferred CaskTreasury ownership to ${governorAddr}`);
 
 
-    /** treasury vesting **/
+    /** fund treasury - 400M (100M community funds + 50M LBP + 250M for protocol chain staking rewards) **/
+
+    await withConfirmation(
+        caskToken.connect(sDeployer).transfer(caskTreasury.address, caskUnits('400000000'))
+    );
+    log(`Sent 400M CASK to treasury at ${caskTreasury.address}`);
+
+
+    /** treasury vesting - 250M community funds **/
 
     await withConfirmation(
         caskToken.connect(sDeployer).approve(treasuryVestedEscrow.address, caskUnits('250000000'))
@@ -92,7 +103,7 @@ const deployDao = async ({ethers, getNamedAccounts}) => {
     log(`Funded 250M CASK in TreasuryVestedEscrow for treasury at ${caskTreasury.address}`);
 
 
-    /** team vesting **/
+    /** team vesting - 200M **/
 
     await withConfirmation(
         caskToken.connect(sDeployer).approve(teamVestedEscrow.address, caskUnits('200000000'))
@@ -103,7 +114,18 @@ const deployDao = async ({ethers, getNamedAccounts}) => {
     log(`Added 200M CASK to TeamVestedEscrow at ${teamVestedEscrow.address}`);
 
 
-    /** change contract owners to governor */
+    /** investor vesting - 150M **/
+
+    await withConfirmation(
+        caskToken.connect(sDeployer).approve(investorVestedEscrow.address, caskUnits('150000000'))
+    );
+    await withConfirmation(
+        investorVestedEscrow.connect(sDeployer).addTokens(caskUnits('150000000'))
+    );
+    log(`Added 150M CASK to InvestorVestedEscrow at ${investorVestedEscrow.address}`);
+
+
+    /** change vesting contract owners to governor */
 
     await withConfirmation(
         investorVestedEscrow.connect(sDeployer).setAdmin(governorAddr)

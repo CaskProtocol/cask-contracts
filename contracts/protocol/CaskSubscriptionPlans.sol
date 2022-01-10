@@ -43,7 +43,7 @@ PausableUpgradeable
         __Pausable_init();
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
-//    constructor() initializer {}
+    constructor() initializer {}
 
 
     function setProtocol(address _protocol) external onlyOwner {

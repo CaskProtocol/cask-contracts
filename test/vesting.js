@@ -179,7 +179,7 @@ describe("VestedEscrow", function () {
 
     });
 
-    it("Cannot under fund vesting contract", async function () {
+    it("Cannot over fund vesting contract", async function () {
         const {
             governor,
             alice,

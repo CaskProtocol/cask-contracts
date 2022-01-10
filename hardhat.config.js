@@ -18,17 +18,19 @@ const { debug } = require("./tasks/debug");
 // dao networks
 
 const MAINNET_DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
-const MAINNET_GOVERNOR = "0x00";
+const MAINNET_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
 
 const KOVAN_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
 const KOVAN_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
 
+const RINKEBY_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
+const RINKEBY_GOVERNOR = "0x939Bb832cF8cfD720C746fE25f3d6632fB1442c3";
 
 // protocol networks
 
 const POLYGON_DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
-const POLYGON_GOVERNOR = "0x00";
-const POLYGON_STRATEGIST = "0x00";
+const POLYGON_GOVERNOR = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
+const POLYGON_STRATEGIST = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
 
 const MUMBAI_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
 const MUMBAI_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
@@ -61,7 +63,8 @@ module.exports = {
     version: "0.8.9",
     settings: {
       optimizer: {
-        enabled: true
+        enabled: true,
+        runs: 500000
       },
     }
   },
@@ -80,6 +83,14 @@ module.exports = {
       url: `${process.env.KOVAN_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.KOVAN_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+      gas: 2100000, gasPrice: 8000000000,
+    },
+    rinkeby: {
+      url: `${process.env.RINKEBY_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.RINKEBY_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
       gas: 2100000, gasPrice: 8000000000,
@@ -113,6 +124,7 @@ module.exports = {
       localhost: 0,
       mainnet: MAINNET_DEPLOYER,
       kovan: KOVAN_DEPLOYER,
+      rinkeby: RINKEBY_DEPLOYER,
       polygon: POLYGON_DEPLOYER,
       mumbai: MUMBAI_DEPLOYER,
     },
@@ -122,6 +134,7 @@ module.exports = {
       hardhat: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
       mainnet: MAINNET_GOVERNOR,
       kovan: KOVAN_GOVERNOR,
+      rinkeby: RINKEBY_GOVERNOR,
       polygon: POLYGON_GOVERNOR,
       mumbai: MUMBAI_GOVERNOR,
     },
@@ -161,6 +174,7 @@ module.exports = {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY,
       kovan: process.env.ETHERSCAN_API_KEY,
+      rinkeby: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYGONSCAN_API_KEY,
       polygonMumbai: process.env.POLYGONSCAN_API_KEY,
     }
