@@ -10,8 +10,7 @@ interface ICaskSubscriptions {
         Paused,
         Canceled,
         PendingCancel,
-        PastDue,
-        Invalid
+        PastDue
     }
 
     struct Subscription {

@@ -110,8 +110,9 @@ PausableUpgradeable
     ) external override onlyProvider(_planId) {
         require(_period > 0, "!invalid(_period)");
         require(_price > 0, "!invalid(_price)");
-
         Plan storage plan = subscriptionPlans[_planId];
+        require(plan.status == PlanStatus.Enabled, "!not_enabled");
+
         plan.period = _period;
         plan.price = _price;
         plan.freeTrialDays = _freeTrialDays;
@@ -128,8 +129,9 @@ PausableUpgradeable
         uint32 _maxUses
     ) external override onlyProvider(_planId) {
         require(_percent > 0, "!invalid(_percent)");
-
         Plan memory plan = subscriptionPlans[_planId];
+        require(plan.status == PlanStatus.Enabled, "!not_enabled");
+
         Discount storage discount = discounts[_planId][_discountId];
 
         discount.percent = _percent;
@@ -153,7 +155,7 @@ PausableUpgradeable
         bytes32 _planId
     ) external override onlyProvider(_planId) {
         Plan storage plan = subscriptionPlans[_planId];
-        require(plan.status != PlanStatus.Disabled, "!disabled");
+        require(plan.status == PlanStatus.Enabled, "!not_enabled");
 
         plan.status = PlanStatus.Disabled;
 
@@ -164,11 +166,22 @@ PausableUpgradeable
         bytes32 _planId
     ) external override onlyProvider(_planId) {
         Plan storage plan = subscriptionPlans[_planId];
-        require(plan.status != PlanStatus.Enabled, "!enabled");
+        require(plan.status == PlanStatus.Disabled, "!not_disabled");
 
         plan.status = PlanStatus.Enabled;
 
         emit SubscriptionPlanEnabled(plan.provider, _planId, plan.planCode);
+    }
+
+    function eolSubscriptionPlan(
+        bytes32 _planId
+    ) external override onlyProvider(_planId) {
+        Plan storage plan = subscriptionPlans[_planId];
+        require(plan.status != PlanStatus.EndOfLife, "!already_eol");
+
+        plan.status = PlanStatus.EndOfLife;
+
+        emit SubscriptionPlanEOL(plan.provider, _planId, plan.planCode);
     }
 
     function verifyDiscount(
