@@ -393,7 +393,8 @@ KeeperCompatibleInterface
 
         // subscription scheduled to be canceled by consumer or has hit its cancelAt time
         if (subscription.status == SubscriptionStatus.PendingCancel ||
-            (subscription.cancelAt > 0 && subscription.cancelAt <= uint32(block.timestamp))) {
+            (subscription.cancelAt > 0 && subscription.cancelAt <= uint32(block.timestamp)) ||
+            plan.status == ICaskSubscriptionPlans.PlanStatus.EndOfLife) {
 
             subscription.status = SubscriptionStatus.Canceled;
             providerActiveSubscriptionCount[subscription.provider] =

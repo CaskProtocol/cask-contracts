@@ -6,7 +6,8 @@ interface ICaskSubscriptionPlans {
     enum PlanStatus {
         None,
         Enabled,
-        Disabled
+        Disabled,
+        EndOfLife
     }
 
     struct Plan {
@@ -56,6 +57,8 @@ interface ICaskSubscriptionPlans {
 
     function enableSubscriptionPlan(bytes32 _planId) external;
 
+    function eolSubscriptionPlan(bytes32 _planId) external;
+
     function verifyDiscount(bytes32 _planId, bytes32 _discountProof) external view returns(bytes32);
 
     function getSubscriptionPlans(address _provider) external view returns(bytes32[] memory);
@@ -83,5 +86,8 @@ interface ICaskSubscriptionPlans {
 
     /** @dev Emitted when `provider` enables a subscription plan */
     event SubscriptionPlanEnabled(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
+
+    /** @dev Emitted when `provider` end-of-lifes a subscription plan */
+    event SubscriptionPlanEOL(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
 
 }
