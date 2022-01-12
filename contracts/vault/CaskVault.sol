@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 
@@ -32,6 +33,7 @@ OwnableUpgradeable,
 PausableUpgradeable,
 ReentrancyGuardUpgradeable
 {
+    using SafeERC20 for IERC20;
 
     modifier onlyOperator {
         bool isOperator = false;
@@ -77,7 +79,7 @@ ReentrancyGuardUpgradeable
         __ReentrancyGuard_init();
 
         vaultAdmin = _vaultAdmin;
-        baseAsset = _baseAsset;
+        baseAsset = _baseAsset; // TODO: require price feed address in ctor? fix issues with allAssets and baseAsset
 
         feeBalance = 0;
     }
@@ -126,7 +128,7 @@ ReentrancyGuardUpgradeable
         // calculate shares before transferring new asset into vault
         uint256 shares = _sharesForAmount(_assetAmount);
 
-        IERC20(_asset).transferFrom(msg.sender, address(this), _assetAmount);
+        IERC20(_asset).safeTransferFrom(msg.sender, address(this), _assetAmount);
 
         uint256 baseAssetAmount;
         if (_asset != baseAsset) {
@@ -182,7 +184,7 @@ ReentrancyGuardUpgradeable
         }
 
         // transfer requested stablecoin to _recipient
-        IERC20(_asset).transfer(_recipient, assetAmount);
+        IERC20(_asset).safeTransfer(_recipient, assetAmount);
 
         emit AssetWithdrawn(_recipient, _asset, assetAmount, baseAmount, _shares);
     }
@@ -258,7 +260,7 @@ ReentrancyGuardUpgradeable
         uint256 _assetAmount
     ) external override onlyOperator {
         require(assets[_asset].allowed, "!allowed");
-        IERC20(_asset).transfer(_strategy, _assetAmount);
+        IERC20(_asset).safeTransfer(_strategy, _assetAmount);
         emit AllocatedToStrategy(_strategy, _asset, _assetAmount);
     }
 
@@ -317,7 +319,7 @@ ReentrancyGuardUpgradeable
         feeBalance = feeBalance - _sharesAmount; // reduce owed fees
 
         // transfer fees in the form of baseAsset to _recipient
-        IERC20(baseAsset).transfer(_recipient, baseAmount);
+        IERC20(baseAsset).safeTransfer(_recipient, baseAmount);
 
         emit AssetWithdrawn(_recipient, baseAsset, baseAmount, baseAmount, _sharesAmount);
     }

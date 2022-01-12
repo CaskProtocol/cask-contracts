@@ -8,6 +8,8 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 
 import "../interfaces/ICaskVault.sol";
 import "../interfaces/ICaskStrategy.sol";
@@ -30,6 +32,7 @@ OwnableUpgradeable,
 PausableUpgradeable,
 ReentrancyGuardUpgradeable
 {
+    using SafeERC20 for IERC20;
 
     /** @dev vault being managed. */
     address public vault;

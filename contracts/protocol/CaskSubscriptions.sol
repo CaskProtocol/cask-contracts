@@ -111,6 +111,7 @@ KeeperCompatibleInterface
         subscription.consumer = msg.sender;
         subscription.provider = plan.provider;
         subscription.planId = _planId;
+        subscription.price = plan.price;
         subscription.pendingPlanId = 0;
         subscription.ref = _ref;
         subscription.cancelAt = _cancelAt;
@@ -127,6 +128,9 @@ KeeperCompatibleInterface
         } else {
             _renewSubscription(subscriptionId);
             subscription.status = SubscriptionStatus.Active;
+        }
+        if (plan.minTerm > 0) {
+            subscription.minTermAt = uint32(block.timestamp) + plan.minTerm;
         }
 
         emit SubscriptionCreated(subscription.consumer, subscription.provider,
@@ -175,8 +179,8 @@ KeeperCompatibleInterface
             emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, subscription.subscriptionId,
                 subscription.ref, curPlan.planCode, plan.planCode);
 
-        } else if (plan.price / plan.period > curPlan.price / curPlan.period) { // upgrade
-            uint256 newAmount = ((plan.price / plan.period) - (curPlan.price / curPlan.period)) *
+        } else if (plan.price / plan.period > subscription.price / curPlan.period) { // upgrade
+            uint256 newAmount = ((plan.price / plan.period) - (subscription.price / curPlan.period)) *
                                  (subscription.renewAt - uint32(block.timestamp));
             _processPayment(subscription.consumer, plan.paymentAddress, newAmount);
 
@@ -188,7 +192,7 @@ KeeperCompatibleInterface
         } else { // downgrade
 
             // possible usecase someday: code to immediately downgrade and extend renewal date based on plan value diff
-//            uint256 credit = ((curPlan.price / curPlan.period) - (plan.price / plan.period)) *
+//            uint256 credit = ((subscription.price / curPlan.period) - (plan.price / plan.period)) *
 //                                (subscription.renewAt - uint32(block.timestamp));
 //            // calculate how many seconds the credit amount buys of the new plan and extend
 //            // the renewal date that amount
@@ -207,6 +211,8 @@ KeeperCompatibleInterface
         uint32 _cancelAt
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
         Subscription storage subscription = subscriptions[_subscriptionId];
+
+        require(subscription.minTermAt == 0 || _cancelAt > subscription.minTermAt, "!min_term");
 
         subscription.cancelAt = _cancelAt;
     }
@@ -249,6 +255,8 @@ KeeperCompatibleInterface
                 subscription.status != SubscriptionStatus.Canceled &&
                 subscription.status != SubscriptionStatus.PendingCancel, "!invalid");
 
+        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!min_term");
+
         subscription.status = SubscriptionStatus.Paused;
 
         emit SubscriptionPaused(subscription.consumer, subscription.provider, subscription.subscriptionId,
@@ -281,6 +289,8 @@ KeeperCompatibleInterface
 
         require(subscription.status != SubscriptionStatus.PendingCancel &&
                 subscription.status != SubscriptionStatus.Canceled, "!invalid(status)");
+
+        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!min_term");
 
         ICaskSubscriptionPlans.Plan memory plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
 
@@ -415,7 +425,7 @@ KeeperCompatibleInterface
                 discount = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlanDiscount(subscription.planId, subscription.discountId);
             }
 
-            uint256 chargeAmount = plan.price;
+            uint256 chargeAmount = subscription.price;
             bool usedDiscount = false;
             if (discount.percent > 0 && discount.expiresAt < uint32(block.timestamp)) {
                 if (discount.maxUses == 0 || discount.uses < discount.maxUses) {

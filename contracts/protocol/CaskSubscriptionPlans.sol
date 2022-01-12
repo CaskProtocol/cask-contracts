@@ -71,6 +71,7 @@ PausableUpgradeable
         bytes32 _planCode,
         uint32 _period,
         uint256 _price,
+        uint32 _minTerm,
         uint16 _freeTrialDays,
         bool _canPause,
         address _paymentAddress,
@@ -90,6 +91,7 @@ PausableUpgradeable
         plan.planCode = _planCode;
         plan.period = _period;
         plan.price = _price;
+        plan.minTerm = _minTerm;
         plan.freeTrialDays = _freeTrialDays;
         plan.canPause = _canPause;
         plan.paymentAddress = _paymentAddress;
@@ -103,18 +105,17 @@ PausableUpgradeable
 
     function updateSubscriptionPlan(
         bytes32 _planId,
-        uint32 _period,
         uint256 _price,
+        uint32 _minTerm,
         uint16 _freeTrialDays,
         bool _canPause
     ) external override onlyProvider(_planId) {
-        require(_period > 0, "!invalid(_period)");
         require(_price > 0, "!invalid(_price)");
         Plan storage plan = subscriptionPlans[_planId];
         require(plan.status == PlanStatus.Enabled, "!not_enabled");
 
-        plan.period = _period;
         plan.price = _price;
+        plan.minTerm = _minTerm;
         plan.freeTrialDays = _freeTrialDays;
         plan.canPause = _canPause;
 

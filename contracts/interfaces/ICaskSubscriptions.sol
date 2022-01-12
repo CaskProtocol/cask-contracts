@@ -17,6 +17,7 @@ interface ICaskSubscriptions {
         bytes32 subscriptionId;
         bytes32 planId;
         bytes32 pendingPlanId;
+        uint256 price;
         bytes32 discountId;
         address consumer;
         address provider;
@@ -24,6 +25,7 @@ interface ICaskSubscriptions {
         bytes32 ref;
         uint32 createdAt;
         uint32 renewAt;
+        uint32 minTermAt;
         uint32 cancelAt;
         uint16 paymentNumber;
         uint8 metaHF;

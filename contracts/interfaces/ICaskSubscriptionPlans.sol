@@ -20,6 +20,7 @@ interface ICaskSubscriptionPlans {
         uint8 metaSize;
         uint32 period; // in seconds
         uint16 freeTrialDays; // in days
+        uint32 minTerm; // in seconds
         bool canPause;
         PlanStatus status;
     }
@@ -42,10 +43,10 @@ interface ICaskSubscriptionPlans {
     function getProviderProfile(address _provider) external view returns(Provider memory);
 
     function createSubscriptionPlan(bytes32 _planCode, uint32 _period,
-        uint256 _price, uint16 _freeTrialDays, bool _canPause, address _payoutAddress,
+        uint256 _price, uint32 _minTerm, uint16 _freeTrialDays, bool _canPause, address _payoutAddress,
         bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
 
-    function updateSubscriptionPlan(bytes32 _planId, uint32 _period, uint256 _price,
+    function updateSubscriptionPlan(bytes32 _planId, uint256 _price, uint32 _minTerm,
         uint16 _freeTrialDays, bool canPause) external;
 
     function setSubscriptionPlanDiscount(bytes32 _planId, bytes32 _discountId,
