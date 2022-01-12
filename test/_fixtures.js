@@ -81,6 +81,7 @@ async function basicFixture() {
         ethers.utils.formatBytes32String("plan1"), // planCode
         86400 * 7, // period - 7 days
         daiUnits('10.0'), // price - in baseAsset
+        0, // minTerm
         3, // freeTrialDays
         true, // canPause
         fixture.providerA.address, // paymentAddress
