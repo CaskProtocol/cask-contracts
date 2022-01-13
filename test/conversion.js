@@ -10,8 +10,8 @@ const {
 } = require("./_helpers");
 
 const {
-    defaultFixture,
-} = require("./_fixtures");
+    vaultFixture,
+} = require("./fixtures/vault");
 
 
 describe("Conversions", function () {
@@ -25,7 +25,7 @@ describe("Conversions", function () {
             usdt,
             usdc,
             weth,
-        } = await loadFixture(defaultFixture);
+        } = await loadFixture(vaultFixture);
 
         const networkAddresses = await getNetworkAddresses(deployments);
 

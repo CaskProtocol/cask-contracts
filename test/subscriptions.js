@@ -10,7 +10,7 @@ const {
 const {
   basicFixture,
   basicFundedFixture
-} = require("./_fixtures");
+} = require("./fixtures/subscriptions");
 
 
 describe("CaskSubscriptions", function () {

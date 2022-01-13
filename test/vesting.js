@@ -3,6 +3,9 @@ const { expect } = require("chai");
 const {
     loadFixture,
     caskUnits,
+    now,
+    hour,
+    month,
     advanceTime,
 } = require("./_helpers");
 
@@ -10,12 +13,9 @@ const {
     vestingFixture,
     teamVestingFixture,
     investorVestingFixture,
-} = require("./_fixtures");
+    teamMultiStartVestingFixture,
+} = require("./fixtures/vesting");
 
-const now = Math.floor(Date.now() / 1000);
-const hour = 3600;
-const day = 24 * hour;
-const month = (365/12) * day;
 
 describe("VestedEscrow", function () {
 
@@ -201,5 +201,29 @@ describe("VestedEscrow", function () {
 
     });
 
+    it("Multiple vesting starts works properly", async function () {
+        const {
+            alice,
+            charlie,
+            teamVestedEscrow,
+        } = await loadFixture(teamMultiStartVestingFixture);
+
+        await advanceTime(hour); // timing adjustment
+
+        await advanceTime(24 * month);
+
+        // alice vesting started day 0
+        expect(await teamVestedEscrow.vestedOf(alice.address))
+            .to.be.closeTo(caskUnits('24000000'), caskUnits('100'));
+        expect(await teamVestedEscrow.balanceOf(alice.address))
+            .to.be.closeTo(caskUnits('24000000'), caskUnits('100'));
+
+        // charlie vesting started 3 months later, so 3M less than alice
+        expect(await teamVestedEscrow.vestedOf(charlie.address))
+            .to.be.closeTo(caskUnits('21000000'), caskUnits('100'));
+        expect(await teamVestedEscrow.balanceOf(charlie.address))
+            .to.be.closeTo(caskUnits('21000000'), caskUnits('100'));
+
+    });
 
 });

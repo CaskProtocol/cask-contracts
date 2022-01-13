@@ -1,15 +1,14 @@
-
 const {
     loadFixture,
     usdcUnits,
     daiUnits,
-    usdtUnits, caskUnits
-} = require("./_helpers");
+    usdtUnits,
+    isFork
+} = require("../_helpers");
 
-const {isFork} = require("./_helpers.js");
-const addresses = require("../utils/addresses");
+const addresses = require("../../utils/addresses");
 
-async function defaultFixture() {
+async function protocolFixture() {
     await deployments.fixture(); // ensure you start from a fresh deployments
 
     // accounts
@@ -75,7 +74,7 @@ async function defaultFixture() {
 }
 
 async function basicFixture() {
-    const fixture = await loadFixture(defaultFixture);
+    const fixture = await loadFixture(protocolFixture);
 
     await fixture.subscriptionPlans.connect(fixture.providerA).createSubscriptionPlan(
         ethers.utils.formatBytes32String("plan1"), // planCode
@@ -110,84 +109,8 @@ async function basicFundedFixture() {
     return fixture;
 }
 
-async function vestingFixture() {
-    await deployments.fixture(); // ensure you start from a fresh deployments
-
-    // accounts
-    const signers = await ethers.getSigners();
-    const deployer = signers[0];
-    const governor = signers[1];
-    const alice = signers[11];
-    const bob = signers[12];
-    const charlie = signers[13];
-
-    // contracts
-    const caskToken = await ethers.getContract("CaskToken");
-    const teamVestedEscrow = await ethers.getContract("TeamVestedEscrow");
-    const investorVestedEscrow = await ethers.getContract("InvestorVestedEscrow");
-
-    return {
-        //accounts
-        deployer,
-        governor,
-        alice,
-        bob,
-        charlie,
-        caskToken,
-        teamVestedEscrow,
-        investorVestedEscrow,
-    };
-}
-
-async function investorVestingFixture() {
-    const fixture = await loadFixture(vestingFixture);
-
-    fixture.vestingStart = Math.floor(Date.now() / 1000);
-
-    await fixture.investorVestedEscrow.connect(fixture.governor)['fund(uint256,address[],uint256[])'](
-        fixture.vestingStart,
-        [
-            fixture.alice.address,
-            fixture.bob.address
-        ],
-        [
-            caskUnits('48000000'), // 1M per month over 3 years
-            caskUnits('96000000') // 2M per month over 3 years
-        ]
-    );
-
-    return fixture;
-}
-
-async function teamVestingFixture() {
-    const fixture = await loadFixture(vestingFixture);
-
-    fixture.vestingStart = Math.floor(Date.now() / 1000);
-    fixture.cliffDuration = 86400 * 365; // 1 year
-
-    await fixture.teamVestedEscrow.connect(fixture.governor)['fund(uint256,uint256,address[],uint256[])'](
-        fixture.vestingStart,
-        fixture.cliffDuration,
-        [
-            fixture.alice.address,
-            fixture.bob.address,
-            fixture.charlie.address
-        ],
-        [
-            caskUnits('48000000'), // 1M per month over 4 years
-            caskUnits('96000000'), // 2M per month over 4 years
-            caskUnits('48000000') // 1M per month over 4 years
-        ]
-    );
-
-    return fixture;
-}
-
 module.exports = {
-    defaultFixture,
+    protocolFixture,
     basicFixture,
     basicFundedFixture,
-    vestingFixture,
-    teamVestingFixture,
-    investorVestingFixture,
 }

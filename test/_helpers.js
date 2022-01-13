@@ -36,6 +36,12 @@ function daiUnitsFormat(amount) {
     return formatUnits(amount, 18);
 }
 
+const now = Math.floor(Date.now() / 1000);
+const hour = 3600;
+const day = 24 * hour;
+const month = (365/12) * day;
+const year = month * 12;
+
 const isFork = process.env.FORK === "true";
 const isLocalhost = !isFork && hre.network.name === "localhost";
 const isMemnet = hre.network.name === "hardhat";
@@ -149,6 +155,11 @@ module.exports = {
     daiUnitsFormat,
     usdcUnitsFormat,
     usdtUnitsFormat,
+    now,
+    hour,
+    day,
+    month,
+    year,
     advanceTime,
     getBlockTimestamp,
     isFork,
