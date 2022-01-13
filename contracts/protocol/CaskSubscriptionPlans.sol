@@ -142,6 +142,22 @@ PausableUpgradeable
         emit SubscriptionPlanSetDiscount(plan.provider, _planId, plan.planCode, _discountId);
     }
 
+    function updateSubscriptionPlanMeta(
+        bytes32 _planId,
+        bytes32 _metaHash,
+        uint8 _metaHF,
+        uint8 _metaSize
+    ) external override onlyProvider(_planId) {
+        Plan storage plan = subscriptionPlans[_planId];
+        require(plan.status == PlanStatus.Enabled, "!not_enabled");
+
+        plan.metaHash = _metaHash;
+        plan.metaHF = _metaHF;
+        plan.metaSize = _metaSize;
+
+        emit SubscriptionPlanUpdateMeta(plan.provider, _planId, _metaHash, _metaHF, _metaSize);
+    }
+
     function consumeDiscount(
         bytes32 _planId,
         bytes32 _discountId

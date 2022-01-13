@@ -52,6 +52,8 @@ interface ICaskSubscriptionPlans {
     function setSubscriptionPlanDiscount(bytes32 _planId, bytes32 _discountId,
         uint8 _percent, uint32 expiresAt, uint32 maxUses) external;
 
+    function updateSubscriptionPlanMeta(bytes32 _planId, bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
+
     function consumeDiscount(bytes32 _planId, bytes32 _discountId) external returns(bool);
 
     function disableSubscriptionPlan(bytes32 _planId) external;
@@ -81,6 +83,10 @@ interface ICaskSubscriptionPlans {
     /** @dev Emitted when `provider` adds a discount to a subscription plan */
     event SubscriptionPlanSetDiscount(address indexed provider, bytes32 indexed planId,
         bytes32 indexed planCode, bytes32 discountId);
+
+    /** @dev Emitted when `provider` updates IPFS metadata for the plan */
+    event SubscriptionPlanUpdateMeta(address indexed provider, bytes32 indexed planId,
+        bytes32 metaHash, uint8 metaHF, uint8 metaSize);
 
     /** @dev Emitted when `provider` disables a subscription plan */
     event SubscriptionPlanDisabled(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
