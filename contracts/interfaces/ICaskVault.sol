@@ -43,13 +43,20 @@ interface ICaskVault {
     function supportsAsset(address _asset) external view returns (bool);
 
     /**
-     * @dev Pay `_baseAssetAmount` of `baseAsset` from `_from` to `_to`
+     * @dev Pay `_baseAssetAmount` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
      * @param _from From address
      * @param _to To address
      * @param _baseAssetAmount Amount of asset to transfer
      * @param _baseAssetFee Fee to deduct from `_baseAssetAmount`
      */
-    function payment(address _from, address _to, uint256 _baseAssetAmount, uint256 _baseAssetFee) external;
+    function protocolPayment(address _from, address _to, uint256 _baseAssetAmount, uint256 _baseAssetFee) external;
+
+    /**
+     * @dev Pay `_baseAssetAmount` of `baseAsset` directly from a sender to `_to`
+     * @param _to To address
+     * @param _baseAssetAmount Amount of asset to transfer
+     */
+    function payment(address _to, uint256 _baseAssetAmount) external;
 
     /**
      * @dev Deposit `_assetAmount` of `_asset` into the vault and credit the equivalent value of `baseAsset`

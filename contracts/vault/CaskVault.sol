@@ -47,6 +47,15 @@ ReentrancyGuardUpgradeable
         _;
     }
 
+    /************************** PARAMETERS **************************/
+
+    /** @dev fixed fee to charge recipient on direct transfer, in baseAsset decimal units. */
+    uint256 public transferFeeFixed;
+
+    /** @dev percentage to charge recipient on direct transfer, in bps. 50% = 5000. */
+    uint256 public transferFeeRate;
+
+
 
     /************************** STATE **************************/
 
@@ -81,6 +90,10 @@ ReentrancyGuardUpgradeable
         vaultAdmin = _vaultAdmin;
         baseAsset = _baseAsset; // TODO: require price feed address in ctor? fix issues with allAssets and baseAsset
 
+        // parameter defaults
+        transferFeeFixed = 0;
+        transferFeeRate = 0;
+
         feeBalance = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -94,7 +107,7 @@ ReentrancyGuardUpgradeable
      * @param _baseAssetAmount Amount of baseAsset to transfer
      * @param _baseAssetFee Fee to deduct from `_baseAssetAmount`
      */
-    function payment(
+    function protocolPayment(
         address _from,
         address _to,
         uint256 _baseAssetAmount,
@@ -111,6 +124,24 @@ ReentrancyGuardUpgradeable
         feeBalance = feeBalance + feeShares; // add fee to total fees owed to protocol
 
         emit Payment(_from, _to, _baseAssetAmount, _baseAssetFee, shares);
+    }
+
+    function payment(
+        address _to,
+        uint256 _baseAssetAmount
+    ) external override nonReentrant {
+        uint256 shares = _sharesForAmount(_baseAssetAmount);
+        require(balances[msg.sender] >= shares, "!balance");
+
+        uint256 baseAssetFee = transferFeeFixed + (_baseAssetAmount * transferFeeRate / 10000);
+        uint256 feeShares = _sharesForAmount(baseAssetFee);
+
+        balances[msg.sender] = balances[msg.sender] - shares;
+        balances[_to] = balances[_to] + shares - feeShares;
+
+        feeBalance = feeBalance + feeShares; // add fee to total fees owed to protocol
+
+        emit Payment(msg.sender, _to, _baseAssetAmount, baseAssetFee, shares);
     }
 
     /**
@@ -323,6 +354,15 @@ ReentrancyGuardUpgradeable
 
         emit AssetWithdrawn(_recipient, baseAsset, baseAmount, baseAmount, _sharesAmount);
     }
+
+    function setParameters(
+        uint256 _transferFeeFixed,
+        uint256 _transferFeeRate
+    ) external onlyOwner {
+        transferFeeFixed = _transferFeeFixed;
+        transferFeeRate = _transferFeeRate;
+    }
+
 
     /************************** ASSET FUNCTIONS **************************/
 

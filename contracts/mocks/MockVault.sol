@@ -30,7 +30,10 @@ contract MockVault is ICaskVault {
         });
     }
 
-    function payment(address _from, address _to, uint256 _amount, uint256 _fee) external override {
+    function protocolPayment(address _from, address _to, uint256 _amount, uint256 _fee) external override {
+    }
+
+    function payment(address _to, uint256 _amount) external override {
     }
 
     function deposit(address _asset, uint256 _amount) external override {

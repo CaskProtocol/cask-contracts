@@ -29,7 +29,7 @@ KeeperCompatibleInterface
     /** @dev fixed fee to charge on payments, in baseAsset decimal units. */
     uint256 public paymentFeeFixed;
 
-    /** @dev percentage to charge on payments in 18 decimals. 100% = 1e18. */
+    /** @dev percentage to charge on payments, in bps. 50% = 5000. */
     uint256 public paymentFeeRate;
 
     /** @dev max gas refund for subscription creation transactions, in wei */
@@ -507,7 +507,7 @@ KeeperCompatibleInterface
         // TODO: calculate the fee rate discount based on staked CASK
         uint256 paymentFeeRateAdjusted = paymentFeeRate;
         uint256 fee = paymentFeeFixed + (_amount * paymentFeeRateAdjusted / 10000);
-        ICaskVault(vault).payment(_consumer, _provider, _amount, fee);
+        ICaskVault(vault).protocolPayment(_consumer, _provider, _amount, fee);
     }
 
     function _rebateGas(
