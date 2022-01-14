@@ -3,74 +3,48 @@ const {
     usdcUnits,
     daiUnits,
     usdtUnits,
+    day,
+    month,
     isFork
 } = require("../_helpers");
+
+const {
+    vaultFixture
+} = require("./vault");
 
 const addresses = require("../../utils/addresses");
 
 async function protocolFixture() {
-    await deployments.fixture(); // ensure you start from a fresh deployments
+    const fixture = await loadFixture(vaultFixture);
 
-    // accounts
     const signers = await ethers.getSigners();
-    const deployer = signers[0];
-    const governor = signers[1];
-    const strategist = signers[2];
-    const consumerA = signers[4];
-    const consumerB = signers[5];
-    const consumerC = signers[6];
-    const providerA = signers[7];
-    const providerB = signers[8];
-    const providerC = signers[9];
 
+    fixture.consumerA = signers[4];
+    fixture.consumerB = signers[5];
+    fixture.consumerC = signers[6];
+    fixture.providerA = signers[7];
+    fixture.providerB = signers[8];
+    fixture.providerC = signers[9];
 
-    // assets
-    let usdt,
-        dai,
-        usdc,
-        weth;
 
     if (isFork) {
-        usdt = await ethers.getContractAt("IERC20", addresses.polygon.USDT);
-        dai = await ethers.getContractAt("IERC20", addresses.polygon.DAI);
-        usdc = await ethers.getContractAt("IERC20", addresses.polygon.USDC);
-        weth = await ethers.getContractAt("IERC20", addresses.polygon.WETH);
+        fixture.usdt = await ethers.getContractAt("IERC20", addresses.polygon.USDT);
+        fixture.dai = await ethers.getContractAt("IERC20", addresses.polygon.DAI);
+        fixture.usdc = await ethers.getContractAt("IERC20", addresses.polygon.USDC);
+        fixture.weth = await ethers.getContractAt("IERC20", addresses.polygon.WETH);
     } else {
-        usdt = await ethers.getContract("MockUSDT");
-        dai = await ethers.getContract("MockDAI");
-        usdc = await ethers.getContract("MockUSDC");
-        weth = await ethers.getContract("MockWETH");
+        fixture.usdt = await ethers.getContract("MockUSDT");
+        fixture.dai = await ethers.getContract("MockDAI");
+        fixture.usdc = await ethers.getContract("MockUSDC");
+        fixture.weth = await ethers.getContract("MockWETH");
     }
 
-    // contracts
-    const vaultAdmin = await ethers.getContract("CaskVaultAdmin");
-    const vault = await ethers.getContract("CaskVault");
-    const subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
-    const subscriptions = await ethers.getContract("CaskSubscriptions");
+    fixture.vaultAdmin = await ethers.getContract("CaskVaultAdmin");
+    fixture.vault = await ethers.getContract("CaskVault");
+    fixture.subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
+    fixture.subscriptions = await ethers.getContract("CaskSubscriptions");
 
-
-    return {
-        //accounts
-        deployer,
-        governor,
-        strategist,
-        consumerA,
-        consumerB,
-        consumerC,
-        providerA,
-        providerB,
-        providerC,
-        // assets
-        usdt,
-        dai,
-        usdc,
-        weth,
-        //contracts
-        vaultAdmin,
-        vault,
-        subscriptionPlans,
-        subscriptions,
-    };
+    return fixture;
 }
 
 async function basicFixture() {
@@ -78,7 +52,7 @@ async function basicFixture() {
 
     await fixture.subscriptionPlans.connect(fixture.providerA).createSubscriptionPlan(
         ethers.utils.formatBytes32String("plan1"), // planCode
-        86400 * 7, // period - 7 days
+        day * 7, // period - 7 days
         daiUnits('10.0'), // price - in baseAsset
         0, // minTerm
         3, // freeTrialDays
