@@ -29,12 +29,12 @@ PausableUpgradeable
 
 
     modifier onlyProvider(bytes32 _planId) {
-        require(msg.sender == subscriptionPlans[_planId].provider, "!auth");
+        require(msg.sender == subscriptionPlans[_planId].provider, "!AUTH");
         _;
     }
 
     modifier onlyProtocol() {
-        require(msg.sender == protocol, "!auth");
+        require(msg.sender == protocol, "!AUTH");
         _;
     }
 
@@ -79,8 +79,8 @@ PausableUpgradeable
         uint8 _metaHF,
         uint8 _metaSize
     ) external override {
-        require(_period > 0, "!invalid(_period)");
-        require(_price > 0, "!invalid(_price)");
+        require(_period > 0, "!INVALID(_period)");
+        require(_price > 0, "!INVALID(_price)");
 
         bytes32 planId = keccak256(abi.encodePacked(msg.sender, _planCode, block.number));
 
@@ -110,9 +110,9 @@ PausableUpgradeable
         uint32 _freeTrial,
         bool _canPause
     ) external override onlyProvider(_planId) {
-        require(_price > 0, "!invalid(_price)");
+        require(_price > 0, "!INVALID(_price)");
         Plan storage plan = subscriptionPlans[_planId];
-        require(plan.status == PlanStatus.Enabled, "!not_enabled");
+        require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
 
         plan.price = _price;
         plan.minTerm = _minTerm;
@@ -129,9 +129,9 @@ PausableUpgradeable
         uint32 _expiresAt,
         uint32 _maxUses
     ) external override onlyProvider(_planId) {
-        require(_percent > 0, "!invalid(_percent)");
+        require(_percent > 0, "!INVALID(_percent)");
         Plan memory plan = subscriptionPlans[_planId];
-        require(plan.status == PlanStatus.Enabled, "!not_enabled");
+        require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
 
         Discount storage discount = discounts[_planId][_discountId];
 
@@ -149,7 +149,7 @@ PausableUpgradeable
         uint8 _metaSize
     ) external override onlyProvider(_planId) {
         Plan storage plan = subscriptionPlans[_planId];
-        require(plan.status == PlanStatus.Enabled, "!not_enabled");
+        require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
 
         plan.metaHash = _metaHash;
         plan.metaHF = _metaHF;
@@ -163,7 +163,7 @@ PausableUpgradeable
         bytes32 _discountId
     ) external override onlyProtocol returns(bool) {
         Discount storage discount = discounts[_planId][_discountId];
-        require(discount.maxUses == 0 || discount.uses < discount.maxUses, "!exhausted");
+        require(discount.maxUses == 0 || discount.uses < discount.maxUses, "!MAX_USES");
         discount.uses = discount.uses - 1;
         return discount.maxUses == 0 || discount.uses < discount.maxUses;
     }
@@ -172,7 +172,7 @@ PausableUpgradeable
         bytes32 _planId
     ) external override onlyProvider(_planId) {
         Plan storage plan = subscriptionPlans[_planId];
-        require(plan.status == PlanStatus.Enabled, "!not_enabled");
+        require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
 
         plan.status = PlanStatus.Disabled;
 
@@ -183,7 +183,7 @@ PausableUpgradeable
         bytes32 _planId
     ) external override onlyProvider(_planId) {
         Plan storage plan = subscriptionPlans[_planId];
-        require(plan.status == PlanStatus.Disabled, "!not_disabled");
+        require(plan.status == PlanStatus.Disabled, "!NOT_DISABLED");
 
         plan.status = PlanStatus.Enabled;
 
@@ -194,7 +194,7 @@ PausableUpgradeable
         bytes32 _planId
     ) external override onlyProvider(_planId) {
         Plan storage plan = subscriptionPlans[_planId];
-        require(plan.status != PlanStatus.EndOfLife, "!already_eol");
+        require(plan.status != PlanStatus.EndOfLife, "!EOL");
 
         plan.status = PlanStatus.EndOfLife;
 

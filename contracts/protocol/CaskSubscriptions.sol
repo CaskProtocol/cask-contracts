@@ -47,7 +47,7 @@ KeeperCompatibleInterface
     mapping(address => uint256) internal providerActiveSubscriptionCount; // provider => count
 
     modifier onlySubscriber(bytes32 _subscriptionId) {
-        require(msg.sender == subscriptions[_subscriptionId].consumer, "!auth");
+        require(msg.sender == subscriptions[_subscriptionId].consumer, "!AUTH");
         _;
     }
 
@@ -61,7 +61,7 @@ KeeperCompatibleInterface
     }
 
     modifier onlyProvider(bytes32 _subscriptionId) {
-        require(msg.sender == subscriptions[_subscriptionId].provider, "!auth");
+        require(msg.sender == subscriptions[_subscriptionId].provider, "!AUTH");
         _;
     }
 
@@ -103,8 +103,8 @@ KeeperCompatibleInterface
         ICaskSubscriptionPlans.Plan memory plan =
             ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(_planId);
 
-        require(plan.provider != address(0), "!invalid(_plan)");
-        require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!disabled");
+        require(plan.provider != address(0), "!INVALID(_plan)");
+        require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!NOT_ENABLED");
 
         bytes32 subscriptionId = keccak256(abi.encodePacked(msg.sender, plan.provider, _ref, _planId, block.number));
 
@@ -151,14 +151,14 @@ KeeperCompatibleInterface
         bool _atNextRenewal
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
         Subscription storage subscription = subscriptions[_subscriptionId];
-        require(subscription.renewAt < uint32(block.timestamp), "!need_renewal");
-        require(subscription.planId != _planId, "!invalid(_planId)");
+        require(subscription.renewAt < uint32(block.timestamp), "!NEED_RENEWAL");
+        require(subscription.planId != _planId, "!INVALID(_planId)");
         require(subscription.status == SubscriptionStatus.Active ||
-                subscription.status == SubscriptionStatus.Trialing, "!invalid(status)");
+                subscription.status == SubscriptionStatus.Trialing, "!INVALID(status)");
 
         ICaskSubscriptionPlans.Plan memory plan =
             ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(_planId);
-        require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!not_active");
+        require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!NOT_ENABLED");
 
         ICaskSubscriptionPlans.Plan memory curPlan =
             ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
@@ -237,7 +237,7 @@ KeeperCompatibleInterface
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
         Subscription storage subscription = subscriptions[_subscriptionId];
 
-        require(subscription.minTermAt == 0 || _cancelAt > subscription.minTermAt, "!min_term");
+        require(subscription.minTermAt == 0 || _cancelAt > subscription.minTermAt, "!MIN_TERM");
 
         subscription.cancelAt = _cancelAt;
     }
@@ -277,13 +277,13 @@ KeeperCompatibleInterface
         ICaskSubscriptionPlans.Plan memory plan =
             ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
 
-        require(plan.canPause, "!unpausable");
+        require(plan.canPause, "!NOT_PAUSABLE");
         require(subscription.status != SubscriptionStatus.Paused &&
                 subscription.status != SubscriptionStatus.PastDue &&
                 subscription.status != SubscriptionStatus.Canceled &&
-                subscription.status != SubscriptionStatus.PendingCancel, "!invalid");
+                subscription.status != SubscriptionStatus.PendingCancel, "!INVALID(status)");
 
-        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!minTerm");
+        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!MIN_TERM");
 
         subscription.status = SubscriptionStatus.Paused;
 
@@ -298,7 +298,7 @@ KeeperCompatibleInterface
         ICaskSubscriptionPlans.Plan memory plan =
             ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
 
-        require(subscription.status == SubscriptionStatus.Paused, "!notPaused");
+        require(subscription.status == SubscriptionStatus.Paused, "!NOT_PAUSED");
 
         subscription.status = SubscriptionStatus.Active;
 
@@ -317,9 +317,9 @@ KeeperCompatibleInterface
         Subscription storage subscription = subscriptions[_subscriptionId];
 
         require(subscription.status != SubscriptionStatus.PendingCancel &&
-                subscription.status != SubscriptionStatus.Canceled, "!invalid(status)");
+                subscription.status != SubscriptionStatus.Canceled, "!INVALID(status)");
 
-        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!minTerm");
+        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!MIN_TERM");
 
         ICaskSubscriptionPlans.Plan memory plan =
             ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
@@ -486,7 +486,7 @@ KeeperCompatibleInterface
             bytes32 oldPlanCode;
 
             // if a plan change is pending, switch to use new plan info
-            if (subscription.pendingPlanId != 0 && subscription.pendingPlanId != subscription.planId) {
+            if (subscription.pendingPlanId != 0) {
                 plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.pendingPlanId);
                 oldPlanCode = plan.planCode;
                 subscription.planId = subscription.pendingPlanId;
