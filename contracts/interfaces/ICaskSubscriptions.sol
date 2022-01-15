@@ -14,7 +14,6 @@ interface ICaskSubscriptions {
     }
 
     struct Subscription {
-        bytes32 subscriptionId;
         bytes32 planId;
         bytes32 pendingPlanId;
         uint256 price;

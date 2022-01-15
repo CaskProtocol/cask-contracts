@@ -105,7 +105,7 @@ KeeperCompatibleInterface
         require(plan.provider != address(0), "!invalid(_plan)");
         require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!disabled");
 
-        bytes32 subscriptionId = keccak256(abi.encodePacked(msg.sender, plan.provider, _planId, block.number));
+        bytes32 subscriptionId = keccak256(abi.encodePacked(msg.sender, plan.provider, _ref, _planId, block.number));
 
         Subscription storage subscription = subscriptions[subscriptionId];
         subscription.consumer = msg.sender;
@@ -121,10 +121,10 @@ KeeperCompatibleInterface
         subscription.metaSize = _metaSize;
         subscription.createdAt = uint32(block.timestamp);
 
-        if (plan.freeTrialDays > 0) {
+        if (plan.freeTrial > 0) {
             // if no trial period, charge now. If trial period, charge will happen after trial is over
             subscription.status = SubscriptionStatus.Trialing;
-            subscription.renewAt = uint32(block.timestamp) + (plan.freeTrialDays * 1 days);
+            subscription.renewAt = uint32(block.timestamp) + plan.freeTrial;
         } else {
             _renewSubscription(subscriptionId);
             subscription.status = SubscriptionStatus.Active;
@@ -133,8 +133,8 @@ KeeperCompatibleInterface
             subscription.minTermAt = uint32(block.timestamp) + plan.minTerm;
         }
 
-        emit SubscriptionCreated(subscription.consumer, subscription.provider,
-            subscription.subscriptionId, subscription.ref, plan.planCode);
+        emit SubscriptionCreated(subscription.consumer, subscription.provider, subscriptionId,
+            subscription.ref, plan.planCode);
 
         consumerSubscriptions[msg.sender].push(subscriptionId);
         providerSubscriptions[plan.provider].push(subscriptionId);
@@ -156,18 +156,19 @@ KeeperCompatibleInterface
         ICaskSubscriptionPlans.Plan memory plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(_planId);
         require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!disabled");
 
-        ICaskSubscriptionPlans.Plan memory curPlan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
+        ICaskSubscriptionPlans.Plan memory curPlan =
+            ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
 
         if (subscription.status == SubscriptionStatus.Trialing) {
 
-            if (plan.freeTrialDays > curPlan.freeTrialDays) {
-                // new plan has moar days than the old plan, adjust renewAt out further
-                subscription.renewAt = subscription.renewAt + ((plan.freeTrialDays - curPlan.freeTrialDays) * 1 days);
-            } else if (plan.freeTrialDays < curPlan.freeTrialDays) {
-                // new plan has less days than the old plan, adjust renewAt in closer
-                subscription.renewAt = subscription.renewAt - ((curPlan.freeTrialDays - plan.freeTrialDays) * 1 days);
+            if (plan.freeTrial > curPlan.freeTrial) {
+                // new plan has moar trial than the old plan, adjust renewAt out further
+                subscription.renewAt = subscription.renewAt + plan.freeTrial - curPlan.freeTrial;
+            } else if (plan.freeTrial < curPlan.freeTrial) {
+                // new plan has less trial than the old plan, adjust renewAt in closer
+                subscription.renewAt = subscription.renewAt - curPlan.freeTrial - plan.freeTrial;
                 if (subscription.renewAt <= uint32(block.timestamp)) {
-                    // if new plan trial days would have caused trial to already be over, end trial as of now
+                    // if new plan trial length would have caused trial to already be over, end trial as of now
                     // subscription will be charged and converted to active during next keeper run
                     subscription.renewAt = uint32(block.timestamp);
                 }
@@ -176,7 +177,7 @@ KeeperCompatibleInterface
             // freely allow plans to change while trialing
             subscription.planId = _planId;
 
-            emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, subscription.subscriptionId,
+            emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, curPlan.planCode, plan.planCode);
 
         } else if (plan.price / plan.period > subscription.price / curPlan.period) { // upgrade
@@ -186,21 +187,21 @@ KeeperCompatibleInterface
 
             subscription.planId = _planId;
 
-            emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, subscription.subscriptionId,
+            emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, curPlan.planCode, plan.planCode);
 
         } else { // downgrade
 
             // possible usecase someday: code to immediately downgrade and extend renewal date based on plan value diff
-//            uint256 credit = ((subscription.price / curPlan.period) - (plan.price / plan.period)) *
-//                                (subscription.renewAt - uint32(block.timestamp));
-//            // calculate how many seconds the credit amount buys of the new plan and extend
-//            // the renewal date that amount
-//            subscription.renewAt = subscription.renewAt + uint32(credit / (plan.price / plan.period));
+            //            uint256 credit = ((subscription.price / curPlan.period) - (plan.price / plan.period)) *
+            //                                (subscription.renewAt - uint32(block.timestamp));
+            //            // calculate how many seconds the credit amount buys of the new plan and extend
+            //            // the renewal date that amount
+            //            subscription.renewAt = subscription.renewAt + uint32(credit / (plan.price / plan.period));
 
             subscription.pendingPlanId = _planId; // will be activated at next renewal
 
-            emit SubscriptionPendingChangePlan(subscription.consumer, subscription.provider, subscription.subscriptionId,
+            emit SubscriptionPendingChangePlan(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, curPlan.planCode, plan.planCode);
         }
 
@@ -230,7 +231,7 @@ KeeperCompatibleInterface
 
             subscription.discountId = ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(subscription.pendingPlanId, _discountProof);
 
-            emit SubscriptionChangedDiscount(subscription.consumer, subscription.provider, subscription.subscriptionId,
+            emit SubscriptionChangedDiscount(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, plan.planCode, subscription.discountId);
 
         } else {
@@ -238,7 +239,7 @@ KeeperCompatibleInterface
 
             subscription.discountId = ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(subscription.planId, _discountProof);
 
-            emit SubscriptionChangedDiscount(subscription.consumer, subscription.provider, subscription.subscriptionId,
+            emit SubscriptionChangedDiscount(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, plan.planCode, subscription.discountId);
         }
     }
@@ -259,7 +260,7 @@ KeeperCompatibleInterface
 
         subscription.status = SubscriptionStatus.Paused;
 
-        emit SubscriptionPaused(subscription.consumer, subscription.provider, subscription.subscriptionId,
+        emit SubscriptionPaused(subscription.consumer, subscription.provider, _subscriptionId,
             subscription.ref, plan.planCode);
     }
 
@@ -278,7 +279,7 @@ KeeperCompatibleInterface
             subscription.renewAt = uint32(block.timestamp);
         }
 
-        emit SubscriptionResumed(subscription.consumer, subscription.provider, subscription.subscriptionId,
+        emit SubscriptionResumed(subscription.consumer, subscription.provider, _subscriptionId,
             subscription.ref, plan.planCode);
     }
 
@@ -296,7 +297,7 @@ KeeperCompatibleInterface
 
         subscription.status = SubscriptionStatus.PendingCancel;
 
-        emit SubscriptionPendingCancel(subscription.consumer, subscription.provider, subscription.subscriptionId,
+        emit SubscriptionPendingCancel(subscription.consumer, subscription.provider, _subscriptionId,
             subscription.ref, plan.planCode);
     }
 
@@ -345,10 +346,24 @@ KeeperCompatibleInterface
         bytes calldata checkData
     ) external view override returns(bool upkeepNeeded, bytes memory performData) {
         uint256 limit = abi.decode(checkData, (uint256));
-        bytes32[] memory subscriptionIds = _subscriptionsRenewable(limit);
-        if (subscriptionIds.length > 0) {
+
+        (
+            uint256 renewableCount,
+            bytes32[] memory subscriptionIds
+        ) = _subscriptionsRenewable(limit);
+
+        uint256 j = 0;
+        bytes32[] memory renewables = new bytes32[](renewableCount);
+        for (uint256 i = 0; i < limit && j < renewableCount; i++) {
+            if (subscriptionIds[i] > 0) {
+                renewables[j] = subscriptionIds[i];
+                j = j + 1;
+            }
+        }
+
+        if (renewableCount > 0) {
             upkeepNeeded = true;
-            performData = abi.encode(subscriptionIds);
+            performData = abi.encode(renewables);
         } else {
             upkeepNeeded = false;
             performData = bytes("");
@@ -357,7 +372,7 @@ KeeperCompatibleInterface
 
     function _subscriptionsRenewable(
         uint256 _limit
-    ) internal view returns(bytes32[] memory) {
+    ) internal view returns(uint256, bytes32[] memory) {
         bytes32[] memory renewables = new bytes32[](_limit);
 
         uint256 foundRenewable = 0;
@@ -374,7 +389,7 @@ KeeperCompatibleInterface
                 }
             }
         }
-        return renewables;
+        return (foundRenewable, renewables);
     }
 
     function performUpkeep(
@@ -410,7 +425,7 @@ KeeperCompatibleInterface
             providerActiveSubscriptionCount[subscription.provider] =
                 providerActiveSubscriptionCount[subscription.provider] - 1;
 
-            emit SubscriptionCanceled(subscription.consumer, subscription.provider, subscription.subscriptionId,
+            emit SubscriptionCanceled(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, plan.planCode);
 
         } else {
@@ -445,14 +460,14 @@ KeeperCompatibleInterface
                     subscription.status = SubscriptionStatus.Canceled;
 
                     emit SubscriptionCanceled(subscription.consumer, subscription.provider,
-                        subscription.subscriptionId, subscription.ref, plan.planCode);
+                        _subscriptionId, subscription.ref, plan.planCode);
 
                 } else if (subscription.status != SubscriptionStatus.PastDue) {
 
                     subscription.status = SubscriptionStatus.PastDue;
 
                     emit SubscriptionPastDue(subscription.consumer, subscription.provider,
-                        subscription.subscriptionId, subscription.ref, plan.planCode);
+                        _subscriptionId, subscription.ref, plan.planCode);
                 }
 
             } else if (chargeAmount > 0) {
@@ -469,7 +484,7 @@ KeeperCompatibleInterface
                     subscription.pendingPlanId = 0;
 
                     emit SubscriptionChangedPlan(subscription.consumer, subscription.provider,
-                        subscription.subscriptionId, subscription.ref, oldPlan.planCode, plan.planCode);
+                        _subscriptionId, subscription.ref, oldPlan.planCode, plan.planCode);
                 }
 
                 if (usedDiscount && discount.maxUses > 0) {
@@ -481,17 +496,17 @@ KeeperCompatibleInterface
 
                 if (subscription.status == SubscriptionStatus.Trialing) {
                     emit SubscriptionTrialEnded(subscription.consumer, subscription.provider,
-                        subscription.subscriptionId, subscription.ref, plan.planCode);
+                        _subscriptionId, subscription.ref, plan.planCode);
                 }
 
                 subscription.status = SubscriptionStatus.Active;
 
-                emit SubscriptionRenewed(subscription.consumer, subscription.provider, subscription.subscriptionId,
+                emit SubscriptionRenewed(subscription.consumer, subscription.provider, _subscriptionId,
                     subscription.ref, plan.planCode);
             } else {
                 subscription.renewAt = subscription.renewAt + plan.period;
 
-                emit SubscriptionRenewed(subscription.consumer, subscription.provider, subscription.subscriptionId,
+                emit SubscriptionRenewed(subscription.consumer, subscription.provider, _subscriptionId,
                     subscription.ref, plan.planCode);
             }
 

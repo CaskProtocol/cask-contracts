@@ -145,6 +145,32 @@ const getNetworkAddresses = async (deployments) => {
     }
 };
 
+const subscriptionCheckUpkeep = async(checkData) => {
+    const subscriptions = await ethers.getContract("CaskSubscriptions");
+    return subscriptions.checkUpkeep(checkData);
+};
+
+const subscriptionPerformUpkeep = async(performData) => {
+    const subscriptions = await ethers.getContract("CaskSubscriptions");
+    return subscriptions.performUpkeep(performData);
+};
+
+const runSubscriptionKeeper = async(limit) => {
+    const abiCoder = new ethers.utils.AbiCoder();
+    const checkData = abiCoder.encode(['uint256'], [limit]);
+    console.log(`runSubscriptionKeeper checkData: ${checkData}`);
+    const checkUpkeep = await subscriptionCheckUpkeep(checkData);
+
+    console.log(`runSubscriptionKeeper checkUpkeep upkeepNeeded: ${checkUpkeep.upkeepNeeded}`);
+    console.log(`runSubscriptionKeeper checkUpkeep performData: ${checkUpkeep.performData}`);
+
+    if (checkUpkeep.upkeepNeeded) {
+        return subscriptionPerformUpkeep(checkUpkeep.performData);
+    } else {
+        return false;
+    }
+};
+
 
 module.exports = {
     caskUnits,
@@ -180,4 +206,7 @@ module.exports = {
     setOracleTokenPriceUsd,
     getNetworkAddresses,
     advanceBlocks,
+    runSubscriptionKeeper,
+    subscriptionCheckUpkeep,
+    subscriptionPerformUpkeep,
 };

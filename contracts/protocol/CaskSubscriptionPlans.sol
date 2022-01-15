@@ -72,7 +72,7 @@ PausableUpgradeable
         uint32 _period,
         uint256 _price,
         uint32 _minTerm,
-        uint16 _freeTrialDays,
+        uint32 _freeTrial,
         bool _canPause,
         address _paymentAddress,
         bytes32 _metaHash,
@@ -92,7 +92,7 @@ PausableUpgradeable
         plan.period = _period;
         plan.price = _price;
         plan.minTerm = _minTerm;
-        plan.freeTrialDays = _freeTrialDays;
+        plan.freeTrial = _freeTrial;
         plan.canPause = _canPause;
         plan.paymentAddress = _paymentAddress;
         plan.metaHash = _metaHash;
@@ -107,7 +107,7 @@ PausableUpgradeable
         bytes32 _planId,
         uint256 _price,
         uint32 _minTerm,
-        uint16 _freeTrialDays,
+        uint32 _freeTrial,
         bool _canPause
     ) external override onlyProvider(_planId) {
         require(_price > 0, "!invalid(_price)");
@@ -116,7 +116,7 @@ PausableUpgradeable
 
         plan.price = _price;
         plan.minTerm = _minTerm;
-        plan.freeTrialDays = _freeTrialDays;
+        plan.freeTrial = _freeTrial;
         plan.canPause = _canPause;
 
         emit SubscriptionPlanUpdated(plan.provider, _planId, plan.planCode);
