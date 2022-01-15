@@ -13,6 +13,25 @@ const {
   singlePlanFixture,
 } = require("./fixtures/subscriptions");
 
+// keep in sync with ICaskSubscriptions.sol
+const SubscriptionStatus = {
+  None: 0,
+  Trialing: 1,
+  Active: 2,
+  Paused: 3,
+  Canceled: 4,
+  PendingCancel: 5,
+  PastDue: 6,
+};
+
+// keep in sync with ICaskSubscriptionPlans.sol
+const PlanStatus = {
+  None: 0,
+  Enabled: 1,
+  Disabled: 2,
+  EndOfLife: 3,
+};
+
 
 describe("CaskSubscriptions", function () {
 
@@ -182,7 +201,7 @@ describe("CaskSubscriptions", function () {
     await advanceTime(8 * day);
     expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionTrialEnded");
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
-    expect(subscriptionInfo.status).to.equal(2); // 2 = active
+    expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
     expect(await consumerVault.currentValueOf(consumerA.address)).to.equal(daiUnits('10'));
 
     // funds just enough for one renewal
@@ -191,14 +210,14 @@ describe("CaskSubscriptions", function () {
 
     // confirm subscription still active but out of funds
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
-    expect(subscriptionInfo.status).to.equal(2); // 2 = active
+    expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
     expect(await consumerVault.currentValueOf(consumerA.address)).to.equal('0');
 
     // unable to renew due to out of funds, confirm past due
     await advanceTime(month);
     expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionPastDue");
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
-    expect(subscriptionInfo.status).to.equal(6); // 6 = PastDue
+    expect(subscriptionInfo.status).to.equal(SubscriptionStatus.PastDue);
 
     // deposit one more months worth
     await consumerVault.deposit(networkAddresses.DAI, daiUnits('10'));
@@ -206,20 +225,20 @@ describe("CaskSubscriptions", function () {
     // confirm successful renew
     expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionRenewed");
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
-    expect(subscriptionInfo.status).to.equal(2); // 2 = active
+    expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
     expect(await consumerVault.currentValueOf(consumerA.address)).to.equal('0');
 
     // a month later, since funds are depleted again, confirm past due
     await advanceTime(month);
     expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionPastDue");
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
-    expect(subscriptionInfo.status).to.equal(6); // 6 = PastDue
+    expect(subscriptionInfo.status).to.equal(SubscriptionStatus.PastDue);
 
     // past due window passes, subscription cancels
     await advanceTime(8 * day);
     expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionCanceled");
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
-    expect(subscriptionInfo.status).to.equal(4); // 4 = Canceled
+    expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Canceled);
 
   });
 
