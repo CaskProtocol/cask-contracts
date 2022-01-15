@@ -20,16 +20,16 @@ PausableUpgradeable
     mapping(address => Provider) internal providerProfiles;
 
     /** @dev Maps for provider to plans. */
-    mapping(address => bytes32[]) internal providerSubscriptionPlans; // provider => planId[]
-    mapping(bytes32 => Plan) internal subscriptionPlans; // planId => Plan
+    mapping(address => bytes32[]) internal providerPlans; // provider => planId[]
+    mapping(bytes32 => Plan) internal plans; // planId => Plan
 
     /** @dev Maps for discounts. */
-    mapping(bytes32 => bytes32[]) internal subscriptionPlanDiscounts; // planId => discountHash[]
+    mapping(bytes32 => bytes32[]) internal planDiscounts; // planId => discountHash[]
     mapping(bytes32 => mapping(bytes32 => Discount)) internal discounts; // planId => discountHash => Discount
 
 
     modifier onlyProvider(bytes32 _planId) {
-        require(msg.sender == subscriptionPlans[_planId].provider, "!AUTH");
+        require(msg.sender == plans[_planId].provider, "!AUTH");
         _;
     }
 
@@ -67,7 +67,7 @@ PausableUpgradeable
         return providerProfiles[_provider];
     }
 
-    function createSubscriptionPlan(
+    function createPlan(
         bytes32 _planCode,
         uint32 _period,
         uint256 _price,
@@ -84,9 +84,9 @@ PausableUpgradeable
 
         bytes32 planId = keccak256(abi.encodePacked(msg.sender, _planCode, block.number));
 
-        providerSubscriptionPlans[msg.sender].push(planId);
+        providerPlans[msg.sender].push(planId);
 
-        Plan storage plan = subscriptionPlans[planId];
+        Plan storage plan = plans[planId];
         plan.provider = msg.sender;
         plan.planCode = _planCode;
         plan.period = _period;
@@ -100,10 +100,10 @@ PausableUpgradeable
         plan.metaSize = _metaSize;
         plan.status = PlanStatus.Enabled;
 
-        emit SubscriptionPlanCreated(plan.provider, planId, plan.planCode);
+        emit PlanCreated(plan.provider, planId, plan.planCode);
     }
 
-    function updateSubscriptionPlan(
+    function updatePlan(
         bytes32 _planId,
         uint256 _price,
         uint32 _minTerm,
@@ -111,7 +111,7 @@ PausableUpgradeable
         bool _canPause
     ) external override onlyProvider(_planId) {
         require(_price > 0, "!INVALID(_price)");
-        Plan storage plan = subscriptionPlans[_planId];
+        Plan storage plan = plans[_planId];
         require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
 
         plan.price = _price;
@@ -119,10 +119,10 @@ PausableUpgradeable
         plan.freeTrial = _freeTrial;
         plan.canPause = _canPause;
 
-        emit SubscriptionPlanUpdated(plan.provider, _planId, plan.planCode);
+        emit PlanUpdated(plan.provider, _planId, plan.planCode);
     }
 
-    function setSubscriptionPlanDiscount(
+    function setPlanDiscount(
         bytes32 _planId,
         bytes32 _discountId,
         uint8 _percent,
@@ -130,7 +130,7 @@ PausableUpgradeable
         uint32 _maxUses
     ) external override onlyProvider(_planId) {
         require(_percent > 0, "!INVALID(_percent)");
-        Plan memory plan = subscriptionPlans[_planId];
+        Plan memory plan = plans[_planId];
         require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
 
         Discount storage discount = discounts[_planId][_discountId];
@@ -139,23 +139,23 @@ PausableUpgradeable
         discount.expiresAt = _expiresAt;
         discount.maxUses = _maxUses;
 
-        emit SubscriptionPlanSetDiscount(plan.provider, _planId, plan.planCode, _discountId);
+        emit PlanSetDiscount(plan.provider, _planId, plan.planCode, _discountId);
     }
 
-    function updateSubscriptionPlanMeta(
+    function updatePlanMeta(
         bytes32 _planId,
         bytes32 _metaHash,
         uint8 _metaHF,
         uint8 _metaSize
     ) external override onlyProvider(_planId) {
-        Plan storage plan = subscriptionPlans[_planId];
+        Plan storage plan = plans[_planId];
         require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
 
         plan.metaHash = _metaHash;
         plan.metaHF = _metaHF;
         plan.metaSize = _metaSize;
 
-        emit SubscriptionPlanUpdateMeta(plan.provider, _planId, _metaHash, _metaHF, _metaSize);
+        emit PlanUpdateMeta(plan.provider, _planId, plan.planCode, _metaHash, _metaHF, _metaSize);
     }
 
     function consumeDiscount(
@@ -171,37 +171,37 @@ PausableUpgradeable
         return discount.maxUses == 0 || discount.uses < discount.maxUses;
     }
 
-    function disableSubscriptionPlan(
+    function disablePlan(
         bytes32 _planId
     ) external override onlyProvider(_planId) {
-        Plan storage plan = subscriptionPlans[_planId];
+        Plan storage plan = plans[_planId];
         require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
 
         plan.status = PlanStatus.Disabled;
 
-        emit SubscriptionPlanDisabled(plan.provider, _planId, plan.planCode);
+        emit PlanDisabled(plan.provider, _planId, plan.planCode);
     }
 
-    function enableSubscriptionPlan(
+    function enablePlan(
         bytes32 _planId
     ) external override onlyProvider(_planId) {
-        Plan storage plan = subscriptionPlans[_planId];
+        Plan storage plan = plans[_planId];
         require(plan.status == PlanStatus.Disabled, "!NOT_DISABLED");
 
         plan.status = PlanStatus.Enabled;
 
-        emit SubscriptionPlanEnabled(plan.provider, _planId, plan.planCode);
+        emit PlanEnabled(plan.provider, _planId, plan.planCode);
     }
 
-    function eolSubscriptionPlan(
+    function killPlan(
         bytes32 _planId
     ) external override onlyProvider(_planId) {
-        Plan storage plan = subscriptionPlans[_planId];
+        Plan storage plan = plans[_planId];
         require(plan.status != PlanStatus.EndOfLife, "!EOL");
 
         plan.status = PlanStatus.EndOfLife;
 
-        emit SubscriptionPlanEOL(plan.provider, _planId, plan.planCode);
+        emit PlanKilled(plan.provider, _planId, plan.planCode);
     }
 
     function verifyDiscount(
@@ -218,29 +218,29 @@ PausableUpgradeable
         return 0; // no discount
     }
 
-    function getSubscriptionPlans(
+    function getPlans(
         address _provider
     ) external override view returns(bytes32[] memory) {
-        return providerSubscriptionPlans[_provider];
+        return providerPlans[_provider];
     }
 
-    function getSubscriptionPlan(
+    function getPlan(
         bytes32 _planId
     ) external override view returns(Plan memory) {
-        return subscriptionPlans[_planId];
+        return plans[_planId];
     }
 
-    function getSubscriptionPlanDiscount(
+    function getPlanDiscount(
         bytes32 _planId,
         bytes32 _discountId
     ) external override view returns(Discount memory) {
         return discounts[_planId][_discountId];
     }
 
-    function getSubscriptionPlanDiscounts(
+    function getPlanDiscounts(
         bytes32 _planId
     ) external override view returns(bytes32[] memory) {
-        return subscriptionPlanDiscounts[_planId];
+        return planDiscounts[_planId];
     }
 
 }

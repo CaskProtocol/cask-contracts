@@ -25,7 +25,7 @@ async function singlePlanFixture() {
 
     fixture.planCode = ethers.utils.formatBytes32String("plan1");
 
-    const tx = await fixture.subscriptionPlans.connect(fixture.providerA).createSubscriptionPlan(
+    const tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
         fixture.planCode, // planCode
         month, // period
         daiUnits('10.0'), // price - in baseAsset
@@ -37,7 +37,7 @@ async function singlePlanFixture() {
     );
 
     const events = (await tx.wait()).events || [];
-    const planCreatedEvent = events.find((e) => e.event === "SubscriptionPlanCreated");
+    const planCreatedEvent = events.find((e) => e.event === "PlanCreated");
     fixture.planId = planCreatedEvent.args.planId;
 
     return fixture;
