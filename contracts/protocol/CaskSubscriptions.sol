@@ -477,35 +477,40 @@ KeeperCompatibleInterface
             plan.status == ICaskSubscriptionPlans.PlanStatus.EndOfLife) {
 
             subscription.status = SubscriptionStatus.Canceled;
+
             providerActiveSubscriptionCount[subscription.provider] =
                 providerActiveSubscriptionCount[subscription.provider] - 1;
 
             emit SubscriptionCanceled(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, plan.planCode);
 
-        } else {
+            return;
+        }
 
-            ICaskSubscriptionPlans.Discount memory discount;
-            bytes32 oldPlanCode;
+        // if a plan change is pending, switch to use new plan info
+        if (subscription.pendingPlanId != 0) {
+            bytes32 oldPlanCode = plan.planCode;
+            plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.pendingPlanId);
 
-            // if a plan change is pending, switch to use new plan info
-            if (subscription.pendingPlanId != 0) {
-                plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.pendingPlanId);
-                oldPlanCode = plan.planCode;
-                subscription.planId = subscription.pendingPlanId;
-                subscription.price = plan.price;
-                discount = ICaskSubscriptionPlans(subscriptionPlans)
-                    .getSubscriptionPlanDiscount(subscription.pendingPlanId, subscription.discountId);
-            } else {
-                discount = ICaskSubscriptionPlans(subscriptionPlans)
-                    .getSubscriptionPlanDiscount(subscription.planId, subscription.discountId);
-            }
+            subscription.planId = subscription.pendingPlanId;
+            subscription.price = plan.price;
+            subscription.pendingPlanId = 0;
 
-            uint256 chargeAmount = subscription.price;
+            emit SubscriptionChangedPlan(subscription.consumer, subscription.provider,
+                _subscriptionId, subscription.ref, oldPlanCode, plan.planCode);
+        }
+
+
+        uint256 chargeAmount = subscription.price;
+
+        // maybe apply discount
+        if (subscription.discountId > 0) {
+            ICaskSubscriptionPlans.Discount memory discount = ICaskSubscriptionPlans(subscriptionPlans)
+                .getSubscriptionPlanDiscount(subscription.planId, subscription.discountId);
 
             if (discount.percent > 0) {
                 try ICaskSubscriptionPlans(subscriptionPlans)
-                        .consumeDiscount(subscription.planId, subscription.discountId) returns (bool stillValid)
+                    .consumeDiscount(subscription.planId, subscription.discountId) returns (bool stillValid)
                 {
                     chargeAmount = chargeAmount - (chargeAmount * discount.percent / 10000);
                     if (!stillValid) {
@@ -515,57 +520,52 @@ KeeperCompatibleInterface
                     subscription.discountId = 0; // remove no longer usable discount
                 }
             }
+        }
 
-            // consumer does not have enough balance to cover payment
-            if (ICaskVault(vault).currentValueOf(subscription.consumer) < chargeAmount) {
+        // consumer does not have enough balance to cover payment
+        if (chargeAmount > 0 && ICaskVault(vault).currentValueOf(subscription.consumer) < chargeAmount) {
 
-                // if have not been able to renew for 7 days, cancel subscription
-                if (subscription.renewAt < uint32(block.timestamp - 7 days)) {
+            // if have not been able to renew for 7 days, cancel subscription
+            if (subscription.renewAt < uint32(block.timestamp - 7 days)) {
 
-                    providerActiveSubscriptionCount[subscription.provider] =
-                        providerActiveSubscriptionCount[subscription.provider] - 1;
-                    subscription.status = SubscriptionStatus.Canceled;
+                providerActiveSubscriptionCount[subscription.provider] =
+                    providerActiveSubscriptionCount[subscription.provider] - 1;
 
-                    emit SubscriptionCanceled(subscription.consumer, subscription.provider,
-                        _subscriptionId, subscription.ref, plan.planCode);
+                subscription.status = SubscriptionStatus.Canceled;
 
-                } else if (subscription.status != SubscriptionStatus.PastDue) {
+                emit SubscriptionCanceled(subscription.consumer, subscription.provider,
+                    _subscriptionId, subscription.ref, plan.planCode);
 
-                    subscription.status = SubscriptionStatus.PastDue;
+            } else if (subscription.status != SubscriptionStatus.PastDue) {
 
-                    emit SubscriptionPastDue(subscription.consumer, subscription.provider,
-                        _subscriptionId, subscription.ref, plan.planCode);
-                }
+                subscription.status = SubscriptionStatus.PastDue;
 
-            } else if (chargeAmount > 0) {
-
-                _processPayment(subscription.consumer, plan.paymentAddress, chargeAmount);
-
-                subscription.renewAt = subscription.renewAt + plan.period;
-                subscription.paymentNumber = subscription.paymentNumber + 1;
-
-                if (subscription.pendingPlanId != 0) {
-                    subscription.pendingPlanId = 0;
-                    emit SubscriptionChangedPlan(subscription.consumer, subscription.provider,
-                        _subscriptionId, subscription.ref, oldPlanCode, plan.planCode);
-                }
-
-                if (subscription.status == SubscriptionStatus.Trialing) {
-                    emit SubscriptionTrialEnded(subscription.consumer, subscription.provider,
-                        _subscriptionId, subscription.ref, plan.planCode);
-                }
-
-                subscription.status = SubscriptionStatus.Active;
-
-                emit SubscriptionRenewed(subscription.consumer, subscription.provider, _subscriptionId,
-                    subscription.ref, plan.planCode);
-            } else {
-                subscription.renewAt = subscription.renewAt + plan.period;
-
-                emit SubscriptionRenewed(subscription.consumer, subscription.provider, _subscriptionId,
-                    subscription.ref, plan.planCode);
+                emit SubscriptionPastDue(subscription.consumer, subscription.provider,
+                    _subscriptionId, subscription.ref, plan.planCode);
             }
 
+        } else if (chargeAmount > 0) {
+
+            _processPayment(subscription.consumer, plan.paymentAddress, chargeAmount);
+
+            subscription.renewAt = subscription.renewAt + plan.period;
+            subscription.paymentNumber = subscription.paymentNumber + 1;
+
+            if (subscription.status == SubscriptionStatus.Trialing) {
+                emit SubscriptionTrialEnded(subscription.consumer, subscription.provider,
+                    _subscriptionId, subscription.ref, plan.planCode);
+            }
+
+            subscription.status = SubscriptionStatus.Active;
+
+            emit SubscriptionRenewed(subscription.consumer, subscription.provider, _subscriptionId,
+                subscription.ref, plan.planCode);
+
+        } else { // no charge, move along now
+            subscription.renewAt = subscription.renewAt + plan.period;
+
+            emit SubscriptionRenewed(subscription.consumer, subscription.provider, _subscriptionId,
+                subscription.ref, plan.planCode);
         }
 
     }
