@@ -335,7 +335,7 @@ KeeperCompatibleInterface
         uint256 offset
     ) external override view returns (bytes32[] memory) {
         bytes32[] memory subscriptionIds = new bytes32[](limit);
-        for (uint256 i = 0; i < limit + offset; i++) {
+        for (uint256 i = 0; i < limit; i++) {
             subscriptionIds[i] = providerSubscriptions[_provider][i+offset];
         }
         return subscriptionIds;
