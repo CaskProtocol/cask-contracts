@@ -301,6 +301,10 @@ KeeperCompatibleInterface
             subscription.ref, plan.planCode);
     }
 
+    function getAllSubscriptionsLength() external view returns (uint256) {
+        return allSubscriptions.length;
+    }
+
     function getSubscription(
         bytes32 _subscriptionId
     ) external override view returns (Subscription memory) {
@@ -308,7 +312,9 @@ KeeperCompatibleInterface
     }
 
     function getConsumerSubscriptions(
-        address _consumer, uint256 limit, uint256 offset
+        address _consumer,
+        uint256 limit,
+        uint256 offset
     ) external override view returns (bytes32[] memory) {
         bytes32[] memory subscriptionIds = new bytes32[](limit);
         for (uint256 i = 0; i < limit; i++) {
@@ -324,7 +330,9 @@ KeeperCompatibleInterface
     }
 
     function getProviderSubscriptions(
-        address _provider, uint256 limit, uint256 offset
+        address _provider,
+        uint256 limit,
+        uint256 offset
     ) external override view returns (bytes32[] memory) {
         bytes32[] memory subscriptionIds = new bytes32[](limit);
         for (uint256 i = 0; i < limit + offset; i++) {
@@ -345,12 +353,15 @@ KeeperCompatibleInterface
     function checkUpkeep(
         bytes calldata checkData
     ) external view override returns(bool upkeepNeeded, bytes memory performData) {
-        uint256 limit = abi.decode(checkData, (uint256));
+        (
+            uint256 limit,
+            uint256 offset
+        ) = abi.decode(checkData, (uint256, uint256));
 
         (
             uint256 renewableCount,
             bytes32[] memory subscriptionIds
-        ) = _subscriptionsRenewable(limit);
+        ) = _subscriptionsRenewable(limit, offset);
 
         uint256 j = 0;
         bytes32[] memory renewables = new bytes32[](renewableCount);
@@ -371,12 +382,13 @@ KeeperCompatibleInterface
     }
 
     function _subscriptionsRenewable(
-        uint256 _limit
+        uint256 _limit,
+        uint256 _offset
     ) internal view returns(uint256, bytes32[] memory) {
         bytes32[] memory renewables = new bytes32[](_limit);
 
         uint256 foundRenewable = 0;
-        for (uint256 i = 0; i < allSubscriptions.length; i++) {
+        for (uint256 i = _offset; i < allSubscriptions.length; i++) {
             Subscription memory subscription = subscriptions[allSubscriptions[i]];
             if (subscription.renewAt <= uint32(block.timestamp) &&
                 subscription.status != SubscriptionStatus.Canceled &&
