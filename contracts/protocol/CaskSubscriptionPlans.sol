@@ -155,7 +155,7 @@ PausableUpgradeable
         plan.metaHF = _metaHF;
         plan.metaSize = _metaSize;
 
-        emit PlanUpdateMeta(plan.provider, _planId, plan.planCode, _metaHash, _metaHF, _metaSize);
+        emit PlanUpdatedMeta(plan.provider, _planId, plan.planCode, _metaHash, _metaHF, _metaSize);
     }
 
     function consumeDiscount(
@@ -197,7 +197,7 @@ PausableUpgradeable
         bytes32 _planId
     ) external override onlyProvider(_planId) {
         Plan storage plan = plans[_planId];
-        require(plan.status != PlanStatus.EndOfLife, "!EOL");
+        require(plan.status != PlanStatus.EndOfLife, "!ALREADY_EOL");
 
         plan.status = PlanStatus.EndOfLife;
 

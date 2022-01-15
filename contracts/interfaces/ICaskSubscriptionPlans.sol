@@ -86,7 +86,7 @@ interface ICaskSubscriptionPlans {
         bytes32 discountId);
 
     /** @dev Emitted when `provider` updates IPFS metadata for the plan */
-    event PlanUpdateMeta(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode,
+    event PlanUpdatedMeta(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode,
         bytes32 metaHash, uint8 metaHF, uint8 metaSize);
 
     /** @dev Emitted when `provider` disables a subscription plan */
