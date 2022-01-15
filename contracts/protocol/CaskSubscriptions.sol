@@ -100,7 +100,8 @@ KeeperCompatibleInterface
         uint256 initialGasLeft = gasleft();
         initialGasLeft = initialGasLeft + 3000;
 
-        ICaskSubscriptionPlans.Plan memory plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(_planId);
+        ICaskSubscriptionPlans.Plan memory plan =
+            ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(_planId);
 
         require(plan.provider != address(0), "!invalid(_plan)");
         require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!disabled");
@@ -145,7 +146,9 @@ KeeperCompatibleInterface
 
     function changeSubscriptionPlan(
         bytes32 _subscriptionId,
-        bytes32 _planId
+        bytes32 _planId,
+        bytes32 _discountProof,
+        bool _atNextRenewal
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
         Subscription storage subscription = subscriptions[_subscriptionId];
         require(subscription.renewAt < uint32(block.timestamp), "!need_renewal");
@@ -153,13 +156,25 @@ KeeperCompatibleInterface
         require(subscription.status == SubscriptionStatus.Active ||
                 subscription.status == SubscriptionStatus.Trialing, "!invalid(status)");
 
-        ICaskSubscriptionPlans.Plan memory plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(_planId);
-        require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!disabled");
+        ICaskSubscriptionPlans.Plan memory plan =
+            ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(_planId);
+        require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!not_active");
 
         ICaskSubscriptionPlans.Plan memory curPlan =
             ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
 
-        if (subscription.status == SubscriptionStatus.Trialing) {
+        if (_discountProof > 0) {
+            subscription.discountId =
+            ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(_planId, _discountProof);
+        }
+
+        if (_atNextRenewal) {
+            subscription.pendingPlanId = _planId; // will be activated at next renewal
+
+            emit SubscriptionPendingChangePlan(subscription.consumer, subscription.provider, _subscriptionId,
+                subscription.ref, curPlan.planCode, plan.planCode);
+
+        } else if (subscription.status == SubscriptionStatus.Trialing) {
 
             if (plan.freeTrial > curPlan.freeTrial) {
                 // new plan has moar trial than the old plan, adjust renewAt out further
@@ -176,6 +191,14 @@ KeeperCompatibleInterface
 
             // freely allow plans to change while trialing
             subscription.planId = _planId;
+            subscription.price = plan.price;
+
+            emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, _subscriptionId,
+                subscription.ref, curPlan.planCode, plan.planCode);
+
+        } else if (plan.price / plan.period == subscription.price / curPlan.period) { // straight swap
+            subscription.planId = _planId;
+            subscription.price = plan.price;
 
             emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, curPlan.planCode, plan.planCode);
@@ -226,11 +249,12 @@ KeeperCompatibleInterface
         Subscription storage subscription = subscriptions[_subscriptionId];
 
         ICaskSubscriptionPlans.Plan memory plan;
-        if (subscription.pendingPlanId != 0 && subscription.planId != subscription.pendingPlanId) {
+        if (subscription.pendingPlanId != 0) {
             // pending downgrade, get discount for new plan
             plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.pendingPlanId);
 
-            subscription.discountId = ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(subscription.pendingPlanId, _discountProof);
+            subscription.discountId =
+                ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(subscription.pendingPlanId, _discountProof);
 
             emit SubscriptionChangedDiscount(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, plan.planCode, subscription.discountId);
@@ -238,7 +262,8 @@ KeeperCompatibleInterface
         } else {
             plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
 
-            subscription.discountId = ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(subscription.planId, _discountProof);
+            subscription.discountId =
+                ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(subscription.planId, _discountProof);
 
             emit SubscriptionChangedDiscount(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, plan.planCode, subscription.discountId);
@@ -249,7 +274,8 @@ KeeperCompatibleInterface
         bytes32 _subscriptionId
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
         Subscription storage subscription = subscriptions[_subscriptionId];
-        ICaskSubscriptionPlans.Plan memory plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
+        ICaskSubscriptionPlans.Plan memory plan =
+            ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
 
         require(plan.canPause, "!unpausable");
         require(subscription.status != SubscriptionStatus.Paused &&
@@ -257,7 +283,7 @@ KeeperCompatibleInterface
                 subscription.status != SubscriptionStatus.Canceled &&
                 subscription.status != SubscriptionStatus.PendingCancel, "!invalid");
 
-        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!min_term");
+        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!minTerm");
 
         subscription.status = SubscriptionStatus.Paused;
 
@@ -269,9 +295,10 @@ KeeperCompatibleInterface
         bytes32 _subscriptionId
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
         Subscription storage subscription = subscriptions[_subscriptionId];
-        ICaskSubscriptionPlans.Plan memory plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
+        ICaskSubscriptionPlans.Plan memory plan =
+            ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
 
-        require(subscription.status == SubscriptionStatus.Paused, "!not_paused");
+        require(subscription.status == SubscriptionStatus.Paused, "!notPaused");
 
         subscription.status = SubscriptionStatus.Active;
 
@@ -292,9 +319,10 @@ KeeperCompatibleInterface
         require(subscription.status != SubscriptionStatus.PendingCancel &&
                 subscription.status != SubscriptionStatus.Canceled, "!invalid(status)");
 
-        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!min_term");
+        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!minTerm");
 
-        ICaskSubscriptionPlans.Plan memory plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
+        ICaskSubscriptionPlans.Plan memory plan =
+            ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
 
         subscription.status = SubscriptionStatus.PendingCancel;
 
@@ -364,22 +392,25 @@ KeeperCompatibleInterface
             bytes32[] memory subscriptionIds
         ) = _subscriptionsRenewable(limit, offset);
 
-        // convert array of `limit` length to new array sized to hold only renewing subscriptionIds
-        uint256 j = 0;
-        bytes32[] memory renewables = new bytes32[](renewableCount);
-        for (uint256 i = 0; i < limit && j < renewableCount; i++) {
-            if (subscriptionIds[i] > 0) {
-                renewables[j] = subscriptionIds[i];
-                j = j + 1;
-            }
-        }
-
-        if (renewableCount > 0) {
-            upkeepNeeded = true;
-            performData = abi.encode(renewables);
-        } else {
+        if (renewableCount == 0) {
             upkeepNeeded = false;
             performData = bytes("");
+        } else if (renewableCount < limit) {
+            // convert array of `limit` length to new array sized to hold only renewing subscriptionIds
+            uint256 j = 0;
+            bytes32[] memory renewables = new bytes32[](renewableCount);
+            for (uint256 i = 0; i < limit && j < renewableCount; i++) {
+                if (subscriptionIds[i] > 0) {
+                    renewables[j] = subscriptionIds[i];
+                    j = j + 1;
+                }
+            }
+            upkeepNeeded = true;
+            performData = abi.encode(renewables);
+
+        } else {
+            upkeepNeeded = true;
+            performData = abi.encode(subscriptionIds);
         }
     }
 
@@ -417,7 +448,7 @@ KeeperCompatibleInterface
     ) external override whenNotPaused {
         bytes32[] memory subscriptionIds = abi.decode(performData, (bytes32[]));
         for (uint256 i = 0; i < subscriptionIds.length; i++) {
-            if (subscriptionIds[i] != "") {
+            if (subscriptionIds[i] > 0) {
                 _renewSubscription(subscriptionIds[i]);
             }
         }
@@ -434,7 +465,8 @@ KeeperCompatibleInterface
             return;
         }
 
-        ICaskSubscriptionPlans.Plan memory plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
+        ICaskSubscriptionPlans.Plan memory plan =
+            ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
 
         // subscription scheduled to be canceled by consumer or has hit its cancelAt time
         if (subscription.status == SubscriptionStatus.PendingCancel ||
@@ -451,14 +483,19 @@ KeeperCompatibleInterface
         } else {
 
             ICaskSubscriptionPlans.Discount memory discount;
+            bytes32 oldPlanCode;
 
             // if a plan change is pending, switch to use new plan info
             if (subscription.pendingPlanId != 0 && subscription.pendingPlanId != subscription.planId) {
                 plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.pendingPlanId);
+                oldPlanCode = plan.planCode;
+                subscription.planId = subscription.pendingPlanId;
                 subscription.price = plan.price;
-                discount = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlanDiscount(subscription.pendingPlanId, subscription.discountId);
+                discount = ICaskSubscriptionPlans(subscriptionPlans)
+                    .getSubscriptionPlanDiscount(subscription.pendingPlanId, subscription.discountId);
             } else {
-                discount = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlanDiscount(subscription.planId, subscription.discountId);
+                discount = ICaskSubscriptionPlans(subscriptionPlans)
+                    .getSubscriptionPlanDiscount(subscription.planId, subscription.discountId);
             }
 
             uint256 chargeAmount = subscription.price;
@@ -498,19 +535,16 @@ KeeperCompatibleInterface
 
                 _processPayment(subscription.consumer, plan.paymentAddress, chargeAmount);
 
-                if (subscription.pendingPlanId != 0 && subscription.pendingPlanId != subscription.planId) {
-                    ICaskSubscriptionPlans.Plan memory oldPlan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
-
-                    subscription.planId = subscription.pendingPlanId;
+                if (subscription.pendingPlanId != 0) {
                     subscription.pendingPlanId = 0;
-
                     emit SubscriptionChangedPlan(subscription.consumer, subscription.provider,
-                        _subscriptionId, subscription.ref, oldPlan.planCode, plan.planCode);
+                        _subscriptionId, subscription.ref, oldPlanCode, plan.planCode);
                 }
 
                 if (usedDiscount && discount.maxUses > 0) {
                     // consume discount and if no more uses remain, drop discount from subscription (gas optimization)
-                    if (!ICaskSubscriptionPlans(subscriptionPlans).consumeDiscount(subscription.planId, subscription.discountId)) {
+                    if (!ICaskSubscriptionPlans(subscriptionPlans)
+                            .consumeDiscount(subscription.planId, subscription.discountId)) {
                         subscription.discountId = 0; // clear discount since no more uses are available
                     }
                 }
