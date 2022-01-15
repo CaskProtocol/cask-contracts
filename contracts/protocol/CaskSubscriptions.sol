@@ -55,7 +55,7 @@ KeeperCompatibleInterface
         require(
             msg.sender == subscriptions[_subscriptionId].consumer||
             msg.sender == subscriptions[_subscriptionId].provider,
-            "!auth"
+            "!AUTH"
         );
         _;
     }
@@ -98,7 +98,7 @@ KeeperCompatibleInterface
         uint8 _metaSize
     ) external override whenNotPaused {
         uint256 initialGasLeft = gasleft();
-        initialGasLeft = initialGasLeft + 3000;
+        initialGasLeft = initialGasLeft;
 
         ICaskSubscriptionPlans.Plan memory plan =
             ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(_planId);
@@ -165,7 +165,7 @@ KeeperCompatibleInterface
 
         if (_discountProof > 0) {
             subscription.discountId =
-            ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(_planId, _discountProof);
+                ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(_planId, _discountProof);
         }
 
         if (_atNextRenewal) {
@@ -530,10 +530,10 @@ KeeperCompatibleInterface
 
             } else if (chargeAmount > 0) {
 
+                _processPayment(subscription.consumer, plan.paymentAddress, chargeAmount);
+
                 subscription.renewAt = subscription.renewAt + plan.period;
                 subscription.paymentNumber = subscription.paymentNumber + 1;
-
-                _processPayment(subscription.consumer, plan.paymentAddress, chargeAmount);
 
                 if (subscription.pendingPlanId != 0) {
                     subscription.pendingPlanId = 0;
