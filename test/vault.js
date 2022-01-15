@@ -12,7 +12,7 @@ const {
 } = require("./fixtures/vault");
 
 
-describe("CaskSubscriptions", function () {
+describe("CaskVault", function () {
 
     it("Deposit non-base asset funds into vault", async function() {
 
