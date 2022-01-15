@@ -28,6 +28,7 @@ interface ICaskSubscriptionPlans {
     struct Discount {
         uint16 percent; // percent in bps. 50% = 5000.
         uint32 expiresAt;
+        uint32 validAfter;
         uint32 maxUses;
         uint32 uses;
     }

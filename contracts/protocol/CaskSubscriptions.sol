@@ -116,11 +116,15 @@ KeeperCompatibleInterface
         subscription.pendingPlanId = 0;
         subscription.ref = _ref;
         subscription.cancelAt = _cancelAt;
-        subscription.discountId = ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(_planId, _discountProof);
         subscription.metaHash = _metaHash;
         subscription.metaHF = _metaHF;
         subscription.metaSize = _metaSize;
         subscription.createdAt = uint32(block.timestamp);
+
+        if (_discountProof > 0) {
+            subscription.discountId =
+                ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(_planId, _discountProof);
+        }
 
         if (plan.freeTrial > 0) {
             // if no trial period, charge now. If trial period, charge will happen after trial is over
@@ -249,24 +253,23 @@ KeeperCompatibleInterface
         Subscription storage subscription = subscriptions[_subscriptionId];
 
         ICaskSubscriptionPlans.Plan memory plan;
+        bytes32 newDiscountId;
+
         if (subscription.pendingPlanId != 0) {
-            // pending downgrade, get discount for new plan
+            // pending plan change, get discount for new plan
             plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.pendingPlanId);
-
-            subscription.discountId =
+            newDiscountId =
                 ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(subscription.pendingPlanId, _discountProof);
-
-            emit SubscriptionChangedDiscount(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, plan.planCode, subscription.discountId);
-
         } else {
             plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.planId);
-
-            subscription.discountId =
+            newDiscountId =
                 ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(subscription.planId, _discountProof);
+        }
 
+        if (newDiscountId > 0) {
+            subscription.discountId = newDiscountId;
             emit SubscriptionChangedDiscount(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, plan.planCode, subscription.discountId);
+                subscription.ref, plan.planCode, newDiscountId);
         }
     }
 
@@ -499,11 +502,17 @@ KeeperCompatibleInterface
             }
 
             uint256 chargeAmount = subscription.price;
-            bool usedDiscount = false;
-            if (discount.percent > 0 && discount.expiresAt < uint32(block.timestamp)) {
-                if (discount.maxUses == 0 || discount.uses < discount.maxUses) {
-                    usedDiscount = true;
+
+            if (discount.percent > 0) {
+                try ICaskSubscriptionPlans(subscriptionPlans)
+                        .consumeDiscount(subscription.planId, subscription.discountId) returns (bool stillValid)
+                {
                     chargeAmount = chargeAmount - (chargeAmount * discount.percent / 10000);
+                    if (!stillValid) {
+                        subscription.discountId = 0;
+                    }
+                } catch Error(string memory) {
+                    subscription.discountId = 0; // remove no longer usable discount
                 }
             }
 
@@ -539,14 +548,6 @@ KeeperCompatibleInterface
                     subscription.pendingPlanId = 0;
                     emit SubscriptionChangedPlan(subscription.consumer, subscription.provider,
                         _subscriptionId, subscription.ref, oldPlanCode, plan.planCode);
-                }
-
-                if (usedDiscount && discount.maxUses > 0) {
-                    // consume discount and if no more uses remain, drop discount from subscription (gas optimization)
-                    if (!ICaskSubscriptionPlans(subscriptionPlans)
-                            .consumeDiscount(subscription.planId, subscription.discountId)) {
-                        subscription.discountId = 0; // clear discount since no more uses are available
-                    }
                 }
 
                 if (subscription.status == SubscriptionStatus.Trialing) {

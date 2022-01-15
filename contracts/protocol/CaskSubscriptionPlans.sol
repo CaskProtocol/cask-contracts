@@ -163,7 +163,10 @@ PausableUpgradeable
         bytes32 _discountId
     ) external override onlyProtocol returns(bool) {
         Discount storage discount = discounts[_planId][_discountId];
-        require(discount.maxUses == 0 || discount.uses < discount.maxUses, "!MAX_USES");
+        require(discount.maxUses == 0 || discount.uses < discount.maxUses, "!DISCOUNT_MAX_USES");
+        require(discount.validAfter == 0 || discount.validAfter >= uint32(block.timestamp), "!DISCOUNT_NOT_VALID_YET");
+        require(discount.expiresAt == 0 || discount.expiresAt < uint32(block.timestamp), "!DISCOUNT_EXPIRED");
+
         discount.uses = discount.uses - 1;
         return discount.maxUses == 0 || discount.uses < discount.maxUses;
     }
@@ -207,7 +210,9 @@ PausableUpgradeable
     ) external override view returns(bytes32) {
         bytes32 discountHash = keccak256(abi.encodePacked(_discountProof));
         Discount memory discount = discounts[_planId][discountHash];
-        if (discount.percent > 0 && discount.expiresAt < uint32(block.timestamp)) {
+        if ((discount.validAfter == 0 || discount.validAfter >= uint32(block.timestamp)) &&
+            (discount.expiresAt == 0 || discount.expiresAt < uint32(block.timestamp)))
+        {
             return discountHash;
         }
         return 0; // no discount
