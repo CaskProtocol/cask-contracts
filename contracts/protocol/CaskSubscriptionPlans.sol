@@ -167,7 +167,7 @@ PausableUpgradeable
         require(discount.validAfter == 0 || discount.validAfter >= uint32(block.timestamp), "!DISCOUNT_NOT_VALID_YET");
         require(discount.expiresAt == 0 || discount.expiresAt < uint32(block.timestamp), "!DISCOUNT_EXPIRED");
 
-        discount.uses = discount.uses - 1;
+        discount.uses = discount.uses + 1;
         return discount.maxUses == 0 || discount.uses < discount.maxUses;
     }
 
@@ -210,7 +210,8 @@ PausableUpgradeable
     ) external override view returns(bytes32) {
         bytes32 discountHash = keccak256(abi.encodePacked(_discountProof));
         Discount memory discount = discounts[_planId][discountHash];
-        if ((discount.validAfter == 0 || discount.validAfter >= uint32(block.timestamp)) &&
+        if ((discount.maxUses == 0 || discount.uses < discount.maxUses) &&
+            (discount.validAfter == 0 || discount.validAfter >= uint32(block.timestamp)) &&
             (discount.expiresAt == 0 || discount.expiresAt < uint32(block.timestamp)))
         {
             return discountHash;
