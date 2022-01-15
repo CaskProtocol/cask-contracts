@@ -186,6 +186,7 @@ KeeperCompatibleInterface
             _processPayment(subscription.consumer, plan.paymentAddress, newAmount);
 
             subscription.planId = _planId;
+            subscription.price = plan.price;
 
             emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, curPlan.planCode, plan.planCode);
@@ -363,6 +364,7 @@ KeeperCompatibleInterface
             bytes32[] memory subscriptionIds
         ) = _subscriptionsRenewable(limit, offset);
 
+        // convert array of `limit` length to new array sized to hold only renewing subscriptionIds
         uint256 j = 0;
         bytes32[] memory renewables = new bytes32[](renewableCount);
         for (uint256 i = 0; i < limit && j < renewableCount; i++) {
@@ -385,23 +387,29 @@ KeeperCompatibleInterface
         uint256 _limit,
         uint256 _offset
     ) internal view returns(uint256, bytes32[] memory) {
-        bytes32[] memory renewables = new bytes32[](_limit);
 
-        uint256 foundRenewable = 0;
+        uint256 size = _limit;
+        if (size > allSubscriptions.length) {
+            size = allSubscriptions.length;
+        }
+
+        bytes32[] memory renewables = new bytes32[](size);
+
+        uint256 renewableCount = 0;
         for (uint256 i = _offset; i < allSubscriptions.length; i++) {
             Subscription memory subscription = subscriptions[allSubscriptions[i]];
             if (subscription.renewAt <= uint32(block.timestamp) &&
                 subscription.status != SubscriptionStatus.Canceled &&
                 subscription.status != SubscriptionStatus.Paused)
             {
-                renewables[foundRenewable] = allSubscriptions[i];
-                foundRenewable = foundRenewable + 1;
-                if (foundRenewable >= _limit) {
+                renewables[renewableCount] = allSubscriptions[i];
+                renewableCount = renewableCount + 1;
+                if (renewableCount >= size) {
                     break;
                 }
             }
         }
-        return (foundRenewable, renewables);
+        return (renewableCount, renewables);
     }
 
     function performUpkeep(
@@ -447,6 +455,7 @@ KeeperCompatibleInterface
             // if a plan change is pending, switch to use new plan info
             if (subscription.pendingPlanId != 0 && subscription.pendingPlanId != subscription.planId) {
                 plan = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlan(subscription.pendingPlanId);
+                subscription.price = plan.price;
                 discount = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlanDiscount(subscription.pendingPlanId, subscription.discountId);
             } else {
                 discount = ICaskSubscriptionPlans(subscriptionPlans).getSubscriptionPlanDiscount(subscription.planId, subscription.discountId);

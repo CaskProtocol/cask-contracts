@@ -2,13 +2,10 @@ const { expect } = require("chai");
 
 const {
   loadFixture,
-  usdcUnits,
   daiUnits,
-  usdtUnits,
   advanceTime,
   day,
   month,
-  subscriptionCheckUpkeep,
   runSubscriptionKeeper,
 } = require("./_helpers");
 
@@ -59,10 +56,8 @@ describe("CaskSubscriptions", function () {
 
     const {
       networkAddresses,
-      providerA,
       consumerA,
       planId,
-      planCode,
       vault,
       subscriptions
     } = await loadFixture(singlePlanFixture);
@@ -78,8 +73,8 @@ describe("CaskSubscriptions", function () {
     const initialConsumerBalance = await consumerVault.currentValueOf(consumerA.address);
     expect(initialConsumerBalance).to.equal(daiUnits('100'));
 
-    let balance = 0;
     let subscriptionInfo;
+    let keeperLimit = 10;
 
     // create subscription
     const tx = await consumerSubscription.createSubscription(
@@ -94,43 +89,38 @@ describe("CaskSubscriptions", function () {
     const subscriptionId = createdEvent.args.subscriptionId;
     expect(subscriptionId).to.not.be.undefined;
 
-    await runSubscriptionKeeper(10);
+    await runSubscriptionKeeper(keeperLimit);
 
     // confirm no charge immediately due to 7 day trial
-    balance = await consumerVault.currentValueOf(consumerA.address);
-    expect(balance).to.equal(daiUnits('100'));
+    expect(await consumerVault.currentValueOf(consumerA.address)).to.equal(daiUnits('100'));
 
     await advanceTime(5 * day); // now day 5
-    await runSubscriptionKeeper(10);
+    await runSubscriptionKeeper(keeperLimit);
 
     // confirm no charge before 7 day trial ends
-    balance = await consumerVault.currentValueOf(consumerA.address);
-    expect(balance).to.equal(daiUnits('100'));
+    expect(await consumerVault.currentValueOf(consumerA.address)).to.equal(daiUnits('100'));
 
     await advanceTime(3 * day); // now day 8
-    expect(await runSubscriptionKeeper(10)).to.emit(consumerSubscription, "SubscriptionTrialEnded");
+    expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionTrialEnded");
 
     // confirm charge after 7 day trial ended
-    balance = await consumerVault.currentValueOf(consumerA.address);
-    expect(balance).to.equal(daiUnits('90'));
+    expect(await consumerVault.currentValueOf(consumerA.address)).to.equal(daiUnits('90'));
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
     expect(subscriptionInfo.paymentNumber).to.equal(1);
 
     await advanceTime(month); // 1 month + 1 day after trial ended
-    expect(await runSubscriptionKeeper(10)).to.emit(consumerSubscription, "SubscriptionRenewed");
+    expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionRenewed");
 
     // confirm charge after another month
-    balance = await consumerVault.currentValueOf(consumerA.address);
-    expect(balance).to.equal(daiUnits('80'));
+    expect(await consumerVault.currentValueOf(consumerA.address)).to.equal(daiUnits('80'));
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
     expect(subscriptionInfo.paymentNumber).to.equal(2);
 
     await advanceTime(month);  // 2 month + 1 day after trial ended
-    expect(await runSubscriptionKeeper(10)).to.emit(consumerSubscription, "SubscriptionRenewed");
+    expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionRenewed");
 
     // confirm charge after another month
-    balance = await consumerVault.currentValueOf(consumerA.address);
-    expect(balance).to.equal(daiUnits('70'));
+    expect(await consumerVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
     expect(subscriptionInfo.paymentNumber).to.equal(3);
 
@@ -139,23 +129,97 @@ describe("CaskSubscriptions", function () {
         .to.emit(consumerSubscription, "SubscriptionPendingCancel");
 
     await advanceTime(month + day);
-    expect(await runSubscriptionKeeper(10)).to.emit(consumerSubscription, "SubscriptionCanceled");
+    expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionCanceled");
 
     // confirm no charges after cancel
-    balance = await consumerVault.currentValueOf(consumerA.address);
-    expect(balance).to.equal(daiUnits('70'));
+    expect(await consumerVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
     expect(subscriptionInfo.paymentNumber).to.equal(3);
 
     await advanceTime(month);
-    await runSubscriptionKeeper(10);
+    await runSubscriptionKeeper(keeperLimit);
 
     // confirm still no charges after cancel
-    balance = await consumerVault.currentValueOf(consumerA.address);
-    expect(balance).to.equal(daiUnits('70'));
+    expect(await consumerVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));
     subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
     expect(subscriptionInfo.paymentNumber).to.equal(3);
 
+  });
+
+  it("Past due and no funds cancel flow", async function () {
+
+    const {
+      networkAddresses,
+      consumerA,
+      planId,
+      vault,
+      subscriptions
+    } = await loadFixture(singlePlanFixture);
+
+    const consumerVault = vault.connect(consumerA);
+    const consumerSubscription = subscriptions.connect(consumerA);
+
+
+    // deposit to vault
+    await consumerVault.deposit(networkAddresses.DAI, daiUnits('20'));
+
+    let subscriptionInfo;
+    let keeperLimit = 10;
+
+    // create subscription
+    const tx = await consumerSubscription.createSubscription(
+        planId, // planId
+        ethers.utils.id(""), // discountProof - keccak256 hash of bytes of discount code string
+        ethers.utils.formatBytes32String("sub1"), // ref
+        0, // cancelAt
+        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of subscription metadata
+    );
+    const events = (await tx.wait()).events || [];
+    const createdEvent = events.find((e) => e.event === "SubscriptionCreated");
+    const subscriptionId = createdEvent.args.subscriptionId;
+
+    // confirm conversion to paid after trial
+    await advanceTime(8 * day);
+    expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionTrialEnded");
+    subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
+    expect(subscriptionInfo.status).to.equal(2); // 2 = active
+    expect(await consumerVault.currentValueOf(consumerA.address)).to.equal(daiUnits('10'));
+
+    // funds just enough for one renewal
+    await advanceTime(month);
+    expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionRenewed");
+
+    // confirm subscription still active but out of funds
+    subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
+    expect(subscriptionInfo.status).to.equal(2); // 2 = active
+    expect(await consumerVault.currentValueOf(consumerA.address)).to.equal('0');
+
+    // unable to renew due to out of funds, confirm past due
+    await advanceTime(month);
+    expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionPastDue");
+    subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
+    expect(subscriptionInfo.status).to.equal(6); // 6 = PastDue
+
+    // deposit one more months worth
+    await consumerVault.deposit(networkAddresses.DAI, daiUnits('10'));
+
+    // confirm successful renew
+    expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionRenewed");
+    subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
+    expect(subscriptionInfo.status).to.equal(2); // 2 = active
+    expect(await consumerVault.currentValueOf(consumerA.address)).to.equal('0');
+
+    // a month later, since funds are depleted again, confirm past due
+    await advanceTime(month);
+    expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionPastDue");
+    subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
+    expect(subscriptionInfo.status).to.equal(6); // 6 = PastDue
+
+    // past due window passes, subscription cancels
+    await advanceTime(8 * day);
+    expect(await runSubscriptionKeeper(keeperLimit)).to.emit(consumerSubscription, "SubscriptionCanceled");
+    subscriptionInfo = await consumerSubscription.getSubscription(subscriptionId);
+    expect(subscriptionInfo.status).to.equal(4); // 4 = Canceled
 
   });
 
