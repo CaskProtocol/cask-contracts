@@ -155,7 +155,7 @@ KeeperCompatibleInterface
         bool _atNextRenewal
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
         Subscription storage subscription = subscriptions[_subscriptionId];
-        require(subscription.renewAt < uint32(block.timestamp), "!NEED_RENEWAL");
+        require(subscription.renewAt >= uint32(block.timestamp), "!NEED_RENEWAL");
         require(subscription.planId != _planId, "!INVALID(_planId)");
         require(subscription.status == SubscriptionStatus.Active ||
                 subscription.status == SubscriptionStatus.Trialing, "!INVALID(status)");

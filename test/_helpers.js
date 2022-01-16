@@ -155,7 +155,7 @@ const subscriptionPerformUpkeep = async(performData) => {
     return subscriptions.performUpkeep(performData);
 };
 
-const runSubscriptionKeeper = async(limit, offset=0) => {
+const runSubscriptionKeeper = async(limit= 10, offset= 0) => {
     const abiCoder = new ethers.utils.AbiCoder();
     const checkData = abiCoder.encode(['uint256','uint256'], [limit, offset]);
     const checkUpkeep = await subscriptionCheckUpkeep(checkData);
@@ -169,6 +169,16 @@ const runSubscriptionKeeper = async(limit, offset=0) => {
         return false;
     }
 };
+
+
+const advanceTimeRunSubscriptionKeeper = async (times, seconds, keeperLimit=10) => {
+    let result;
+    for (let i = 0; i < times; i++) {
+        await advanceTime(seconds);
+        result = await runSubscriptionKeeper(keeperLimit);
+    }
+    return result;
+}
 
 
 module.exports = {
@@ -208,4 +218,5 @@ module.exports = {
     runSubscriptionKeeper,
     subscriptionCheckUpkeep,
     subscriptionPerformUpkeep,
+    advanceTimeRunSubscriptionKeeper,
 };

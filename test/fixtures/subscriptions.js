@@ -20,7 +20,7 @@ async function protocolFixture() {
     return fixture;
 }
 
-async function singlePlanFixture() {
+async function onePlanFixture() {
     const fixture = await loadFixture(protocolFixture);
 
     fixture.planCode = ethers.utils.formatBytes32String("plan1");
@@ -39,6 +39,44 @@ async function singlePlanFixture() {
     const events = (await tx.wait()).events || [];
     const planCreatedEvent = events.find((e) => e.event === "PlanCreated");
     fixture.planId = planCreatedEvent.args.planId;
+
+    return fixture;
+}
+
+async function twoPlanFixture() {
+    const fixture = await loadFixture(protocolFixture);
+
+    let tx, events, planCreatedEvent;
+
+    fixture.planACode = ethers.utils.formatBytes32String("planA");
+    tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
+        fixture.planACode, // planCode
+        month, // period
+        daiUnits('10.0'), // price - in baseAsset
+        0, // minTerm
+        7 * day, // freeTrial
+        true, // canPause
+        fixture.providerA.address, // paymentAddress
+        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
+    );
+    events = (await tx.wait()).events || [];
+    planCreatedEvent = events.find((e) => e.event === "PlanCreated");
+    fixture.planAId = planCreatedEvent.args.planId;
+
+    fixture.planBCode = ethers.utils.formatBytes32String("planB");
+    tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
+        fixture.planBCode, // planCode
+        month, // period
+        daiUnits('20.0'), // price - in baseAsset
+        0, // minTerm
+        7 * day, // freeTrial
+        true, // canPause
+        fixture.providerA.address, // paymentAddress
+        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
+    );
+    events = (await tx.wait()).events || [];
+    planCreatedEvent = events.find((e) => e.event === "PlanCreated");
+    fixture.planBId = planCreatedEvent.args.planId;
 
     return fixture;
 }
@@ -91,7 +129,8 @@ async function minTermPlanFixture() {
 
 module.exports = {
     protocolFixture,
-    singlePlanFixture,
+    onePlanFixture,
+    twoPlanFixture,
     unpausablePlanFixture,
     minTermPlanFixture,
 }
