@@ -125,7 +125,7 @@ PausableUpgradeable
     function setPlanDiscount(
         bytes32 _planId,
         bytes32 _discountId,
-        uint8 _percent,
+        uint16 _percent,
         uint32 _expiresAt,
         uint32 _maxUses
     ) external override onlyProvider(_planId) {
@@ -208,9 +208,10 @@ PausableUpgradeable
         bytes32 _planId,
         bytes32 _discountProof
     ) external override view returns(bytes32) {
-        bytes32 discountHash = keccak256(abi.encodePacked(_discountProof));
+        bytes32 discountHash = keccak256(abi.encode(_discountProof));
         Discount memory discount = discounts[_planId][discountHash];
-        if ((discount.maxUses == 0 || discount.uses < discount.maxUses) &&
+        if (discount.percent > 0 && // needed to make sure we didnt find a zeroed out non existant discount
+            (discount.maxUses == 0 || discount.uses < discount.maxUses) &&
             (discount.validAfter == 0 || discount.validAfter >= uint32(block.timestamp)) &&
             (discount.expiresAt == 0 || discount.expiresAt < uint32(block.timestamp)))
         {

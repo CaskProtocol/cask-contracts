@@ -36,6 +36,25 @@ function daiUnitsFormat(amount) {
     return formatUnits(amount, 18);
 }
 
+// keep in sync with ICaskSubscriptions.sol
+const SubscriptionStatus = {
+    None: 0,
+    Trialing: 1,
+    Active: 2,
+    Paused: 3,
+    Canceled: 4,
+    PendingCancel: 5,
+    PastDue: 6,
+};
+
+// keep in sync with ICaskSubscriptionPlans.sol
+const PlanStatus = {
+    None: 0,
+    Enabled: 1,
+    Disabled: 2,
+    EndOfLife: 3,
+};
+
 const now = Math.floor(Date.now() / 1000);
 const hour = 3600;
 const day = 24 * hour;
@@ -190,6 +209,8 @@ module.exports = {
     daiUnitsFormat,
     usdcUnitsFormat,
     usdtUnitsFormat,
+    SubscriptionStatus,
+    PlanStatus,
     now,
     hour,
     day,

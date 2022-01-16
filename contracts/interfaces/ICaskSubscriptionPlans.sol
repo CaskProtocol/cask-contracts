@@ -51,7 +51,7 @@ interface ICaskSubscriptionPlans {
         uint32 _freeTrial, bool canPause) external;
 
     function setPlanDiscount(bytes32 _planId, bytes32 _discountId,
-        uint8 _percent, uint32 expiresAt, uint32 maxUses) external;
+        uint16 _percent, uint32 expiresAt, uint32 maxUses) external;
 
     function updatePlanMeta(bytes32 _planId, bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
 
