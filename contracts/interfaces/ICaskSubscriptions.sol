@@ -14,7 +14,6 @@ interface ICaskSubscriptions {
     }
 
     struct Subscription {
-        bytes32 subscriptionId;
         bytes32 planId;
         bytes32 pendingPlanId;
         uint256 price;
@@ -39,7 +38,8 @@ interface ICaskSubscriptions {
     function createSubscription(bytes32 _planId, bytes32 _discountProof, bytes32 _ref, uint32 _cancelAt,
         bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
 
-    function changeSubscriptionPlan(bytes32 _subscriptionId, bytes32 _planId) external;
+    function changeSubscriptionPlan(bytes32 _subscriptionId, bytes32 _planId,
+        bytes32 _discountProof, bool _atNextRenewal) external;
 
     function changeSubscriptionCancelAt(bytes32 _subscriptionId, uint32 _cancelAt) external;
 

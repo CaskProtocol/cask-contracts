@@ -19,7 +19,7 @@ interface ICaskSubscriptionPlans {
         uint8 metaHF;
         uint8 metaSize;
         uint32 period; // in seconds
-        uint16 freeTrialDays; // in days
+        uint32 freeTrial; // in seconds
         uint32 minTerm; // in seconds
         bool canPause;
         PlanStatus status;
@@ -28,6 +28,7 @@ interface ICaskSubscriptionPlans {
     struct Discount {
         uint16 percent; // percent in bps. 50% = 5000.
         uint32 expiresAt;
+        uint32 validAfter;
         uint32 maxUses;
         uint32 uses;
     }
@@ -42,59 +43,59 @@ interface ICaskSubscriptionPlans {
 
     function getProviderProfile(address _provider) external view returns(Provider memory);
 
-    function createSubscriptionPlan(bytes32 _planCode, uint32 _period,
-        uint256 _price, uint32 _minTerm, uint16 _freeTrialDays, bool _canPause, address _payoutAddress,
+    function createPlan(bytes32 _planCode, uint32 _period,
+        uint256 _price, uint32 _minTerm, uint32 _freeTrial, bool _canPause, address _payoutAddress,
         bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
 
-    function updateSubscriptionPlan(bytes32 _planId, uint256 _price, uint32 _minTerm,
-        uint16 _freeTrialDays, bool canPause) external;
+    function updatePlan(bytes32 _planId, uint256 _price, uint32 _minTerm,
+        uint32 _freeTrial, bool canPause) external;
 
-    function setSubscriptionPlanDiscount(bytes32 _planId, bytes32 _discountId,
-        uint8 _percent, uint32 expiresAt, uint32 maxUses) external;
+    function setPlanDiscount(bytes32 _planId, bytes32 _discountId,
+        uint16 _percent, uint32 expiresAt, uint32 maxUses) external;
 
-    function updateSubscriptionPlanMeta(bytes32 _planId, bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
+    function updatePlanMeta(bytes32 _planId, bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
 
     function consumeDiscount(bytes32 _planId, bytes32 _discountId) external returns(bool);
 
-    function disableSubscriptionPlan(bytes32 _planId) external;
+    function disablePlan(bytes32 _planId) external;
 
-    function enableSubscriptionPlan(bytes32 _planId) external;
+    function enablePlan(bytes32 _planId) external;
 
-    function eolSubscriptionPlan(bytes32 _planId) external;
+    function killPlan(bytes32 _planId) external;
 
     function verifyDiscount(bytes32 _planId, bytes32 _discountProof) external view returns(bytes32);
 
-    function getSubscriptionPlans(address _provider) external view returns(bytes32[] memory);
+    function getPlans(address _provider) external view returns(bytes32[] memory);
 
-    function getSubscriptionPlan(bytes32 _planId) external view returns(Plan memory);
+    function getPlan(bytes32 _planId) external view returns(Plan memory);
 
-    function getSubscriptionPlanDiscount(bytes32 _planId, bytes32 _discountId) external view returns(Discount memory);
+    function getPlanDiscount(bytes32 _planId, bytes32 _discountId) external view returns(Discount memory);
 
-    function getSubscriptionPlanDiscounts(bytes32 _planId) external view returns (bytes32[] memory);
+    function getPlanDiscounts(bytes32 _planId) external view returns (bytes32[] memory);
 
 
 
     /** @dev Emitted when `provider` creates a new subscription plan */
-    event SubscriptionPlanCreated(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
+    event PlanCreated(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
 
     /** @dev Emitted when `provider` updates a subscription plan */
-    event SubscriptionPlanUpdated(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
+    event PlanUpdated(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
 
     /** @dev Emitted when `provider` adds a discount to a subscription plan */
-    event SubscriptionPlanSetDiscount(address indexed provider, bytes32 indexed planId,
-        bytes32 indexed planCode, bytes32 discountId);
+    event PlanSetDiscount(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode,
+        bytes32 discountId);
 
     /** @dev Emitted when `provider` updates IPFS metadata for the plan */
-    event SubscriptionPlanUpdateMeta(address indexed provider, bytes32 indexed planId,
+    event PlanUpdatedMeta(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode,
         bytes32 metaHash, uint8 metaHF, uint8 metaSize);
 
     /** @dev Emitted when `provider` disables a subscription plan */
-    event SubscriptionPlanDisabled(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
+    event PlanDisabled(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
 
     /** @dev Emitted when `provider` enables a subscription plan */
-    event SubscriptionPlanEnabled(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
+    event PlanEnabled(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
 
     /** @dev Emitted when `provider` end-of-lifes a subscription plan */
-    event SubscriptionPlanEOL(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
+    event PlanKilled(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
 
 }

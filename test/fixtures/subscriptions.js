@@ -1,116 +1,176 @@
 const {
     loadFixture,
-    usdcUnits,
     daiUnits,
-    usdtUnits,
-    isFork
+    day,
+    month,
 } = require("../_helpers");
 
-const addresses = require("../../utils/addresses");
+const {
+    fundedFixture,
+} = require("./vault");
 
 async function protocolFixture() {
-    await deployments.fixture(); // ensure you start from a fresh deployments
+    const fixture = await loadFixture(fundedFixture);
 
-    // accounts
-    const signers = await ethers.getSigners();
-    const deployer = signers[0];
-    const governor = signers[1];
-    const strategist = signers[2];
-    const consumerA = signers[4];
-    const consumerB = signers[5];
-    const consumerC = signers[6];
-    const providerA = signers[7];
-    const providerB = signers[8];
-    const providerC = signers[9];
+    fixture.vaultAdmin = await ethers.getContract("CaskVaultAdmin");
+    fixture.vault = await ethers.getContract("CaskVault");
+    fixture.subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
+    fixture.subscriptions = await ethers.getContract("CaskSubscriptions");
 
-
-    // assets
-    let usdt,
-        dai,
-        usdc,
-        weth;
-
-    if (isFork) {
-        usdt = await ethers.getContractAt("IERC20", addresses.polygon.USDT);
-        dai = await ethers.getContractAt("IERC20", addresses.polygon.DAI);
-        usdc = await ethers.getContractAt("IERC20", addresses.polygon.USDC);
-        weth = await ethers.getContractAt("IERC20", addresses.polygon.WETH);
-    } else {
-        usdt = await ethers.getContract("MockUSDT");
-        dai = await ethers.getContract("MockDAI");
-        usdc = await ethers.getContract("MockUSDC");
-        weth = await ethers.getContract("MockWETH");
-    }
-
-    // contracts
-    const vaultAdmin = await ethers.getContract("CaskVaultAdmin");
-    const vault = await ethers.getContract("CaskVault");
-    const subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
-    const subscriptions = await ethers.getContract("CaskSubscriptions");
-
-
-    return {
-        //accounts
-        deployer,
-        governor,
-        strategist,
-        consumerA,
-        consumerB,
-        consumerC,
-        providerA,
-        providerB,
-        providerC,
-        // assets
-        usdt,
-        dai,
-        usdc,
-        weth,
-        //contracts
-        vaultAdmin,
-        vault,
-        subscriptionPlans,
-        subscriptions,
-    };
+    return fixture;
 }
 
-async function basicFixture() {
+async function onePlanFixture() {
     const fixture = await loadFixture(protocolFixture);
 
-    await fixture.subscriptionPlans.connect(fixture.providerA).createSubscriptionPlan(
-        ethers.utils.formatBytes32String("plan1"), // planCode
-        86400 * 7, // period - 7 days
+    fixture.planCode = ethers.utils.formatBytes32String("plan1");
+
+    const tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
+        fixture.planCode, // planCode
+        month, // period
         daiUnits('10.0'), // price - in baseAsset
         0, // minTerm
-        3, // freeTrialDays
+        7 * day, // freeTrial
         true, // canPause
         fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
 
-    fixture.subscriptionPlanIds = await fixture.subscriptionPlans.getSubscriptionPlans(fixture.providerA.address);
+    const events = (await tx.wait()).events || [];
+    const planCreatedEvent = events.find((e) => e.event === "PlanCreated");
+    fixture.planId = planCreatedEvent.args.planId;
 
     return fixture;
 }
 
-async function basicFundedFixture() {
-    const fixture = await loadFixture(basicFixture);
+async function twoPlanFixture() {
+    const fixture = await loadFixture(protocolFixture);
 
-    for (const consumer of [fixture.consumerA, fixture.consumerB, fixture.consumerC]) {
-        await fixture.usdt.connect(consumer).mint(usdtUnits('1000.0'));
-        await fixture.usdt.connect(consumer).approve(fixture.vault.address, usdtUnits('1000.0'));
+    let tx, events, planCreatedEvent;
 
-        await fixture.dai.connect(consumer).mint(daiUnits('1000.0'));
-        await fixture.dai.connect(consumer).approve(fixture.vault.address, daiUnits('1000.0'));
+    fixture.planACode = ethers.utils.formatBytes32String("planA");
+    tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
+        fixture.planACode, // planCode
+        month, // period
+        daiUnits('10.0'), // price - in baseAsset
+        0, // minTerm
+        7 * day, // freeTrial
+        true, // canPause
+        fixture.providerA.address, // paymentAddress
+        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
+    );
+    events = (await tx.wait()).events || [];
+    planCreatedEvent = events.find((e) => e.event === "PlanCreated");
+    fixture.planAId = planCreatedEvent.args.planId;
 
-        await fixture.usdc.connect(consumer).mint(usdcUnits('1000.0'));
-        await fixture.usdc.connect(consumer).approve(fixture.vault.address, usdcUnits('1000.0'));
-    }
+    fixture.planBCode = ethers.utils.formatBytes32String("planB");
+    tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
+        fixture.planBCode, // planCode
+        month, // period
+        daiUnits('20.0'), // price - in baseAsset
+        0, // minTerm
+        7 * day, // freeTrial
+        true, // canPause
+        fixture.providerA.address, // paymentAddress
+        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
+    );
+    events = (await tx.wait()).events || [];
+    planCreatedEvent = events.find((e) => e.event === "PlanCreated");
+    fixture.planBId = planCreatedEvent.args.planId;
 
     return fixture;
 }
+
+async function unpausablePlanFixture() {
+    const fixture = await loadFixture(protocolFixture);
+
+    fixture.planCode = ethers.utils.formatBytes32String("plan1");
+
+    const tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
+        fixture.planCode, // planCode
+        month, // period
+        daiUnits('10.0'), // price - in baseAsset
+        0, // minTerm
+        7 * day, // freeTrial
+        false, // canPause
+        fixture.providerA.address, // paymentAddress
+        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
+    );
+
+    const events = (await tx.wait()).events || [];
+    const planCreatedEvent = events.find((e) => e.event === "PlanCreated");
+    fixture.planId = planCreatedEvent.args.planId;
+
+    return fixture;
+}
+
+async function minTermPlanFixture() {
+    const fixture = await loadFixture(protocolFixture);
+
+    fixture.planCode = ethers.utils.formatBytes32String("plan1");
+
+    const tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
+        fixture.planCode, // planCode
+        month, // period
+        daiUnits('10.0'), // price - in baseAsset
+        12 * month, // minTerm
+        7 * day, // freeTrial
+        true, // canPause
+        fixture.providerA.address, // paymentAddress
+        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
+    );
+
+    const events = (await tx.wait()).events || [];
+    const planCreatedEvent = events.find((e) => e.event === "PlanCreated");
+    fixture.planId = planCreatedEvent.args.planId;
+
+    return fixture;
+}
+
+async function onePlanWithDiscountsFixture() {
+    const fixture = await loadFixture(protocolFixture);
+
+    fixture.planCode = ethers.utils.formatBytes32String("plan1");
+
+    const tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
+        fixture.planCode, // planCode
+        month, // period
+        daiUnits('10.0'), // price - in baseAsset
+        0, // minTerm
+        7 * day, // freeTrial
+        true, // canPause
+        fixture.providerA.address, // paymentAddress
+        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
+    );
+
+    const events = (await tx.wait()).events || [];
+    const planCreatedEvent = events.find((e) => e.event === "PlanCreated");
+    fixture.planId = planCreatedEvent.args.planId;
+
+
+    const createDiscount = async (code, percent, expiresAt, maxUses) => {
+        await fixture.subscriptionPlans.connect(fixture.providerA).setPlanDiscount(
+            fixture.planId, // planId
+            ethers.utils.keccak256(ethers.utils.id(code)), // discount code- see docs for format details
+            percent, // discount percent in bps
+            expiresAt, // expiresAt - 0 = no expire
+            maxUses // maxUses - 0 = no max
+        );
+    };
+
+    await createDiscount("discount1", 5000, 0, 0);
+    await createDiscount("discount2", 1000, 0, 0);
+
+    return fixture;
+}
+
+
 
 module.exports = {
     protocolFixture,
-    basicFixture,
-    basicFundedFixture,
+    onePlanFixture,
+    twoPlanFixture,
+    unpausablePlanFixture,
+    minTermPlanFixture,
+    onePlanWithDiscountsFixture,
 }

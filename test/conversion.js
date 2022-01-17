@@ -6,7 +6,6 @@ const {
     usdcUnits,
     daiUnits,
     usdtUnits,
-    getNetworkAddresses,
 } = require("./_helpers");
 
 const {
@@ -19,15 +18,10 @@ describe("Conversions", function () {
     it("converts properly", async function() {
 
         const {
+            networkAddresses,
             vault,
             governor,
-            dai,
-            usdt,
-            usdc,
-            weth,
         } = await loadFixture(vaultFixture);
-
-        const networkAddresses = await getNetworkAddresses(deployments);
 
         await vault.connect(governor).allowAsset(
             networkAddresses.WETH, // address
@@ -38,13 +32,13 @@ describe("Conversions", function () {
         console.log("Allowed WETH in vault");
 
         console.log("1000.0 DAI to USDC converted value:",
-            (await vault.convertPrice(dai.address, usdc.address, daiUnits("1000.0"))).toString());
+            (await vault.convertPrice(networkAddresses.DAI, networkAddresses.USDC, daiUnits("1000.0"))).toString());
 
         console.log("3.0 WETH to USDC converted value:",
-            (await vault.convertPrice(weth.address, usdc.address, parseUnits("3.0", 18))).toString());
+            (await vault.convertPrice(networkAddresses.WETH, networkAddresses.USDC, parseUnits("3.0", 18))).toString());
 
         console.log("9000 USDC to WETH converted value:",
-            (await vault.convertPrice(usdc.address, weth.address, usdcUnits("9999.0"))).toString());
+            (await vault.convertPrice(networkAddresses.USDC, networkAddresses.WETH, usdcUnits("9999.0"))).toString());
 
     });
 

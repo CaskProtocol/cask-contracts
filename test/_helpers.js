@@ -36,6 +36,25 @@ function daiUnitsFormat(amount) {
     return formatUnits(amount, 18);
 }
 
+// keep in sync with ICaskSubscriptions.sol
+const SubscriptionStatus = {
+    None: 0,
+    Trialing: 1,
+    Active: 2,
+    Paused: 3,
+    Canceled: 4,
+    PendingCancel: 5,
+    PastDue: 6,
+};
+
+// keep in sync with ICaskSubscriptionPlans.sol
+const PlanStatus = {
+    None: 0,
+    Enabled: 1,
+    Disabled: 2,
+    EndOfLife: 3,
+};
+
 const now = Math.floor(Date.now() / 1000);
 const hour = 3600;
 const day = 24 * hour;
@@ -145,6 +164,41 @@ const getNetworkAddresses = async (deployments) => {
     }
 };
 
+const subscriptionCheckUpkeep = async(checkData) => {
+    const subscriptions = await ethers.getContract("CaskSubscriptions");
+    return subscriptions.checkUpkeep(checkData);
+};
+
+const subscriptionPerformUpkeep = async(performData) => {
+    const subscriptions = await ethers.getContract("CaskSubscriptions");
+    return subscriptions.performUpkeep(performData);
+};
+
+const runSubscriptionKeeper = async(limit= 10, offset= 0) => {
+    const abiCoder = new ethers.utils.AbiCoder();
+    const checkData = abiCoder.encode(['uint256','uint256'], [limit, offset]);
+    const checkUpkeep = await subscriptionCheckUpkeep(checkData);
+
+    // console.log(`runSubscriptionKeeper checkUpkeep upkeepNeeded: ${checkUpkeep.upkeepNeeded}`);
+    // console.log(`runSubscriptionKeeper checkUpkeep performData: ${checkUpkeep.performData}`);
+
+    if (checkUpkeep.upkeepNeeded) {
+        return subscriptionPerformUpkeep(checkUpkeep.performData);
+    } else {
+        return false;
+    }
+};
+
+
+const advanceTimeRunSubscriptionKeeper = async (times, seconds, keeperLimit=10) => {
+    let result;
+    for (let i = 0; i < times; i++) {
+        await advanceTime(seconds);
+        result = await runSubscriptionKeeper(keeperLimit);
+    }
+    return result;
+}
+
 
 module.exports = {
     caskUnits,
@@ -155,6 +209,8 @@ module.exports = {
     daiUnitsFormat,
     usdcUnitsFormat,
     usdtUnitsFormat,
+    SubscriptionStatus,
+    PlanStatus,
     now,
     hour,
     day,
@@ -180,4 +236,8 @@ module.exports = {
     setOracleTokenPriceUsd,
     getNetworkAddresses,
     advanceBlocks,
+    runSubscriptionKeeper,
+    subscriptionCheckUpkeep,
+    subscriptionPerformUpkeep,
+    advanceTimeRunSubscriptionKeeper,
 };

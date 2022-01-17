@@ -8,6 +8,10 @@
     "test": "IS_TEST=true npx hardhat test",
     "clean": "rm -rf artifacts cache deployments/local*"
   },
+  "mocha": {
+    "require": "hardhat/register",
+    "timeout": 10000
+  },
   "author": "Subverse Labs, LLC <info@subverselabs.com>",
   "license": "MIT",
   "homepage": "https://github.com/machadolab/cask-contracts#readme",

@@ -210,15 +210,39 @@ describe("VestedEscrow", function () {
 
         await advanceTime(hour); // timing adjustment
 
-        await advanceTime(24 * month);
+        await advanceTime(4 * month);
 
-        // alice vesting started day 0
+        // neither cliff ended yet
+        expect(await teamVestedEscrow.vestedOf(alice.address)).to.be.equal('0')
+        expect(await teamVestedEscrow.balanceOf(alice.address)).to.be.equal('0');
+        expect(await teamVestedEscrow.vestedOf(charlie.address)).to.be.equal('0');
+        expect(await teamVestedEscrow.balanceOf(charlie.address)).to.be.equal('0')
+
+
+        await advanceTime(10 * month); // at month 14
+
+
+        // alice cliff ended at month 12
+        expect(await teamVestedEscrow.vestedOf(alice.address))
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+        expect(await teamVestedEscrow.balanceOf(alice.address))
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+
+        // charlie cliff not ended yet
+        expect(await teamVestedEscrow.vestedOf(charlie.address)).to.be.equal('0');
+        expect(await teamVestedEscrow.balanceOf(charlie.address)).to.be.equal('0')
+
+
+        await advanceTime(10 * month); // at month 24
+
+
+        // both cliffs ended, charlie vesting is 3 months behind alice
+
         expect(await teamVestedEscrow.vestedOf(alice.address))
             .to.be.closeTo(caskUnits('24000000'), caskUnits('100'));
         expect(await teamVestedEscrow.balanceOf(alice.address))
             .to.be.closeTo(caskUnits('24000000'), caskUnits('100'));
 
-        // charlie vesting started 3 months later, so 3M less than alice
         expect(await teamVestedEscrow.vestedOf(charlie.address))
             .to.be.closeTo(caskUnits('21000000'), caskUnits('100'));
         expect(await teamVestedEscrow.balanceOf(charlie.address))
