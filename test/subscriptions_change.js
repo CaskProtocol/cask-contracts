@@ -1,7 +1,6 @@
 const { expect } = require("chai");
 
 const {
-    loadFixture,
     daiUnits,
     SubscriptionStatus,
     day,
@@ -25,7 +24,7 @@ describe("CaskSubscriptions Change", function () {
             planBId,
             vault,
             subscriptions
-        } = await loadFixture(twoPlanFixture);
+        } = await twoPlanFixture();
 
         const consumerAVault = vault.connect(consumerA);
         const consumerASubscriptions = subscriptions.connect(consumerA);

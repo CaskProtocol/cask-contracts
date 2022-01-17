@@ -1,5 +1,4 @@
 const {
-    loadFixture,
     caskUnits,
     now,
     hour,
@@ -38,7 +37,7 @@ async function vestingFixture() {
 }
 
 async function investorVestingFixture() {
-    const fixture = await loadFixture(vestingFixture);
+    const fixture = await vestingFixture();
 
     fixture.vestingStart = now + hour;
 
@@ -58,7 +57,7 @@ async function investorVestingFixture() {
 }
 
 async function teamVestingFixture() {
-    const fixture = await loadFixture(vestingFixture);
+    const fixture = await vestingFixture();
 
     fixture.vestingStart = now + hour;
     fixture.cliffDuration = year;
@@ -82,7 +81,7 @@ async function teamVestingFixture() {
 }
 
 async function teamMultiStartVestingFixture() {
-    const fixture = await loadFixture(vestingFixture);
+    const fixture = await vestingFixture();
 
     fixture.vestingStart = now + hour;
     fixture.cliffDuration = year;

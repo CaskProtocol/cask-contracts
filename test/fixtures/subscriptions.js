@@ -1,5 +1,4 @@
 const {
-    loadFixture,
     daiUnits,
     day,
     month,
@@ -10,7 +9,7 @@ const {
 } = require("./vault");
 
 async function protocolFixture() {
-    const fixture = await loadFixture(fundedFixture);
+    const fixture = await fundedFixture();
 
     fixture.vaultAdmin = await ethers.getContract("CaskVaultAdmin");
     fixture.vault = await ethers.getContract("CaskVault");
@@ -21,7 +20,7 @@ async function protocolFixture() {
 }
 
 async function onePlanFixture() {
-    const fixture = await loadFixture(protocolFixture);
+    const fixture = await protocolFixture();
 
     fixture.planCode = ethers.utils.formatBytes32String("plan1");
 
@@ -44,7 +43,7 @@ async function onePlanFixture() {
 }
 
 async function twoPlanFixture() {
-    const fixture = await loadFixture(protocolFixture);
+    const fixture = await protocolFixture();
 
     let tx, events, planCreatedEvent;
 
@@ -82,7 +81,7 @@ async function twoPlanFixture() {
 }
 
 async function unpausablePlanFixture() {
-    const fixture = await loadFixture(protocolFixture);
+    const fixture = await protocolFixture();
 
     fixture.planCode = ethers.utils.formatBytes32String("plan1");
 
@@ -105,7 +104,7 @@ async function unpausablePlanFixture() {
 }
 
 async function minTermPlanFixture() {
-    const fixture = await loadFixture(protocolFixture);
+    const fixture = await protocolFixture();
 
     fixture.planCode = ethers.utils.formatBytes32String("plan1");
 
@@ -128,7 +127,7 @@ async function minTermPlanFixture() {
 }
 
 async function onePlanWithDiscountsFixture() {
-    const fixture = await loadFixture(protocolFixture);
+    const fixture = await protocolFixture();
 
     fixture.planCode = ethers.utils.formatBytes32String("plan1");
 

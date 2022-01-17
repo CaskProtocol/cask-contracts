@@ -1,7 +1,6 @@
 const { expect } = require("chai");
 
 const {
-    loadFixture,
     caskUnits,
     now,
     hour,
@@ -20,7 +19,7 @@ const {
 describe("VestedEscrow", function () {
 
     it("Token supply is 1B", async function () {
-        const {caskToken} = await loadFixture(vestingFixture);
+        const {caskToken} = await vestingFixture();
         expect(await caskToken.totalSupply()).to.equal(caskUnits('1000000000'));
     });
 
@@ -29,7 +28,7 @@ describe("VestedEscrow", function () {
             governor,
             alice,
             teamVestedEscrow
-        } = await loadFixture(vestingFixture);
+        } = await vestingFixture();
 
         const vestingStart = now;
 
@@ -57,7 +56,7 @@ describe("VestedEscrow", function () {
             bob,
             caskToken,
             teamVestedEscrow
-        } = await loadFixture(teamVestingFixture);
+        } = await teamVestingFixture();
 
         await advanceTime(hour); // timing adjustment
 
@@ -133,7 +132,7 @@ describe("VestedEscrow", function () {
             alice,
             bob,
             teamVestedEscrow
-        } = await loadFixture(teamVestingFixture);
+        } = await teamVestingFixture();
 
         await advanceTime(hour); // timing adjustment
 
@@ -168,7 +167,7 @@ describe("VestedEscrow", function () {
             governor,
             alice,
             investorVestedEscrow
-        } = await loadFixture(investorVestingFixture);
+        } = await investorVestingFixture();
 
         await advanceTime(hour); // timing adjustment
 
@@ -185,7 +184,7 @@ describe("VestedEscrow", function () {
             alice,
             bob,
             investorVestedEscrow
-        } = await loadFixture(vestingFixture);
+        } = await vestingFixture();
 
         // attempt over fund - InvestorVestedEscrow only has 150M in it
         await expect(investorVestedEscrow.connect(governor)['fund(address[],uint256[])'](
@@ -206,7 +205,7 @@ describe("VestedEscrow", function () {
             alice,
             charlie,
             teamVestedEscrow,
-        } = await loadFixture(teamMultiStartVestingFixture);
+        } = await teamMultiStartVestingFixture();
 
         await advanceTime(hour); // timing adjustment
 

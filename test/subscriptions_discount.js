@@ -1,7 +1,6 @@
 const { expect } = require("chai");
 
 const {
-    loadFixture,
     daiUnits,
     day,
     month,
@@ -23,7 +22,7 @@ describe("CaskSubscriptions Discount", function () {
             planId,
             vault,
             subscriptions
-        } = await loadFixture(onePlanWithDiscountsFixture);
+        } = await onePlanWithDiscountsFixture();
 
         const consumerAVault = vault.connect(consumerA);
         const consumerASubscriptions = subscriptions.connect(consumerA);

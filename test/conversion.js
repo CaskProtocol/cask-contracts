@@ -2,7 +2,6 @@ const { expect } = require("chai");
 
 const { parseUnits } = require("ethers").utils;
 const {
-    loadFixture,
     usdcUnits,
     daiUnits,
     usdtUnits,
@@ -21,7 +20,7 @@ describe("Conversions", function () {
             networkAddresses,
             vault,
             governor,
-        } = await loadFixture(vaultFixture);
+        } = await vaultFixture();
 
         await vault.connect(governor).allowAsset(
             networkAddresses.WETH, // address

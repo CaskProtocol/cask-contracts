@@ -5,7 +5,6 @@ const {
     usdtUnits,
     daiUnits,
     usdcUnits,
-    loadFixture
 } = require("../_helpers");
 
 async function vaultFixture() {
@@ -49,7 +48,7 @@ async function vaultFixture() {
 }
 
 async function fundedFixture() {
-    const fixture = await loadFixture(vaultFixture);
+    const fixture = await vaultFixture();
 
     const networkAddresses = await getNetworkAddresses(deployments);
 

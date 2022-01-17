@@ -1,7 +1,6 @@
 const { expect } = require("chai");
 
 const {
-    loadFixture,
     usdcUnits,
     daiUnits,
     usdtUnits,
@@ -20,7 +19,7 @@ describe("CaskVault", function () {
             networkAddresses,
             vault,
             consumerA,
-        } = await loadFixture(fundedFixture);
+        } = await fundedFixture();
 
         await vault.connect(consumerA).deposit(networkAddresses.USDC, usdcUnits('100.0'));
         expect(await vault.currentValueOf(consumerA.address)).to.equal(daiUnits('100.0'));
@@ -33,7 +32,7 @@ describe("CaskVault", function () {
             networkAddresses,
             vault,
             consumerA,
-        } = await loadFixture(fundedFixture);
+        } = await fundedFixture();
 
         await vault.connect(consumerA).deposit(networkAddresses.DAI, daiUnits('100.0'));
         expect(await vault.currentValueOf(consumerA.address)).to.equal(daiUnits('100.0'));

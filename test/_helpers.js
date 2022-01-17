@@ -1,6 +1,5 @@
 const hre = require("hardhat");
 const { parseUnits, formatUnits } = require("ethers").utils;
-const { createFixtureLoader } = require("ethereum-waffle");
 
 const addresses = require("../utils/addresses");
 
@@ -79,23 +78,6 @@ const isProdnet = isMainnet || isPolygon;
 const isRealChain = !isLocalhost && !isMemnet;
 const isDaoChain = isMemnet || isFork || isLocalhost || isMainnet || isKovan;
 const isProtocolChain = isMemnet || isFork || isLocalhost || isPolygon || isMumbai;
-
-// Fixture loader that is compatible with Ganache
-const loadFixture = createFixtureLoader(
-    [
-        hre.ethers.provider.getSigner(0),
-        hre.ethers.provider.getSigner(1),
-        hre.ethers.provider.getSigner(2),
-        hre.ethers.provider.getSigner(3),
-        hre.ethers.provider.getSigner(4),
-        hre.ethers.provider.getSigner(5),
-        hre.ethers.provider.getSigner(6),
-        hre.ethers.provider.getSigner(7),
-        hre.ethers.provider.getSigner(8),
-        hre.ethers.provider.getSigner(9),
-    ],
-    hre.ethers.provider
-);
 
 const advanceTime = async (seconds) => {
     await hre.ethers.provider.send("evm_increaseTime", [seconds]);
@@ -232,7 +214,6 @@ module.exports = {
     isProdnet,
     isDaoChain,
     isProtocolChain,
-    loadFixture,
     setOracleTokenPriceUsd,
     getNetworkAddresses,
     advanceBlocks,
