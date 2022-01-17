@@ -29,11 +29,15 @@ KeeperCompatibleInterface
     /** @dev fixed fee to charge on payments, in baseAsset decimal units. */
     uint256 public paymentFeeFixed;
 
-    /** @dev percentage to charge on payments, in bps. 50% = 5000. */
-    uint256 public paymentFeeRate;
+    /** @dev min and max percentage to charge on payments, in bps. 50% = 5000. */
+    uint256 public paymentFeeRateMin; // floor if full discount applied
+    uint256 public paymentFeeRateMax; // fee if no discount applied
 
-    /** @dev max gas refund for subscription creation transactions, in wei */
-    uint256 public gasRefundLimit;
+    /** @dev max gas refund for transactions, in wei */
+    uint256 public gasRefundLimitCreateSubscription;
+    uint256 public gasRefundLimitChangeSubscription;
+    uint256 public gasRefundLimitCancelSubscription;
+    uint256 public gasRefundLimitOther;
 
 
     bytes32[] internal allSubscriptions;
@@ -53,7 +57,7 @@ KeeperCompatibleInterface
 
     modifier onlySubscriberOrProvider(bytes32 _subscriptionId) {
         require(
-            msg.sender == subscriptions[_subscriptionId].consumer||
+            msg.sender == subscriptions[_subscriptionId].consumer ||
             msg.sender == subscriptions[_subscriptionId].provider,
             "!AUTH"
         );
@@ -78,8 +82,12 @@ KeeperCompatibleInterface
 
         // parameter defaults
         paymentFeeFixed = 0;
-        paymentFeeRate = 0;
-        gasRefundLimit = 0;
+        paymentFeeRateMin = 0;
+        paymentFeeRateMax = 0;
+        gasRefundLimitCreateSubscription = 0;
+        gasRefundLimitChangeSubscription = 0;
+        gasRefundLimitCancelSubscription = 0;
+        gasRefundLimitOther = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -98,7 +106,6 @@ KeeperCompatibleInterface
         uint8 _metaSize
     ) external override whenNotPaused {
         uint256 initialGasLeft = gasleft();
-        initialGasLeft = initialGasLeft;
 
         ICaskSubscriptionPlans.Plan memory plan =
             ICaskSubscriptionPlans(subscriptionPlans).getPlan(_planId);
@@ -145,7 +152,8 @@ KeeperCompatibleInterface
         providerSubscriptions[plan.provider].push(subscriptionId);
         providerActiveSubscriptionCount[plan.provider] = providerActiveSubscriptionCount[plan.provider] + 1;
         allSubscriptions.push(subscriptionId);
-        _rebateGas(initialGasLeft);
+
+        _rebateGas(initialGasLeft, gasRefundLimitCreateSubscription);
     }
 
     function changeSubscriptionPlan(
@@ -154,6 +162,8 @@ KeeperCompatibleInterface
         bytes32 _discountProof,
         bool _atNextRenewal
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
+        uint256 initialGasLeft = gasleft();
+
         Subscription storage subscription = subscriptions[_subscriptionId];
         require(subscription.renewAt >= uint32(block.timestamp), "!NEED_RENEWAL");
         require(subscription.planId != _planId, "!INVALID(_planId)");
@@ -233,23 +243,30 @@ KeeperCompatibleInterface
                 subscription.ref, curPlan.planCode, plan.planCode);
         }
 
+        _rebateGas(initialGasLeft, gasRefundLimitChangeSubscription);
     }
 
     function changeSubscriptionCancelAt(
         bytes32 _subscriptionId,
         uint32 _cancelAt
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
+        uint256 initialGasLeft = gasleft();
+
         Subscription storage subscription = subscriptions[_subscriptionId];
 
         require(subscription.minTermAt == 0 || _cancelAt > subscription.minTermAt, "!MIN_TERM");
 
         subscription.cancelAt = _cancelAt;
+
+        _rebateGas(initialGasLeft, gasRefundLimitOther);
     }
 
     function changeSubscriptionDiscount(
         bytes32 _subscriptionId,
         bytes32 _discountProof
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
+        uint256 initialGasLeft = gasleft();
+
         Subscription storage subscription = subscriptions[_subscriptionId];
 
         ICaskSubscriptionPlans.Plan memory plan;
@@ -271,11 +288,15 @@ KeeperCompatibleInterface
             emit SubscriptionChangedDiscount(subscription.consumer, subscription.provider, _subscriptionId,
                 subscription.ref, plan.planCode, newDiscountId);
         }
+
+        _rebateGas(initialGasLeft, gasRefundLimitOther);
     }
 
     function pauseSubscription(
         bytes32 _subscriptionId
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
+        uint256 initialGasLeft = gasleft();
+
         Subscription storage subscription = subscriptions[_subscriptionId];
         ICaskSubscriptionPlans.Plan memory plan =
             ICaskSubscriptionPlans(subscriptionPlans).getPlan(subscription.planId);
@@ -292,11 +313,15 @@ KeeperCompatibleInterface
 
         emit SubscriptionPaused(subscription.consumer, subscription.provider, _subscriptionId,
             subscription.ref, plan.planCode);
+
+        _rebateGas(initialGasLeft, gasRefundLimitOther);
     }
 
     function resumeSubscription(
         bytes32 _subscriptionId
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
+        uint256 initialGasLeft = gasleft();
+
         Subscription storage subscription = subscriptions[_subscriptionId];
         ICaskSubscriptionPlans.Plan memory plan =
             ICaskSubscriptionPlans(subscriptionPlans).getPlan(subscription.planId);
@@ -312,11 +337,15 @@ KeeperCompatibleInterface
 
         emit SubscriptionResumed(subscription.consumer, subscription.provider, _subscriptionId,
             subscription.ref, plan.planCode);
+
+        _rebateGas(initialGasLeft, gasRefundLimitOther);
     }
 
     function cancelSubscription(
         bytes32 _subscriptionId
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
+        uint256 initialGasLeft = gasleft();
+
         Subscription storage subscription = subscriptions[_subscriptionId];
 
         require(subscription.status != SubscriptionStatus.PendingCancel &&
@@ -331,6 +360,8 @@ KeeperCompatibleInterface
 
         emit SubscriptionPendingCancel(subscription.consumer, subscription.provider, _subscriptionId,
             subscription.ref, plan.planCode);
+
+        _rebateGas(initialGasLeft, gasRefundLimitCancelSubscription);
     }
 
     function getAllSubscriptionsLength() external view returns (uint256) {
@@ -576,22 +607,26 @@ KeeperCompatibleInterface
         uint256 _amount
     ) internal {
         // TODO: calculate the fee rate discount based on staked CASK
-        uint256 paymentFeeRateAdjusted = paymentFeeRate;
+        uint256 paymentFeeRateAdjusted = paymentFeeRateMax;
+        if (paymentFeeRateAdjusted < paymentFeeRateMin) {
+            paymentFeeRateAdjusted = paymentFeeRateMin;
+        }
         uint256 fee = paymentFeeFixed + (_amount * paymentFeeRateAdjusted / 10000);
         ICaskVault(vault).protocolPayment(_consumer, _provider, _amount, fee);
     }
 
     function _rebateGas(
-        uint256 _initialGasLeft
+        uint256 _initialGasLeft,
+        uint256 _gasRefundLimit
     ) internal {
-        if (gasRefundLimit == 0) {
+        if (_gasRefundLimit == 0) {
             return;
         }
 
         // assume a fixed 30000 wei for transaction overhead and stuff performed after this snapshot
         uint256 weiRebate = (_initialGasLeft - gasleft() + 30000) * tx.gasprice;
-        if (weiRebate > gasRefundLimit) {
-            weiRebate = gasRefundLimit;
+        if (weiRebate > _gasRefundLimit) {
+            weiRebate = _gasRefundLimit;
         }
 
 //        CaskTreasury.refundGas(msg.sender, weiRebate);
@@ -610,12 +645,20 @@ KeeperCompatibleInterface
 
     function setParameters(
         uint256 _paymentFeeFixed,
-        uint256 _paymentFeeRate,
-        uint256 _gasRefundLimit
+        uint256 _paymentFeeRateMin,
+        uint256 _paymentFeeRateMax,
+        uint256 _gasRefundLimitCreateSubscription,
+        uint256 _gasRefundLimitChangeSubscription,
+        uint256 _gasRefundLimitCancelSubscription,
+        uint256 _gasRefundLimitOther
     ) external onlyOwner {
         paymentFeeFixed = _paymentFeeFixed;
-        paymentFeeRate = _paymentFeeRate;
-        gasRefundLimit = _gasRefundLimit;
+        paymentFeeRateMin = _paymentFeeRateMin;
+        paymentFeeRateMax = _paymentFeeRateMax;
+        gasRefundLimitCreateSubscription = _gasRefundLimitCreateSubscription;
+        gasRefundLimitChangeSubscription = _gasRefundLimitChangeSubscription;
+        gasRefundLimitCancelSubscription = _gasRefundLimitCancelSubscription;
+        gasRefundLimitOther = _gasRefundLimitOther;
     }
 
 }
