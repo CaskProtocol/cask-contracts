@@ -74,6 +74,7 @@ PausableUpgradeable
         uint32 _minTerm,
         uint32 _freeTrial,
         bool _canPause,
+        uint32 _maxPastDue,
         address _paymentAddress,
         bytes32 _metaHash,
         uint8 _metaHF,
@@ -94,6 +95,7 @@ PausableUpgradeable
         plan.minTerm = _minTerm;
         plan.freeTrial = _freeTrial;
         plan.canPause = _canPause;
+        plan.maxPastDue = _maxPastDue;
         plan.paymentAddress = _paymentAddress;
         plan.metaHash = _metaHash;
         plan.metaHF = _metaHF;
@@ -108,7 +110,8 @@ PausableUpgradeable
         uint256 _price,
         uint32 _minTerm,
         uint32 _freeTrial,
-        bool _canPause
+        bool _canPause,
+        uint32 _maxPastDue
     ) external override onlyProvider(_planId) {
         require(_price > 0, "!INVALID(_price)");
         Plan storage plan = plans[_planId];
@@ -118,13 +121,14 @@ PausableUpgradeable
         plan.minTerm = _minTerm;
         plan.freeTrial = _freeTrial;
         plan.canPause = _canPause;
+        plan.maxPastDue = _maxPastDue;
 
         emit PlanUpdated(plan.provider, _planId, plan.planCode);
     }
 
-    function setPlanDiscount(
+    function setPlanDiscounts(
         bytes32 _planId,
-        bytes32 _discountId,
+        bytes32[] calldata _discountIds,
         uint16 _percent,
         uint32 _expiresAt,
         uint32 _maxUses
@@ -133,13 +137,13 @@ PausableUpgradeable
         Plan memory plan = plans[_planId];
         require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
 
-        Discount storage discount = discounts[_planId][_discountId];
+        for (uint256 i = 0; i < _discountIds.length; i++) {
+            Discount storage discount = discounts[_planId][_discountIds[i]];
 
-        discount.percent = _percent;
-        discount.expiresAt = _expiresAt;
-        discount.maxUses = _maxUses;
-
-        emit PlanSetDiscount(plan.provider, _planId, plan.planCode, _discountId);
+            discount.percent = _percent;
+            discount.expiresAt = _expiresAt;
+            discount.maxUses = _maxUses;
+        }
     }
 
     function updatePlanMeta(
