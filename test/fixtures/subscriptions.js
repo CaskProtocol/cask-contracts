@@ -31,6 +31,7 @@ async function onePlanFixture() {
         0, // minTerm
         7 * day, // freeTrial
         true, // canPause
+        7 * day, // maxPastDue
         fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
@@ -55,6 +56,7 @@ async function twoPlanFixture() {
         0, // minTerm
         7 * day, // freeTrial
         true, // canPause
+        7 * day, // maxPastDue
         fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
@@ -70,6 +72,7 @@ async function twoPlanFixture() {
         0, // minTerm
         7 * day, // freeTrial
         true, // canPause
+        7 * day, // maxPastDue
         fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
@@ -92,6 +95,7 @@ async function unpausablePlanFixture() {
         0, // minTerm
         7 * day, // freeTrial
         false, // canPause
+        7 * day, // maxPastDue
         fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
@@ -115,6 +119,7 @@ async function minTermPlanFixture() {
         12 * month, // minTerm
         7 * day, // freeTrial
         true, // canPause
+        7 * day, // maxPastDue
         fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
@@ -138,6 +143,7 @@ async function onePlanWithDiscountsFixture() {
         0, // minTerm
         7 * day, // freeTrial
         true, // canPause
+        7 * day, // maxPastDue
         fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
@@ -148,9 +154,9 @@ async function onePlanWithDiscountsFixture() {
 
 
     const createDiscount = async (code, percent, expiresAt, maxUses) => {
-        await fixture.subscriptionPlans.connect(fixture.providerA).setPlanDiscount(
+        await fixture.subscriptionPlans.connect(fixture.providerA).setPlanDiscounts(
             fixture.planId, // planId
-            ethers.utils.keccak256(ethers.utils.id(code)), // discount code- see docs for format details
+            [ethers.utils.keccak256(ethers.utils.id(code))], // discount codes - see docs for format details
             percent, // discount percent in bps
             expiresAt, // expiresAt - 0 = no expire
             maxUses // maxUses - 0 = no max

@@ -556,8 +556,8 @@ KeeperCompatibleInterface
         // consumer does not have enough balance to cover payment
         if (chargeAmount > 0 && ICaskVault(vault).currentValueOf(subscription.consumer) < chargeAmount) {
 
-            // if have not been able to renew for 7 days, cancel subscription
-            if (subscription.renewAt < uint32(block.timestamp - 7 days)) {
+            // if have not been able to renew for `plan.maxPastDue` seconds, cancel subscription
+            if (subscription.renewAt < uint32(block.timestamp) - plan.maxPastDue) {
 
                 providerActiveSubscriptionCount[subscription.provider] =
                     providerActiveSubscriptionCount[subscription.provider] - 1;
@@ -607,6 +607,8 @@ KeeperCompatibleInterface
         uint256 _amount
     ) internal {
         // TODO: calculate the fee rate discount based on staked CASK
+
+
         uint256 paymentFeeRateAdjusted = paymentFeeRateMax;
         if (paymentFeeRateAdjusted < paymentFeeRateMin) {
             paymentFeeRateAdjusted = paymentFeeRateMin;

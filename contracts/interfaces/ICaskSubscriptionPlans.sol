@@ -21,6 +21,7 @@ interface ICaskSubscriptionPlans {
         uint32 period; // in seconds
         uint32 freeTrial; // in seconds
         uint32 minTerm; // in seconds
+        uint32 maxPastDue; // in seconds
         bool canPause;
         PlanStatus status;
     }
@@ -44,13 +45,13 @@ interface ICaskSubscriptionPlans {
     function getProviderProfile(address _provider) external view returns(Provider memory);
 
     function createPlan(bytes32 _planCode, uint32 _period,
-        uint256 _price, uint32 _minTerm, uint32 _freeTrial, bool _canPause, address _payoutAddress,
-        bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
+        uint256 _price, uint32 _minTerm, uint32 _freeTrial, bool _canPause, uint32 _maxPastDue,
+        address _payoutAddress, bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
 
     function updatePlan(bytes32 _planId, uint256 _price, uint32 _minTerm,
-        uint32 _freeTrial, bool canPause) external;
+        uint32 _freeTrial, bool canPause, uint32 _maxPastDue) external;
 
-    function setPlanDiscount(bytes32 _planId, bytes32 _discountId,
+    function setPlanDiscounts(bytes32 _planId, bytes32[] calldata _discountIds,
         uint16 _percent, uint32 expiresAt, uint32 maxUses) external;
 
     function updatePlanMeta(bytes32 _planId, bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
@@ -80,10 +81,6 @@ interface ICaskSubscriptionPlans {
 
     /** @dev Emitted when `provider` updates a subscription plan */
     event PlanUpdated(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode);
-
-    /** @dev Emitted when `provider` adds a discount to a subscription plan */
-    event PlanSetDiscount(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode,
-        bytes32 discountId);
 
     /** @dev Emitted when `provider` updates IPFS metadata for the plan */
     event PlanUpdatedMeta(address indexed provider, bytes32 indexed planId, bytes32 indexed planCode,
