@@ -18,7 +18,7 @@ PausableUpgradeable,
 KeeperCompatibleInterface
 {
 
-    /************************** STATE **************************/
+    /************************** PARAMETERS **************************/
 
     /** @dev contract to manage subscription plan definitions. */
     address public subscriptionPlans;
@@ -38,6 +38,12 @@ KeeperCompatibleInterface
     uint256 public gasRefundLimitChangeSubscription;
     uint256 public gasRefundLimitCancelSubscription;
     uint256 public gasRefundLimitOther;
+
+    /** @dev factor used to reduce payment fee based on qty of staked CASK */
+    uint256 public stakeTargetFactor;
+
+
+    /************************** STATE **************************/
 
 
     bytes32[] internal allSubscriptions;
@@ -88,6 +94,7 @@ KeeperCompatibleInterface
         gasRefundLimitChangeSubscription = 0;
         gasRefundLimitCancelSubscription = 0;
         gasRefundLimitOther = 0;
+        stakeTargetFactor = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -220,7 +227,7 @@ KeeperCompatibleInterface
         } else if (plan.price / plan.period > subscription.price / curPlan.period) { // upgrade
             uint256 newAmount = ((plan.price / plan.period) - (subscription.price / curPlan.period)) *
                                  (subscription.renewAt - uint32(block.timestamp));
-            _processPayment(subscription.consumer, plan.paymentAddress, newAmount);
+            _processPayment(subscription.consumer, plan, newAmount);
 
             subscription.planId = _planId;
             subscription.price = plan.price;
@@ -577,7 +584,7 @@ KeeperCompatibleInterface
 
         } else if (chargeAmount > 0) {
 
-            _processPayment(subscription.consumer, plan.paymentAddress, chargeAmount);
+            _processPayment(subscription.consumer, plan, chargeAmount);
 
             subscription.renewAt = subscription.renewAt + plan.period;
             subscription.paymentNumber = subscription.paymentNumber + 1;
@@ -603,18 +610,28 @@ KeeperCompatibleInterface
 
     function _processPayment(
         address _consumer,
-        address _provider,
+        ICaskSubscriptionPlans.Plan memory _plan,
         uint256 _amount
     ) internal {
-        // TODO: calculate the fee rate discount based on staked CASK
+        // TODO: reduce fee based on staked balance
+//        uint256 stakedBalance = ICaskStakeManager(stakeManager).providerStakeBalanceOf(_plan.provider);
+        uint256 stakedBalance = 0;
+        uint256 paymentFeeRateAdjusted;
 
+        if (stakedBalance > 0) {
+            uint256 loadFactor = 365 / (_plan.period / 1 days);
+            uint256 noFeeTarget = providerActiveSubscriptionCount[_plan.provider] * stakeTargetFactor * loadFactor;
 
-        uint256 paymentFeeRateAdjusted = paymentFeeRateMax;
-        if (paymentFeeRateAdjusted < paymentFeeRateMin) {
-            paymentFeeRateAdjusted = paymentFeeRateMin;
+            paymentFeeRateAdjusted = paymentFeeRateMax - (paymentFeeRateMax * (stakedBalance / noFeeTarget));
+            if (paymentFeeRateAdjusted < paymentFeeRateMin) {
+                paymentFeeRateAdjusted = paymentFeeRateMin;
+            }
+        } else {
+            paymentFeeRateAdjusted = paymentFeeRateMax;
         }
+
         uint256 fee = paymentFeeFixed + (_amount * paymentFeeRateAdjusted / 10000);
-        ICaskVault(vault).protocolPayment(_consumer, _provider, _amount, fee);
+        ICaskVault(vault).protocolPayment(_consumer, _plan.paymentAddress, _amount, fee);
     }
 
     function _rebateGas(
@@ -631,7 +648,7 @@ KeeperCompatibleInterface
             weiRebate = _gasRefundLimit;
         }
 
-//        CaskTreasury.refundGas(msg.sender, weiRebate);
+//        ICaskTreasury(caskTreasury).refundGas(msg.sender, weiRebate);
     }
 
 
@@ -652,7 +669,8 @@ KeeperCompatibleInterface
         uint256 _gasRefundLimitCreateSubscription,
         uint256 _gasRefundLimitChangeSubscription,
         uint256 _gasRefundLimitCancelSubscription,
-        uint256 _gasRefundLimitOther
+        uint256 _gasRefundLimitOther,
+        uint256 _stakeTargetFactor
     ) external onlyOwner {
         paymentFeeFixed = _paymentFeeFixed;
         paymentFeeRateMin = _paymentFeeRateMin;
@@ -661,6 +679,7 @@ KeeperCompatibleInterface
         gasRefundLimitChangeSubscription = _gasRefundLimitChangeSubscription;
         gasRefundLimitCancelSubscription = _gasRefundLimitCancelSubscription;
         gasRefundLimitOther = _gasRefundLimitOther;
+        stakeTargetFactor = _stakeTargetFactor;
     }
 
 }

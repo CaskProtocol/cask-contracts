@@ -111,7 +111,8 @@ async function _debug_protocol(taskArguments, hre) {
     // Config
     //
     const paymentFeeFixed = await subscriptions.paymentFeeFixed();
-    const paymentFeeRate = await subscriptions.paymentFeeRate();
+    const paymentFeeRateMin = await subscriptions.paymentFeeRateMin();
+    const paymentFeeRateMax = await subscriptions.paymentFeeRateMax();
 
     console.log("\nProtocol Configuration");
     console.log("====================");
@@ -128,7 +129,8 @@ async function _debug_protocol(taskArguments, hre) {
     console.log(`CaskSubscriptions vault:                        ${await subscriptions.vault()}`);
     console.log(`CaskSubscriptions subscriptionPlans:            ${await subscriptions.subscriptionPlans()}`);
     console.log(`CaskSubscriptions paymentFeeFixed:              ${paymentFeeFixed}`);
-    console.log(`CaskSubscriptions paymentFeeRate:               ${paymentFeeRate} (${paymentFeeRate / 100}%)`);
+    console.log(`CaskSubscriptions paymentFeeRateMin:            ${paymentFeeRateMin} (${paymentFeeRateMin / 100}%)`);
+    console.log(`CaskSubscriptions paymentFeeRateMax:            ${paymentFeeRateMax} (${paymentFeeRateMax / 100}%)`);
 
 
     //
