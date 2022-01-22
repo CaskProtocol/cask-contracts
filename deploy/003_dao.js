@@ -1,8 +1,11 @@
 const {
-    isDaoChain,
     caskUnits,
     caskUnitsFormat,
-} = require("../test/_helpers.js");
+} = require("../utils/units");
+
+const {
+    isDaoChain,
+} = require("../test/_networks");
 
 const {
     log,

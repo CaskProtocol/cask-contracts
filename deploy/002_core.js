@@ -1,6 +1,6 @@
 const {
     isDaoChain,
-} = require("../test/_helpers.js");
+} = require("../test/_networks");
 
 const {
     log,

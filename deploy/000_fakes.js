@@ -1,6 +1,6 @@
 const {
     isMumbai
-} = require("../test/_helpers");
+} = require("../test/_networks");
 
 const {
     log,

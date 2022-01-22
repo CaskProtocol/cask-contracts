@@ -1,11 +1,12 @@
 const { deployments } = require("hardhat");
 
+const { getNetworkAddresses } = require("../_helpers");
+
 const {
-    getNetworkAddresses,
     usdtUnits,
     daiUnits,
     usdcUnits,
-} = require("../_helpers");
+} = require("../../utils/units");
 
 async function vaultFixture() {
     await deployments.fixture(); // ensure you start from a fresh deployments

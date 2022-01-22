@@ -1,39 +1,13 @@
 const hre = require("hardhat");
 const { parseUnits, formatUnits } = require("ethers").utils;
 
-const addresses = require("../utils/addresses");
+const {
+    isRealChain,
+    isPolygon,
+    isMumbai
+} = require("./_networks");
 
-function caskUnits(amount) {
-    return parseUnits(amount, 18);
-}
 
-function caskUnitsFormat(amount) {
-    return formatUnits(amount, 18);
-}
-
-function usdtUnits(amount) {
-    return parseUnits(amount, 6);
-}
-
-function usdtUnitsFormat(amount) {
-    return formatUnits(amount, 6);
-}
-
-function usdcUnits(amount) {
-    return parseUnits(amount, 6);
-}
-
-function usdcUnitsFormat(amount) {
-    return formatUnits(amount, 6);
-}
-
-function daiUnits(amount) {
-    return parseUnits(amount, 18);
-}
-
-function daiUnitsFormat(amount) {
-    return formatUnits(amount, 18);
-}
 
 // keep in sync with ICaskSubscriptions.sol
 const SubscriptionStatus = {
@@ -53,31 +27,6 @@ const PlanStatus = {
     Disabled: 2,
     EndOfLife: 3,
 };
-
-const now = Math.floor(Date.now() / 1000);
-const hour = 3600;
-const day = 24 * hour;
-const month = (365/12) * day;
-const year = month * 12;
-
-const isFork = process.env.FORK === "true";
-const isLocalhost = !isFork && hre.network.name === "localhost";
-const isMemnet = hre.network.name === "hardhat";
-
-const isKovan = hre.network.name === "kovan";
-const isMainnet = hre.network.name === "mainnet";
-
-const isPolygon = hre.network.name === "polygon";
-const isMumbai = hre.network.name === "mumbai";
-
-const isTest = process.env.IS_TEST === "true";
-
-const isDevnet = isLocalhost || isMemnet;
-const isTestnet = isKovan || isMumbai;
-const isProdnet = isMainnet || isPolygon;
-const isRealChain = !isLocalhost && !isMemnet;
-const isDaoChain = isMemnet || isFork || isLocalhost || isMainnet || isKovan;
-const isProtocolChain = isMemnet || isFork || isLocalhost || isPolygon || isMumbai;
 
 const advanceTime = async (seconds) => {
     await hre.ethers.provider.send("evm_increaseTime", [seconds]);
@@ -183,40 +132,13 @@ const advanceTimeRunSubscriptionKeeper = async (times, seconds, keeperLimit=10) 
 
 
 module.exports = {
-    caskUnits,
-    usdtUnits,
-    usdcUnits,
-    daiUnits,
-    caskUnitsFormat,
-    daiUnitsFormat,
-    usdcUnitsFormat,
-    usdtUnitsFormat,
     SubscriptionStatus,
     PlanStatus,
-    now,
-    hour,
-    day,
-    month,
-    year,
     advanceTime,
     getBlockTimestamp,
-    isFork,
-    isTest,
-    isDevnet,
-    isLocalhost,
-    isMainnet,
-    isKovan,
-    isPolygon,
-    isMumbai,
-    isTestnet,
-    isRealChain,
-    isMemnet,
-    isProdnet,
-    isDaoChain,
-    isProtocolChain,
     setOracleTokenPriceUsd,
-    getNetworkAddresses,
     advanceBlocks,
+    getNetworkAddresses,
     runSubscriptionKeeper,
     subscriptionCheckUpkeep,
     subscriptionPerformUpkeep,

@@ -1,5 +1,6 @@
 const { parseUnits } = require("ethers").utils;
-const { isDevnet } = require("../test/_helpers");
+
+const { isDevnet } = require("../test/_networks");
 
 const deployMocks = async ({deployments, getNamedAccounts}) => {
     const {deploy} = deployments;

@@ -1,12 +1,14 @@
-
-const addresses = require("../utils/addresses");
 const {
-    getNetworkAddresses,
-    isProtocolChain,
     usdtUnits,
     usdcUnits,
     daiUnits
-} = require("../test/_helpers.js");
+} = require("../utils/units");
+
+const {
+    isProtocolChain,
+} = require("../test/_networks");
+
+const { getNetworkAddresses } = require("../test/_helpers");
 
 const {
     log,

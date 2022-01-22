@@ -13,6 +13,7 @@ require('hardhat-contract-sizer');
 
 const { accounts } = require("./tasks/account");
 const { debug } = require("./tasks/debug");
+const { fund } = require("./tasks/fund");
 
 
 // dao networks
@@ -55,6 +56,10 @@ task("debug", "Print info about contracts and their configs", debug);
 
 task("accounts", "Prints the list of accounts", async (taskArguments, hre) => {
   return accounts(taskArguments, hre, privateKeys);
+});
+
+task("fund", "Funds all the accounts", async (taskArguments, hre) => {
+  return fund(taskArguments, hre, privateKeys);
 });
 
 

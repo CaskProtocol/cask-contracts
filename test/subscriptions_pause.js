@@ -2,9 +2,12 @@ const { expect } = require("chai");
 
 const {
     daiUnits,
-    SubscriptionStatus,
     day,
     month,
+} = require("../utils/units");
+
+const {
+    SubscriptionStatus,
     advanceTimeRunSubscriptionKeeper,
 } = require("./_helpers");
 
