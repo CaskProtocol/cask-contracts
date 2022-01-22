@@ -630,8 +630,16 @@ KeeperCompatibleInterface
             paymentFeeRateAdjusted = paymentFeeRateMax;
         }
 
+        ICaskSubscriptionPlans.Provider memory provider =
+            ICaskSubscriptionPlans(subscriptionPlans).getProviderProfile(_plan.provider);
+
+        address paymentAddress = _plan.provider;
+        if (provider.paymentAddress != address(0)) {
+            paymentAddress = provider.paymentAddress;
+        }
+
         uint256 fee = paymentFeeFixed + (_amount * paymentFeeRateAdjusted / 10000);
-        ICaskVault(vault).protocolPayment(_consumer, _plan.paymentAddress, _amount, fee);
+        ICaskVault(vault).protocolPayment(_consumer, paymentAddress, _amount, fee);
     }
 
     function _rebateGas(

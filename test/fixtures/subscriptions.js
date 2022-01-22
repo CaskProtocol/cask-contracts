@@ -32,7 +32,6 @@ async function onePlanFixture() {
         7 * day, // freeTrial
         true, // canPause
         7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
 
@@ -57,7 +56,6 @@ async function twoPlanFixture() {
         7 * day, // freeTrial
         true, // canPause
         7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
     events = (await tx.wait()).events || [];
@@ -73,7 +71,6 @@ async function twoPlanFixture() {
         7 * day, // freeTrial
         true, // canPause
         7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
     events = (await tx.wait()).events || [];
@@ -96,7 +93,6 @@ async function unpausablePlanFixture() {
         7 * day, // freeTrial
         false, // canPause
         7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
 
@@ -120,7 +116,6 @@ async function minTermPlanFixture() {
         7 * day, // freeTrial
         true, // canPause
         7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
 
@@ -144,7 +139,6 @@ async function onePlanWithDiscountsFixture() {
         7 * day, // freeTrial
         true, // canPause
         7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
         ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
     );
 

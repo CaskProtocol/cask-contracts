@@ -12,7 +12,6 @@ interface ICaskSubscriptionPlans {
 
     struct Plan {
         address provider;
-        address paymentAddress;
         uint256 price; // denominated in baseAsset
         bytes32 planCode;
         bytes32 metaHash; // the three meta* members are used to build an IPFS CID efficiently
@@ -35,18 +34,19 @@ interface ICaskSubscriptionPlans {
     }
 
     struct Provider {
+        address paymentAddress;
         bytes32 metaHash; // the three meta* members are used to build an IPFS CID efficiently
         uint8 metaHF;
         uint8 metaSize;
     }
 
-    function setProviderProfile(bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
+    function setProviderProfile(address _paymentAddress, bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
 
     function getProviderProfile(address _provider) external view returns(Provider memory);
 
     function createPlan(bytes32 _planCode, uint32 _period,
         uint256 _price, uint32 _minTerm, uint32 _freeTrial, bool _canPause, uint32 _maxPastDue,
-        address _payoutAddress, bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
+        bytes32 _metaHash, uint8 _metaHF, uint8 _metaSize) external;
 
     function updatePlan(bytes32 _planId, uint256 _price, uint32 _minTerm,
         uint32 _freeTrial, bool canPause, uint32 _maxPastDue) external;

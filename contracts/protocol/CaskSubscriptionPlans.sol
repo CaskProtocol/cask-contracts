@@ -51,11 +51,13 @@ PausableUpgradeable
     }
 
     function setProviderProfile(
+        address _paymentAddress,
         bytes32 _metaHash,
         uint8 _metaHF,
         uint8 _metaSize
     ) external override {
         Provider storage profile = providerProfiles[msg.sender];
+        profile.paymentAddress = _paymentAddress;
         profile.metaHash = _metaHash;
         profile.metaHF = _metaHF;
         profile.metaSize = _metaSize;
@@ -75,7 +77,6 @@ PausableUpgradeable
         uint32 _freeTrial,
         bool _canPause,
         uint32 _maxPastDue,
-        address _paymentAddress,
         bytes32 _metaHash,
         uint8 _metaHF,
         uint8 _metaSize
@@ -96,7 +97,6 @@ PausableUpgradeable
         plan.freeTrial = _freeTrial;
         plan.canPause = _canPause;
         plan.maxPastDue = _maxPastDue;
-        plan.paymentAddress = _paymentAddress;
         plan.metaHash = _metaHash;
         plan.metaHF = _metaHF;
         plan.metaSize = _metaSize;
