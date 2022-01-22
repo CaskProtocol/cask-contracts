@@ -58,9 +58,7 @@ task("accounts", "Prints the list of accounts", async (taskArguments, hre) => {
   return accounts(taskArguments, hre, privateKeys);
 });
 
-task("fund", "Funds all the accounts", async (taskArguments, hre) => {
-  return fund(taskArguments, hre, privateKeys);
-});
+task("fund", "Funds all accounts with USDC/USDT/DAI", fund);
 
 
 module.exports = {
