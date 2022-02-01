@@ -1,37 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "../interfaces/ICaskSubscriptionManager.sol";
 import "../interfaces/ICaskSubscriptions.sol";
 import "../interfaces/ICaskSubscriptionPlans.sol";
-import "../interfaces/ICaskVault.sol";
 
 contract CaskSubscriptions is
 ICaskSubscriptions,
-Initializable,
+ERC721Upgradeable,
 OwnableUpgradeable,
-PausableUpgradeable,
-KeeperCompatibleInterface
+PausableUpgradeable
 {
+    using ECDSA for bytes32;
 
     /************************** PARAMETERS **************************/
 
     /** @dev contract to manage subscription plan definitions. */
-    address public subscriptionPlans;
+    ICaskSubscriptionManager public subscriptionManager;
 
-    /** @dev vault to use for payments. */
-    address public vault;
-
-    /** @dev fixed fee to charge on payments, in baseAsset decimal units. */
-    uint256 public paymentFeeFixed;
-
-    /** @dev min and max percentage to charge on payments, in bps. 50% = 5000. */
-    uint256 public paymentFeeRateMin; // floor if full discount applied
-    uint256 public paymentFeeRateMax; // fee if no discount applied
+    /** @dev contract to manage subscription plan definitions. */
+    ICaskSubscriptionPlans public subscriptionPlans;
 
     /** @dev max gas refund for transactions, in wei */
     uint256 public gasRefundLimitCreateSubscription;
@@ -39,317 +32,236 @@ KeeperCompatibleInterface
     uint256 public gasRefundLimitCancelSubscription;
     uint256 public gasRefundLimitOther;
 
-    /** @dev factor used to reduce payment fee based on qty of staked CASK */
-    uint256 public stakeTargetFactor;
-
 
     /************************** STATE **************************/
 
-
-    bytes32[] internal allSubscriptions;
+    uint256[] private allSubscriptions;
 
     /** @dev Maps for consumer to list of subscriptions. */
-    mapping(address => bytes32[]) internal consumerSubscriptions; // consumer => subscriptionId[]
-    mapping(bytes32 => Subscription) internal subscriptions; // subscriptionId => Subscription
+    mapping(address => uint256[]) private consumerSubscriptions; // consumer => subscriptionId[]
+    mapping(uint256 => Subscription) private subscriptions; // subscriptionId => Subscription
+    mapping(uint256 => bytes32) private pendingPlanChanges; // subscriptionId => planData
 
     /** @dev Maps for provider to list of subscriptions and plans. */
-    mapping(address => bytes32[]) internal providerSubscriptions; // provider => subscriptionId[]
-    mapping(address => uint256) internal providerActiveSubscriptionCount; // provider => count
+    mapping(address => uint256[]) private providerSubscriptions; // provider => subscriptionId[]
+    mapping(address => uint256) private providerActiveSubscriptionCount; // provider => count
+    mapping(address => mapping(uint32 => uint256)) private planActiveSubscriptionCount; // provider => planId => count
 
-    modifier onlySubscriber(bytes32 _subscriptionId) {
-        require(msg.sender == subscriptions[_subscriptionId].consumer, "!AUTH");
+
+    modifier onlyManager() {
+        require(msg.sender == address(subscriptionManager), "!AUTH");
         _;
     }
 
-    modifier onlySubscriberOrProvider(bytes32 _subscriptionId) {
+    modifier onlySubscriber(uint256 _subscriptionId) {
+        require(msg.sender == ownerOf(_subscriptionId), "!AUTH");
+        _;
+    }
+
+    modifier onlySubscriberOrProvider(uint256 _subscriptionId) {
         require(
-            msg.sender == subscriptions[_subscriptionId].consumer ||
+            msg.sender == ownerOf(_subscriptionId) ||
             msg.sender == subscriptions[_subscriptionId].provider,
             "!AUTH"
         );
         _;
     }
 
-    modifier onlyProvider(bytes32 _subscriptionId) {
-        require(msg.sender == subscriptions[_subscriptionId].provider, "!AUTH");
-        _;
-    }
-
-
     function initialize(
-        address _subscriptionPlans,
-        address _vault
+        address _subscriptionPlans
     ) public initializer {
         __Ownable_init();
         __Pausable_init();
+        __ERC721_init("Cask Subscriptions","CASKSUBS");
 
-        subscriptionPlans = _subscriptionPlans;
-        vault = _vault;
+        subscriptionPlans = ICaskSubscriptionPlans(_subscriptionPlans);
 
         // parameter defaults
-        paymentFeeFixed = 0;
-        paymentFeeRateMin = 0;
-        paymentFeeRateMax = 0;
         gasRefundLimitCreateSubscription = 0;
         gasRefundLimitChangeSubscription = 0;
         gasRefundLimitCancelSubscription = 0;
         gasRefundLimitOther = 0;
-        stakeTargetFactor = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
 
+    function tokenURI(uint256 _subscriptionId) public view override returns (string memory) {
+        require(_exists(_subscriptionId), "ERC721Metadata: URI query for nonexistent token");
+
+        Subscription memory subscription = subscriptions[_subscriptionId];
+
+        // TODO: do we want the token to point to provider CID or subscription CID?
+//        ICaskSubscriptionPlans.Provider memory profile = subscriptionPlans.getProviderProfile(subscription.provider);
+//        return string(abi.encodePacked("ipfs://", profile.cid, "/token"));
+
+        return string(abi.encodePacked("ipfs://", subscription.cid));
+    }
+
+    function _beforeTokenTransfer(
+        address _from,
+        address _to,
+        uint256 _subscriptionId
+    ) internal override {
+        if (_from != address(0) && _to != address(0)) { // only non-mint/burn transfers
+            Subscription storage subscription = subscriptions[_subscriptionId];
+
+            PlanInfo memory planInfo = _parsePlanData(subscription.planData);
+            require(planInfo.canTransfer, "!NOT_TRANSFERRABLE");
+
+            require(subscription.minTermAt == 0 || uint32(block.timestamp) >= subscription.minTermAt, "!MIN_TERM");
+
+            // on transfer, set subscription to cancel at next renewal until new owner accepts subscription
+            subscription.cancelAt = subscription.renewAt;
+        }
+    }
 
     /************************** SUBSCRIPTION METHODS **************************/
 
-    function createSubscription(
-        bytes32 _planId,
-        bytes32 _discountProof,
-        bytes32 _ref,
+    function createNetworkSubscription(
+        bytes32[] calldata _planProof,  // [provider, ref, planData, merkleRoot, merkleProof...]
+        bytes32[] calldata _discountProof, // [discountCodeProof, discountData, merkleRoot, merkleProof...]
+        bytes32 _networkData,
         uint32 _cancelAt,
-        bytes32 _metaHash,
-        uint8 _metaHF,
-        uint8 _metaSize
+        bytes memory _providerSignature,
+        bytes memory _networkSignature,
+        string calldata _cid
     ) external override whenNotPaused {
         uint256 initialGasLeft = gasleft();
+        uint256 subscriptionId = _createSubscription(_planProof, _discountProof, _cancelAt,
+            _providerSignature, _cid);
 
-        ICaskSubscriptionPlans.Plan memory plan =
-            ICaskSubscriptionPlans(subscriptionPlans).getPlan(_planId);
-
-        require(plan.provider != address(0), "!INVALID(_plan)");
-        require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!NOT_ENABLED");
-
-        bytes32 subscriptionId = keccak256(abi.encodePacked(msg.sender, plan.provider, _ref, _planId, block.number));
+        _verifyNetworkData(_networkData, _networkSignature);
 
         Subscription storage subscription = subscriptions[subscriptionId];
-        subscription.consumer = msg.sender;
-        subscription.provider = plan.provider;
-        subscription.planId = _planId;
-        subscription.price = plan.price;
-        subscription.pendingPlanId = 0;
-        subscription.ref = _ref;
-        subscription.cancelAt = _cancelAt;
-        subscription.metaHash = _metaHash;
-        subscription.metaHF = _metaHF;
-        subscription.metaSize = _metaSize;
-        subscription.createdAt = uint32(block.timestamp);
+        subscription.networkData = _networkData;
+        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitCreateSubscription);
+    }
 
-        if (_discountProof > 0) {
-            subscription.discountId =
-                ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(_planId, _discountProof);
-        }
-
-        if (plan.freeTrial > 0) {
-            // if no trial period, charge now. If trial period, charge will happen after trial is over
-            subscription.status = SubscriptionStatus.Trialing;
-            subscription.renewAt = uint32(block.timestamp) + plan.freeTrial;
-        } else {
-            _renewSubscription(subscriptionId);
-            subscription.status = SubscriptionStatus.Active;
-        }
-        if (plan.minTerm > 0) {
-            subscription.minTermAt = uint32(block.timestamp) + plan.minTerm;
-        }
-
-        emit SubscriptionCreated(subscription.consumer, subscription.provider, subscriptionId,
-            subscription.ref, plan.planCode);
-
-        consumerSubscriptions[msg.sender].push(subscriptionId);
-        providerSubscriptions[plan.provider].push(subscriptionId);
-        providerActiveSubscriptionCount[plan.provider] = providerActiveSubscriptionCount[plan.provider] + 1;
-        allSubscriptions.push(subscriptionId);
-
-        _rebateGas(initialGasLeft, gasRefundLimitCreateSubscription);
+    function createSubscription(
+        bytes32[] calldata _planProof, // [provider, ref, planData, merkleRoot, merkleProof...]
+        bytes32[] calldata _discountProof, // [discountCodeProof, discountData, merkleRoot, merkleProof...]
+        uint32 _cancelAt,
+        bytes memory _providerSignature,
+        string calldata _cid
+    ) external override whenNotPaused {
+        uint256 initialGasLeft = gasleft();
+        _createSubscription(_planProof, _discountProof, _cancelAt, _providerSignature, _cid);
+        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitCreateSubscription);
     }
 
     function changeSubscriptionPlan(
-        bytes32 _subscriptionId,
-        bytes32 _planId,
-        bytes32 _discountProof,
-        bool _atNextRenewal
+        uint256 _subscriptionId,
+        bytes32[] calldata _planProof,  // [provider, ref, planData, merkleRoot, merkleProof...]
+        bytes32[] calldata _discountProof, // [discountCodeProof, discountData, merkleRoot, merkleProof...]
+        bytes memory _providerSignature,
+        string calldata _cid
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
         uint256 initialGasLeft = gasleft();
-
-        Subscription storage subscription = subscriptions[_subscriptionId];
-        require(subscription.renewAt >= uint32(block.timestamp), "!NEED_RENEWAL");
-        require(subscription.planId != _planId, "!INVALID(_planId)");
-        require(subscription.status == SubscriptionStatus.Active ||
-                subscription.status == SubscriptionStatus.Trialing, "!INVALID(status)");
-
-        ICaskSubscriptionPlans.Plan memory plan =
-            ICaskSubscriptionPlans(subscriptionPlans).getPlan(_planId);
-        require(plan.status == ICaskSubscriptionPlans.PlanStatus.Enabled, "!NOT_ENABLED");
-
-        ICaskSubscriptionPlans.Plan memory curPlan =
-            ICaskSubscriptionPlans(subscriptionPlans).getPlan(subscription.planId);
-
-        if (_discountProof > 0) {
-            subscription.discountId =
-                ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(_planId, _discountProof);
-        }
-
-        if (_atNextRenewal) {
-            subscription.pendingPlanId = _planId; // will be activated at next renewal
-
-            emit SubscriptionPendingChangePlan(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, curPlan.planCode, plan.planCode);
-
-        } else if (subscription.status == SubscriptionStatus.Trialing) {
-
-            if (plan.freeTrial > curPlan.freeTrial) {
-                // new plan has moar trial than the old plan, adjust renewAt out further
-                subscription.renewAt = subscription.renewAt + plan.freeTrial - curPlan.freeTrial;
-            } else if (plan.freeTrial < curPlan.freeTrial) {
-                // new plan has less trial than the old plan, adjust renewAt in closer
-                subscription.renewAt = subscription.renewAt - curPlan.freeTrial - plan.freeTrial;
-                if (subscription.renewAt <= uint32(block.timestamp)) {
-                    // if new plan trial length would have caused trial to already be over, end trial as of now
-                    // subscription will be charged and converted to active during next keeper run
-                    subscription.renewAt = uint32(block.timestamp);
-                }
-            }
-
-            // freely allow plans to change while trialing
-            subscription.planId = _planId;
-            subscription.price = plan.price;
-
-            emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, curPlan.planCode, plan.planCode);
-
-        } else if (plan.price / plan.period == subscription.price / curPlan.period) { // straight swap
-            subscription.planId = _planId;
-            subscription.price = plan.price;
-
-            emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, curPlan.planCode, plan.planCode);
-
-        } else if (plan.price / plan.period > subscription.price / curPlan.period) { // upgrade
-            uint256 newAmount = ((plan.price / plan.period) - (subscription.price / curPlan.period)) *
-                                 (subscription.renewAt - uint32(block.timestamp));
-            _processPayment(subscription.consumer, plan, newAmount);
-
-            subscription.planId = _planId;
-            subscription.price = plan.price;
-
-            emit SubscriptionChangedPlan(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, curPlan.planCode, plan.planCode);
-
-        } else { // downgrade
-
-            // possible usecase someday: code to immediately downgrade and extend renewal date based on plan value diff
-            //            uint256 credit = ((subscription.price / curPlan.period) - (plan.price / plan.period)) *
-            //                                (subscription.renewAt - uint32(block.timestamp));
-            //            // calculate how many seconds the credit amount buys of the new plan and extend
-            //            // the renewal date that amount
-            //            subscription.renewAt = subscription.renewAt + uint32(credit / (plan.price / plan.period));
-
-            subscription.pendingPlanId = _planId; // will be activated at next renewal
-
-            emit SubscriptionPendingChangePlan(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, curPlan.planCode, plan.planCode);
-        }
-
-        _rebateGas(initialGasLeft, gasRefundLimitChangeSubscription);
+        _changeSubscriptionPlan(_subscriptionId, _planProof, _discountProof, _providerSignature, _cid);
+        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitChangeSubscription);
     }
 
     function changeSubscriptionCancelAt(
-        bytes32 _subscriptionId,
+        uint256 _subscriptionId,
         uint32 _cancelAt
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
         uint256 initialGasLeft = gasleft();
 
         Subscription storage subscription = subscriptions[_subscriptionId];
 
-        require(subscription.minTermAt == 0 || _cancelAt > subscription.minTermAt, "!MIN_TERM");
+        require(subscription.minTermAt == 0 || _cancelAt >= subscription.minTermAt, "!MIN_TERM");
 
         subscription.cancelAt = _cancelAt;
 
-        _rebateGas(initialGasLeft, gasRefundLimitOther);
+        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
     }
 
     function changeSubscriptionDiscount(
-        bytes32 _subscriptionId,
-        bytes32 _discountProof
+        uint256 _subscriptionId,
+        bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
         uint256 initialGasLeft = gasleft();
 
         Subscription storage subscription = subscriptions[_subscriptionId];
 
-        ICaskSubscriptionPlans.Plan memory plan;
-        bytes32 newDiscountId;
-
-        if (subscription.pendingPlanId != 0) {
+        if (pendingPlanChanges[_subscriptionId] > 0) {
+            PlanInfo memory newPlanInfo = _parsePlanData(pendingPlanChanges[_subscriptionId]);
             // pending plan change, get discount for new plan
-            plan = ICaskSubscriptionPlans(subscriptionPlans).getPlan(subscription.pendingPlanId);
-            newDiscountId =
-                ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(subscription.pendingPlanId, _discountProof);
+            (
+            subscription.discountId,
+            subscription.discountData
+            ) = _verifyDiscountProof(subscription.provider, newPlanInfo.planId, _discountProof);
         } else {
-            plan = ICaskSubscriptionPlans(subscriptionPlans).getPlan(subscription.planId);
-            newDiscountId =
-                ICaskSubscriptionPlans(subscriptionPlans).verifyDiscount(subscription.planId, _discountProof);
+            (
+            subscription.discountId,
+            subscription.discountData
+            ) = _verifyDiscountProof(subscription.provider, subscription.planId, _discountProof);
         }
 
-        if (newDiscountId > 0) {
-            subscription.discountId = newDiscountId;
-            emit SubscriptionChangedDiscount(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, plan.planCode, newDiscountId);
-        }
+        emit SubscriptionChangedDiscount(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId, subscription.discountData);
 
-        _rebateGas(initialGasLeft, gasRefundLimitOther);
+        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
     }
 
     function pauseSubscription(
-        bytes32 _subscriptionId
+        uint256 _subscriptionId
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
         uint256 initialGasLeft = gasleft();
 
         Subscription storage subscription = subscriptions[_subscriptionId];
-        ICaskSubscriptionPlans.Plan memory plan =
-            ICaskSubscriptionPlans(subscriptionPlans).getPlan(subscription.planId);
 
-        require(plan.canPause, "!NOT_PAUSABLE");
         require(subscription.status != SubscriptionStatus.Paused &&
                 subscription.status != SubscriptionStatus.PastDue &&
                 subscription.status != SubscriptionStatus.Canceled &&
                 subscription.status != SubscriptionStatus.PendingCancel, "!INVALID(status)");
 
-        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!MIN_TERM");
+        require(subscription.minTermAt == 0 || uint32(block.timestamp) >= subscription.minTermAt, "!MIN_TERM");
+
+        PlanInfo memory planInfo = _parsePlanData(subscription.planData);
+        require(planInfo.canPause, "!NOT_PAUSABLE");
 
         subscription.status = SubscriptionStatus.Paused;
 
-        emit SubscriptionPaused(subscription.consumer, subscription.provider, _subscriptionId,
-            subscription.ref, plan.planCode);
+        planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
 
-        _rebateGas(initialGasLeft, gasRefundLimitOther);
+        emit SubscriptionPaused(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId);
+
+        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
     }
 
     function resumeSubscription(
-        bytes32 _subscriptionId
+        uint256 _subscriptionId
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
         uint256 initialGasLeft = gasleft();
 
         Subscription storage subscription = subscriptions[_subscriptionId];
-        ICaskSubscriptionPlans.Plan memory plan =
-            ICaskSubscriptionPlans(subscriptionPlans).getPlan(subscription.planId);
-
         require(subscription.status == SubscriptionStatus.Paused, "!NOT_PAUSED");
 
+        PlanInfo memory planInfo = _parsePlanData(subscription.planData);
+
+        require(planInfo.maxActive == 0 ||
+            planActiveSubscriptionCount[subscription.provider][planInfo.planId] < planInfo.maxActive, "!MAX_ACTIVE");
+
         subscription.status = SubscriptionStatus.Active;
+
+        planActiveSubscriptionCount[subscription.provider][subscription.planId] += 1;
 
         // if renewal date has already passed, set it to now so consumer is not charged for the time it was paused
         if (subscription.renewAt < uint32(block.timestamp)) {
             subscription.renewAt = uint32(block.timestamp);
         }
 
-        emit SubscriptionResumed(subscription.consumer, subscription.provider, _subscriptionId,
-            subscription.ref, plan.planCode);
+        emit SubscriptionResumed(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId);
 
-        _rebateGas(initialGasLeft, gasRefundLimitOther);
+        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
     }
 
     function cancelSubscription(
-        bytes32 _subscriptionId
+        uint256 _subscriptionId
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
         uint256 initialGasLeft = gasleft();
 
@@ -358,25 +270,100 @@ KeeperCompatibleInterface
         require(subscription.status != SubscriptionStatus.PendingCancel &&
                 subscription.status != SubscriptionStatus.Canceled, "!INVALID(status)");
 
-        require(subscription.minTermAt == 0 || uint32(block.timestamp) > subscription.minTermAt, "!MIN_TERM");
-
-        ICaskSubscriptionPlans.Plan memory plan =
-            ICaskSubscriptionPlans(subscriptionPlans).getPlan(subscription.planId);
+        require(subscription.minTermAt == 0 || uint32(block.timestamp) >= subscription.minTermAt, "!MIN_TERM");
 
         subscription.status = SubscriptionStatus.PendingCancel;
 
-        emit SubscriptionPendingCancel(subscription.consumer, subscription.provider, _subscriptionId,
-            subscription.ref, plan.planCode);
+        emit SubscriptionPendingCancel(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId);
 
-        _rebateGas(initialGasLeft, gasRefundLimitCancelSubscription);
+        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitCancelSubscription);
     }
 
-    function getAllSubscriptionsLength() external view returns (uint256) {
+    function managerPlanChange(
+        uint256 _subscriptionId
+    ) external override onlyManager whenNotPaused {
+        bytes32 pendingPlanData = pendingPlanChanges[_subscriptionId];
+        require(pendingPlanData > 0, "!INVALID(planId)");
+
+        Subscription storage subscription = subscriptions[_subscriptionId];
+        PlanInfo memory newPlanInfo = _parsePlanData(pendingPlanData);
+
+        emit SubscriptionChangedPlan(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId, newPlanInfo.planId, subscription.discountId);
+
+        subscription.planId = newPlanInfo.planId;
+        subscription.planData = pendingPlanData;
+
+        if (newPlanInfo.minPeriods > 0) {
+            subscription.minTermAt = uint32(block.timestamp) + (newPlanInfo.period * newPlanInfo.minPeriods);
+        }
+
+        delete pendingPlanChanges[_subscriptionId]; // free up memory
+    }
+
+    function managerCancelSubscription(
+        uint256 _subscriptionId
+    ) external override onlyManager whenNotPaused {
+        Subscription storage subscription = subscriptions[_subscriptionId];
+
+        subscription.status = SubscriptionStatus.Canceled;
+
+        providerActiveSubscriptionCount[subscription.provider] -= 1;
+        planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
+
+        emit SubscriptionCanceled(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId);
+
+        _burn(_subscriptionId);
+    }
+
+    function managerPastDueSubscription(
+        uint256 _subscriptionId
+    ) external override onlyManager whenNotPaused {
+        Subscription storage subscription = subscriptions[_subscriptionId];
+
+        subscription.status = SubscriptionStatus.PastDue;
+
+        emit SubscriptionPastDue(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId);
+    }
+
+    function managerRenewSubscription(
+        uint256 _subscriptionId
+    ) external override onlyManager whenNotPaused {
+        Subscription storage subscription = subscriptions[_subscriptionId];
+        PlanInfo memory planInfo = _parsePlanData(subscription.planData);
+
+        if (subscription.status == SubscriptionStatus.Trialing) {
+            emit SubscriptionTrialEnded(ownerOf(_subscriptionId), subscription.provider,
+                _subscriptionId, subscription.ref, subscription.planId);
+        }
+
+        subscription.status = SubscriptionStatus.Active; // just in case it was something else previously
+        subscription.renewAt = subscription.renewAt + planInfo.period;
+
+        emit SubscriptionRenewed(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId);
+    }
+
+    function managerClearDiscount(
+        uint256 _subscriptionId
+    ) external override onlyManager whenNotPaused {
+        Subscription storage subscription = subscriptions[_subscriptionId];
+        subscription.discountData = 0;
+    }
+
+    function getAllSubscriptionsCount() external view returns (uint256) {
         return allSubscriptions.length;
     }
 
+    function getAllSubscriptions() external override view returns (uint256[] memory) {
+        return allSubscriptions;
+    }
+
     function getSubscription(
-        bytes32 _subscriptionId
+        uint256 _subscriptionId
     ) external override view returns (Subscription memory) {
         return subscriptions[_subscriptionId];
     }
@@ -385,8 +372,8 @@ KeeperCompatibleInterface
         address _consumer,
         uint256 limit,
         uint256 offset
-    ) external override view returns (bytes32[] memory) {
-        bytes32[] memory subscriptionIds = new bytes32[](limit);
+    ) external override view returns (uint256[] memory) {
+        uint256[] memory subscriptionIds = new uint256[](limit);
         for (uint256 i = 0; i < limit; i++) {
             subscriptionIds[i] = consumerSubscriptions[_consumer][i+offset];
         }
@@ -403,8 +390,8 @@ KeeperCompatibleInterface
         address _provider,
         uint256 limit,
         uint256 offset
-    ) external override view returns (bytes32[] memory) {
-        bytes32[] memory subscriptionIds = new bytes32[](limit);
+    ) external override view returns (uint256[] memory) {
+        uint256[] memory subscriptionIds = new uint256[](limit);
         for (uint256 i = 0; i < limit; i++) {
             subscriptionIds[i] = providerSubscriptions[_provider][i+offset];
         }
@@ -417,246 +404,298 @@ KeeperCompatibleInterface
         return providerSubscriptions[_provider].length;
     }
 
+    function getProviderActiveSubscriptionCount(
+        address _provider
+    ) external override view returns (uint256) {
+        return providerActiveSubscriptionCount[_provider];
+    }
 
-    /************************** OPERATIONAL METHODS **************************/
+    function getProviderPlanActiveSubscriptionCount(
+        address _provider,
+        uint32 _planId
+    ) external override view returns (uint256) {
+        return planActiveSubscriptionCount[_provider][_planId];
+    }
 
-    function checkUpkeep(
-        bytes calldata checkData
-    ) external view override returns(bool upkeepNeeded, bytes memory performData) {
-        (
-            uint256 limit,
-            uint256 offset
-        ) = abi.decode(checkData, (uint256, uint256));
+    function getPendingPlanChange(
+        uint256 _subscriptionId
+    ) external override view returns (bytes32) {
+        return pendingPlanChanges[_subscriptionId];
+    }
 
-        (
-            uint256 renewableCount,
-            bytes32[] memory subscriptionIds
-        ) = _subscriptionsRenewable(limit, offset);
+    function _createSubscription(
+        bytes32[] calldata _planProof,  // [provider, ref, planData, merkleRoot, merkleProof...]
+        bytes32[] calldata _discountProof, // [discountCodeProof, discountData, merkleRoot, merkleProof...]
+        uint32 _cancelAt,
+        bytes memory _providerSignature,
+        string calldata _cid
+    ) internal returns(uint256) {
+        require(_planProof.length >= 4, "!INVALID(planProofLen)");
 
-        if (renewableCount == 0) {
-            upkeepNeeded = false;
-            performData = bytes("");
-        } else if (renewableCount < limit) {
-            // convert array of `limit` length to new array sized to hold only renewing subscriptionIds
-            uint256 j = 0;
-            bytes32[] memory renewables = new bytes32[](renewableCount);
-            for (uint256 i = 0; i < limit && j < renewableCount; i++) {
-                if (subscriptionIds[i] > 0) {
-                    renewables[j] = subscriptionIds[i];
-                    j = j + 1;
-                }
-            }
-            upkeepNeeded = true;
-            performData = abi.encode(renewables);
-
+        // confirms merkleroots are in fact the ones provider committed to
+        address provider;
+        if (_discountProof.length >= 3) {
+            provider = _verifyMerkleRoots(_planProof[0], _providerSignature, _planProof[3], _discountProof[2]);
         } else {
-            upkeepNeeded = true;
-            performData = abi.encode(subscriptionIds);
+            provider = _verifyMerkleRoots(_planProof[0], _providerSignature, _planProof[3], 0);
         }
+
+        // confirms plan data is included in merkle root
+        require(_verifyPlanProof(_planProof), "!INVALID(planProof)");
+
+        // decode planData bytes32 into PlanInfo
+        PlanInfo memory planInfo = _parsePlanData(_planProof[2]);
+
+        // generate subscriptionId from plan info and ref
+        uint256 subscriptionId = _generateSubscriptionId(_planProof[0], _planProof[1], _planProof[2]);
+
+        require(planInfo.maxActive == 0 ||
+            planActiveSubscriptionCount[provider][planInfo.planId] < planInfo.maxActive, "!MAX_ACTIVE");
+        require(subscriptionPlans.getPlanStatus(provider, planInfo.planId) ==
+            ICaskSubscriptionPlans.PlanStatus.Enabled, "!NOT_ENABLED");
+
+        _safeMint(msg.sender, subscriptionId);
+
+        Subscription storage subscription = subscriptions[subscriptionId];
+
+        subscription.provider = provider;
+        subscription.planId = planInfo.planId;
+        subscription.ref = _planProof[1];
+        subscription.planData = _planProof[2];
+        subscription.cancelAt = _cancelAt;
+        subscription.cid = _cid;
+        subscription.createdAt = uint32(block.timestamp);
+
+        if (planInfo.minPeriods > 0) {
+            subscription.minTermAt = uint32(block.timestamp + (planInfo.period * planInfo.minPeriods));
+        }
+
+        if (planInfo.freeTrial > 0) {
+            // if no trial period, charge now. If trial period, charge will happen after trial is over
+            subscription.status = SubscriptionStatus.Trialing;
+            subscription.renewAt = uint32(block.timestamp) + planInfo.freeTrial;
+        }
+
+        (
+        subscription.discountId,
+        subscription.discountData
+        ) = _verifyDiscountProof(provider, subscription.planId, _discountProof);
+
+        if (subscription.renewAt <= uint32(block.timestamp)) {
+            subscriptionManager.renewSubscription(subscriptionId);
+        }
+
+        emit SubscriptionCreated(ownerOf(subscriptionId), subscription.provider, subscriptionId,
+            subscription.ref, subscription.planId, subscription.discountId);
+
+        consumerSubscriptions[msg.sender].push(subscriptionId);
+        providerSubscriptions[provider].push(subscriptionId);
+        providerActiveSubscriptionCount[provider] += 1;
+        planActiveSubscriptionCount[provider][planInfo.planId] += 1;
+        allSubscriptions.push(subscriptionId);
+
+        return subscriptionId;
     }
 
-    function _subscriptionsRenewable(
-        uint256 _limit,
-        uint256 _offset
-    ) internal view returns(uint256, bytes32[] memory) {
+    function _changeSubscriptionPlan(
+        uint256 _subscriptionId,
+        bytes32[] calldata _planProof,  // [provider, ref, planData, merkleRoot, merkleProof...]
+        bytes32[] calldata _discountProof, // [discountCodeProof, discountData, merkleRoot, merkleProof...]
+        bytes memory _providerSignature,
+        string calldata _cid
+    ) internal {
+        require(_planProof.length >= 4, "!INVALID(planProofLen)");
 
-        uint256 size = _limit;
-        if (size > allSubscriptions.length) {
-            size = allSubscriptions.length;
+        Subscription storage subscription = subscriptions[_subscriptionId];
+
+        require(subscription.renewAt > uint32(block.timestamp), "!NEED_RENEWAL");
+        require(subscription.status == SubscriptionStatus.Active ||
+            subscription.status == SubscriptionStatus.Trialing, "!INVALID(status)");
+
+        // confirms merkleroots are in fact the ones provider committed to
+        address provider;
+        if (_discountProof.length >= 3) {
+            provider = _verifyMerkleRoots(_planProof[0], _providerSignature, _planProof[3], _discountProof[2]);
+        } else {
+            provider = _verifyMerkleRoots(_planProof[0], _providerSignature, _planProof[3], 0);
         }
 
-        bytes32[] memory renewables = new bytes32[](size);
+        // confirms plan data is included in merkle root
+        require(_verifyPlanProof(_planProof), "!INVALID(planProof)");
 
-        uint256 renewableCount = 0;
-        for (uint256 i = _offset; i < allSubscriptions.length; i++) {
-            Subscription memory subscription = subscriptions[allSubscriptions[i]];
-            if (subscription.renewAt <= uint32(block.timestamp) &&
-                subscription.status != SubscriptionStatus.Canceled &&
-                subscription.status != SubscriptionStatus.Paused)
-            {
-                renewables[renewableCount] = allSubscriptions[i];
-                renewableCount = renewableCount + 1;
-                if (renewableCount >= size) {
-                    break;
-                }
-            }
-        }
-        return (renewableCount, renewables);
+        // decode planData bytes32 into PlanInfo
+        PlanInfo memory newPlanInfo = _parsePlanData(_planProof[2]);
+
+        require(subscription.provider == provider, "!INVALID(provider)");
+        require(subscription.planId != newPlanInfo.planId, "!INVALID(planId)");
+
+        require(subscriptionPlans.getPlanStatus(provider, newPlanInfo.planId) ==
+            ICaskSubscriptionPlans.PlanStatus.Enabled, "!NOT_ENABLED");
+
+        subscription.cid = _cid;
+
+        (
+        subscription.discountId,
+        subscription.discountData
+        ) = _verifyDiscountProof(provider, subscription.planId, _discountProof);
+
+        _performPlanChange(_subscriptionId, newPlanInfo, _planProof[2]);
     }
 
-    function performUpkeep(
-        bytes calldata performData
-    ) external override whenNotPaused {
-        bytes32[] memory subscriptionIds = abi.decode(performData, (bytes32[]));
-        for (uint256 i = 0; i < subscriptionIds.length; i++) {
-            if (subscriptionIds[i] > 0) {
-                _renewSubscription(subscriptionIds[i]);
-            }
-        }
-    }
-
-    function _renewSubscription(
-        bytes32 _subscriptionId
+    function _performPlanChange(
+        uint256 _subscriptionId,
+        PlanInfo memory _newPlanInfo,
+        bytes32 _planData
     ) internal {
         Subscription storage subscription = subscriptions[_subscriptionId];
 
-        // not time to renew yet or is paused
-        if (subscription.renewAt > uint32(block.timestamp) ||
-            subscription.status == SubscriptionStatus.Paused) {
-            return;
+        PlanInfo memory currentPlanInfo = _parsePlanData(subscription.planData);
+
+        if (subscription.status == SubscriptionStatus.Trialing) { // still in trial, just change now
+
+            _swapTrialingPlan(_subscriptionId, currentPlanInfo, _newPlanInfo, _planData);
+
+        } else if (_newPlanInfo.price / _newPlanInfo.period ==
+            currentPlanInfo.price / currentPlanInfo.period)
+        { // straight swap
+
+            _swapPlan(_subscriptionId, _newPlanInfo, _planData);
+
+        } else if (_newPlanInfo.price / _newPlanInfo.period >
+            currentPlanInfo.price / currentPlanInfo.period)
+        { // upgrade
+
+            _upgradePlan(_subscriptionId, currentPlanInfo, _newPlanInfo, _planData);
+
+        } else { // downgrade - to take affect at next renewal
+
+            _scheduleSwapPlan(_subscriptionId, _newPlanInfo.planId, _planData);
         }
-
-        ICaskSubscriptionPlans.Plan memory plan =
-            ICaskSubscriptionPlans(subscriptionPlans).getPlan(subscription.planId);
-
-        // subscription scheduled to be canceled by consumer or has hit its cancelAt time
-        if (subscription.status == SubscriptionStatus.PendingCancel ||
-            (subscription.cancelAt > 0 && subscription.cancelAt <= uint32(block.timestamp)) ||
-            plan.status == ICaskSubscriptionPlans.PlanStatus.EndOfLife) {
-
-            subscription.status = SubscriptionStatus.Canceled;
-
-            providerActiveSubscriptionCount[subscription.provider] =
-                providerActiveSubscriptionCount[subscription.provider] - 1;
-
-            emit SubscriptionCanceled(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, plan.planCode);
-
-            return;
-        }
-
-        // if a plan change is pending, switch to use new plan info
-        if (subscription.pendingPlanId != 0) {
-            bytes32 oldPlanCode = plan.planCode;
-            plan = ICaskSubscriptionPlans(subscriptionPlans).getPlan(subscription.pendingPlanId);
-
-            subscription.planId = subscription.pendingPlanId;
-            subscription.price = plan.price;
-            subscription.pendingPlanId = 0;
-
-            emit SubscriptionChangedPlan(subscription.consumer, subscription.provider,
-                _subscriptionId, subscription.ref, oldPlanCode, plan.planCode);
-        }
-
-
-        uint256 chargeAmount = subscription.price;
-
-        // maybe apply discount
-        if (subscription.discountId > 0) {
-            ICaskSubscriptionPlans.Discount memory discount = ICaskSubscriptionPlans(subscriptionPlans)
-                .getPlanDiscount(subscription.planId, subscription.discountId);
-
-            if (discount.percent > 0) {
-                try ICaskSubscriptionPlans(subscriptionPlans)
-                    .consumeDiscount(subscription.planId, subscription.discountId) returns (bool stillValid)
-                {
-                    chargeAmount = chargeAmount - (chargeAmount * discount.percent / 10000);
-                    if (!stillValid) {
-                        subscription.discountId = 0;
-                    }
-                } catch Error(string memory) {
-                    subscription.discountId = 0; // remove no longer usable discount
-                }
-            }
-        }
-
-        // consumer does not have enough balance to cover payment
-        if (chargeAmount > 0 && ICaskVault(vault).currentValueOf(subscription.consumer) < chargeAmount) {
-
-            // if have not been able to renew for `plan.maxPastDue` seconds, cancel subscription
-            if (subscription.renewAt < uint32(block.timestamp) - plan.maxPastDue) {
-
-                providerActiveSubscriptionCount[subscription.provider] =
-                    providerActiveSubscriptionCount[subscription.provider] - 1;
-
-                subscription.status = SubscriptionStatus.Canceled;
-
-                emit SubscriptionCanceled(subscription.consumer, subscription.provider,
-                    _subscriptionId, subscription.ref, plan.planCode);
-
-            } else if (subscription.status != SubscriptionStatus.PastDue) {
-
-                subscription.status = SubscriptionStatus.PastDue;
-
-                emit SubscriptionPastDue(subscription.consumer, subscription.provider,
-                    _subscriptionId, subscription.ref, plan.planCode);
-            }
-
-        } else if (chargeAmount > 0) {
-
-            _processPayment(subscription.consumer, plan, chargeAmount);
-
-            subscription.renewAt = subscription.renewAt + plan.period;
-            subscription.paymentNumber = subscription.paymentNumber + 1;
-
-            if (subscription.status == SubscriptionStatus.Trialing) {
-                emit SubscriptionTrialEnded(subscription.consumer, subscription.provider,
-                    _subscriptionId, subscription.ref, plan.planCode);
-            }
-
-            subscription.status = SubscriptionStatus.Active;
-
-            emit SubscriptionRenewed(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, plan.planCode);
-
-        } else { // no charge, move along now
-            subscription.renewAt = subscription.renewAt + plan.period;
-
-            emit SubscriptionRenewed(subscription.consumer, subscription.provider, _subscriptionId,
-                subscription.ref, plan.planCode);
-        }
-
     }
 
-    function _processPayment(
-        address _consumer,
-        ICaskSubscriptionPlans.Plan memory _plan,
-        uint256 _amount
-    ) internal {
-        // TODO: reduce fee based on staked balance
-//        uint256 stakedBalance = ICaskStakeManager(stakeManager).providerStakeBalanceOf(_plan.provider);
-        uint256 stakedBalance = 0;
-        uint256 paymentFeeRateAdjusted;
-
-        if (stakedBalance > 0) {
-            uint256 loadFactor = 365 / (_plan.period / 1 days);
-            uint256 noFeeTarget = providerActiveSubscriptionCount[_plan.provider] * stakeTargetFactor * loadFactor;
-
-            paymentFeeRateAdjusted = paymentFeeRateMax - (paymentFeeRateMax * (stakedBalance / noFeeTarget));
-            if (paymentFeeRateAdjusted < paymentFeeRateMin) {
-                paymentFeeRateAdjusted = paymentFeeRateMin;
+    function _verifyDiscountProof(
+        address _provider,
+        uint32 _planId,
+        bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
+    ) internal view returns(bytes32, bytes32) {
+        if (_discountProof.length > 3 && _discountProof[0] > 0) {
+            bytes32 discountId = keccak256(abi.encode(_discountProof[0]));
+            bytes32 discountData = _discountProof[1];
+            if (subscriptionPlans.verifyDiscount(_provider, _planId, discountId, discountData,
+                _discountProof[2], _discountProof[3:]))
+            {
+                return (discountId, discountData);
             }
-        } else {
-            paymentFeeRateAdjusted = paymentFeeRateMax;
         }
-
-        ICaskSubscriptionPlans.Provider memory provider =
-            ICaskSubscriptionPlans(subscriptionPlans).getProviderProfile(_plan.provider);
-
-        address paymentAddress = _plan.provider;
-        if (provider.paymentAddress != address(0)) {
-            paymentAddress = provider.paymentAddress;
-        }
-
-        uint256 fee = paymentFeeFixed + (_amount * paymentFeeRateAdjusted / 10000);
-        ICaskVault(vault).protocolPayment(_consumer, paymentAddress, _amount, fee);
+        return (0,0);
     }
 
-    function _rebateGas(
-        uint256 _initialGasLeft,
-        uint256 _gasRefundLimit
+    function _verifyPlanProof(
+        bytes32[] calldata _planProof // [provider, ref, planData, merkleRoot, merkleProof...]
+    ) internal view returns(bool) {
+        return subscriptionPlans.verifyPlan(_planProof[2], _planProof[3], _planProof[4:]);
+    }
+
+    function _generateSubscriptionId(
+        bytes32 _providerAddr,
+        bytes32 _ref,
+        bytes32 _planData
+    ) internal view returns(uint256) {
+        return uint256(keccak256(abi.encodePacked(msg.sender, _providerAddr, _planData, _ref, block.number)));
+    }
+
+    function _parsePlanData(
+        bytes32 _planData
+    ) internal pure returns(PlanInfo memory) {
+        bytes2 options = bytes2(_planData << 240);
+        return PlanInfo({
+            price: uint256(_planData >> 160),
+            planId: uint32(bytes4(_planData << 96)),
+            period: uint32(bytes4(_planData << 128)),
+            freeTrial: uint32(bytes4(_planData << 160)),
+            maxActive: uint32(bytes4(_planData << 192)),
+            minPeriods: uint16(bytes2(_planData << 224)),
+            canPause: options & 0x0001 == 0x0001,
+            canTransfer: options & 0x0002 == 0x0002
+        });
+    }
+
+    function _parseNetworkData(
+        bytes32 _networkData
+    ) internal pure returns(NetworkInfo memory) {
+        return NetworkInfo({
+            network: address(bytes20(_networkData)),
+            feeBps: uint16(bytes2(_networkData << 160))
+        });
+    }
+
+    function _swapTrialingPlan(
+        uint256 _subscriptionId,
+        PlanInfo memory _currentPlanInfo,
+        PlanInfo memory _newPlanInfo,
+        bytes32 _newPlanData
     ) internal {
-        if (_gasRefundLimit == 0) {
-            return;
+        Subscription storage subscription = subscriptions[_subscriptionId];
+
+        // adjust renewal based on new plan trial length
+        subscription.renewAt = subscription.renewAt - _currentPlanInfo.freeTrial + _newPlanInfo.freeTrial;
+
+        // if new plan trial length would have caused trial to already be over, end trial as of now
+        // subscription will be charged and converted to active during next keeper run
+        if (subscription.renewAt <= uint32(block.timestamp)) {
+            subscription.renewAt = uint32(block.timestamp);
         }
 
-        // assume a fixed 30000 wei for transaction overhead and stuff performed after this snapshot
-        uint256 weiRebate = (_initialGasLeft - gasleft() + 30000) * tx.gasprice;
-        if (weiRebate > _gasRefundLimit) {
-            weiRebate = _gasRefundLimit;
+        _swapPlan(_subscriptionId, _newPlanInfo, _newPlanData);
+    }
+
+    function _scheduleSwapPlan(
+        uint256 _subscriptionId,
+        uint32 newPlanId,
+        bytes32 _newPlanData
+    ) internal {
+        Subscription storage subscription = subscriptions[_subscriptionId];
+
+        pendingPlanChanges[_subscriptionId] = _newPlanData;
+
+        emit SubscriptionPendingChangePlan(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId, newPlanId);
+    }
+
+    function _swapPlan(
+        uint256 _subscriptionId,
+        PlanInfo memory _newPlanInfo,
+        bytes32 _newPlanData
+    ) internal {
+        Subscription storage subscription = subscriptions[_subscriptionId];
+
+        emit SubscriptionChangedPlan(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId, _newPlanInfo.planId, subscription.discountId);
+
+        if (_newPlanInfo.minPeriods > 0) {
+            subscription.minTermAt = uint32(block.timestamp + (_newPlanInfo.period * _newPlanInfo.minPeriods));
         }
 
-//        ICaskTreasury(caskTreasury).refundGas(msg.sender, weiRebate);
+        subscription.planId = _newPlanInfo.planId;
+        subscription.planData = _newPlanData;
+    }
+
+    function _upgradePlan(
+        uint256 _subscriptionId,
+        PlanInfo memory _currentPlanInfo,
+        PlanInfo memory _newPlanInfo,
+        bytes32 _newPlanData
+    ) internal {
+        Subscription storage subscription = subscriptions[_subscriptionId];
+
+        uint256 newAmount = ((_newPlanInfo.price / _newPlanInfo.period) -
+            (_currentPlanInfo.price / _currentPlanInfo.period)) *
+            (subscription.renewAt - uint32(block.timestamp));
+
+        subscriptionManager.processSinglePayment(ownerOf(_subscriptionId), subscription.provider,
+            _subscriptionId, newAmount);
+
+        _swapPlan(_subscriptionId, _newPlanInfo, _newPlanData);
     }
 
 
@@ -670,24 +709,47 @@ KeeperCompatibleInterface
         _unpause();
     }
 
+    function setManager(
+        address _subscriptionManager
+    ) external onlyOwner {
+        subscriptionManager = ICaskSubscriptionManager(_subscriptionManager);
+    }
+
     function setParameters(
-        uint256 _paymentFeeFixed,
-        uint256 _paymentFeeRateMin,
-        uint256 _paymentFeeRateMax,
         uint256 _gasRefundLimitCreateSubscription,
         uint256 _gasRefundLimitChangeSubscription,
         uint256 _gasRefundLimitCancelSubscription,
-        uint256 _gasRefundLimitOther,
-        uint256 _stakeTargetFactor
+        uint256 _gasRefundLimitOther
     ) external onlyOwner {
-        paymentFeeFixed = _paymentFeeFixed;
-        paymentFeeRateMin = _paymentFeeRateMin;
-        paymentFeeRateMax = _paymentFeeRateMax;
         gasRefundLimitCreateSubscription = _gasRefundLimitCreateSubscription;
         gasRefundLimitChangeSubscription = _gasRefundLimitChangeSubscription;
         gasRefundLimitCancelSubscription = _gasRefundLimitCancelSubscription;
         gasRefundLimitOther = _gasRefundLimitOther;
-        stakeTargetFactor = _stakeTargetFactor;
+    }
+
+    function _verifyMerkleRoots(
+        bytes32 providerAddr,
+        bytes memory _providerSignature,
+        bytes32 _planMerkleRoot,
+        bytes32 _discountMerkleRoot
+    ) internal pure returns (address) {
+        address recovered = keccak256(abi.encode(_planMerkleRoot, _discountMerkleRoot))
+            .toEthSignedMessageHash()
+            .recover(_providerSignature);
+        require(address(bytes20(providerAddr << 96)) == recovered, "!INVALID(proof)");
+        return recovered;
+    }
+
+    function _verifyNetworkData(
+        bytes32 _networkData,
+        bytes memory _networkSignature
+    ) internal pure returns (address) {
+        address network = keccak256(abi.encode(_networkData))
+            .toEthSignedMessageHash()
+            .recover(_networkSignature);
+        NetworkInfo memory networkInfo = _parseNetworkData(_networkData);
+        require(networkInfo.network == network, "!INVALID(network)");
+        return network;
     }
 
 }

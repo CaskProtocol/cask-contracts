@@ -39,8 +39,13 @@ contract MockVault is ICaskVault {
     function deposit(address _asset, uint256 _amount) external override {
     }
 
-    function withdraw(address _recipient, address _asset, uint256 _amount) external override {
+    function depositTo(address _to, address _asset, uint256 _amount) external override {
+    }
 
+    function withdraw(address _asset, uint256 _amount) external override {
+    }
+
+    function withdrawTo(address _recipient, address _asset, uint256 _amount) external override {
     }
 
     function totalSupply() external override view returns(uint256) {

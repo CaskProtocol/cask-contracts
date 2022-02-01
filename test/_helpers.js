@@ -1,10 +1,10 @@
 const hre = require("hardhat");
+const addresses = require("../utils/addresses");
 const { parseUnits, formatUnits } = require("ethers").utils;
 
 const {
     isRealChain,
     isPolygon,
-    isMumbai
 } = require("./_networks");
 
 
@@ -69,17 +69,6 @@ const setOracleTokenPriceUsd = async (tokenSymbol, usdPrice) => {
 const getNetworkAddresses = async (deployments) => {
     if (isPolygon) {
         return addresses.polygon;
-    } else if (isMumbai) {
-        return {
-            DAI_USD: addresses.mumbai.DAI_USD,
-            USDC_USD: addresses.mumbai.USDC_USD,
-            USDT_USD: addresses.mumbai.USDT_USD,
-            WETH_USD: addresses.mumbai.WETH_USD,
-            USDT: (await deployments.get("FakeUSDT")).address,
-            USDC: (await deployments.get("FakeUSDC")).address,
-            DAI: (await deployments.get("FakeDAI")).address,
-            WETH: (await deployments.get("FakeWETH")).address,
-        }
     } else {
         // On other environments, return mock feeds.
         return {
@@ -96,13 +85,13 @@ const getNetworkAddresses = async (deployments) => {
 };
 
 const subscriptionCheckUpkeep = async(checkData) => {
-    const subscriptions = await ethers.getContract("CaskSubscriptions");
-    return subscriptions.checkUpkeep(checkData);
+    const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
+    return subscriptionManager.checkUpkeep(checkData);
 };
 
 const subscriptionPerformUpkeep = async(performData) => {
-    const subscriptions = await ethers.getContract("CaskSubscriptions");
-    return subscriptions.performUpkeep(performData);
+    const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
+    return subscriptionManager.performUpkeep(performData);
 };
 
 const runSubscriptionKeeper = async(limit= 10, offset= 0) => {

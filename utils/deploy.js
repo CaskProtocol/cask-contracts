@@ -8,7 +8,7 @@ const {
     isMainnet,
     isTestnet,
     isRealChain,
-} = require("../test/_helpers.js");
+} = require("../test/_networks");
 
 const { getTxOpts } = require("../utils/tx.js");
 

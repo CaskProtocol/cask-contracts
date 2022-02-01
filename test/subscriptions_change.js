@@ -15,6 +15,12 @@ const {
     twoPlanFixture,
 } = require("./fixtures/subscriptions");
 
+const {
+    generatePlanProof,
+    plansMerkleProof,
+    generateDiscountProof,
+} = require("../utils/plans");
+
 
 describe("CaskSubscriptions Change", function () {
 
@@ -23,10 +29,12 @@ describe("CaskSubscriptions Change", function () {
         const {
             networkAddresses,
             consumerA,
-            planAId,
-            planBId,
             vault,
-            subscriptions
+            subscriptions,
+            plans,
+            plansRoot,
+            discountsRoot,
+            signedRoots,
         } = await twoPlanFixture();
 
         const consumerAVault = vault.connect(consumerA);
@@ -38,14 +46,22 @@ describe("CaskSubscriptions Change", function () {
 
         let subscriptionInfo;
 
+        const ref = ethers.utils.id("user1");
+
+        const plan = plans.find((p) => p.planId === 200);
+        const plansProof = generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
+            plansMerkleProof(plans, plan));
+        const discountProof = generateDiscountProof(0, 0, discountsRoot)
+
         // create subscription
         const tx = await consumerASubscriptions.createSubscription(
-            planAId, // planId
-            ethers.utils.id(""), // discountProof - keccak256 hash of bytes of discount code string
-            ethers.utils.formatBytes32String("sub1"), // ref
+            plansProof, // planProof
+            discountProof, // discountProof
             0, // cancelAt
-            ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of subscription metadata
+            signedRoots, // providerSignature
+            "" // cid
         );
+
         const events = (await tx.wait()).events || [];
         const createdEvent = events.find((e) => e.event === "SubscriptionCreated");
         const subscriptionId = createdEvent.args.subscriptionId;
@@ -61,10 +77,20 @@ describe("CaskSubscriptions Change", function () {
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('130'));
         subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
-        expect(subscriptionInfo.planId).to.equal(planAId);
+        expect(subscriptionInfo.planId).to.equal(plan.planId);
 
-        expect(await consumerASubscriptions.changeSubscriptionPlan(subscriptionId, planBId,
-            ethers.utils.id(""), false)).to.emit(consumerASubscriptions, "SubscriptionChangedPlan");
+        const newPlan = plans.find((p) => p.planId === 201);
+        const newPlansProof = generatePlanProof(newPlan.provider, 0, newPlan.planData, plansRoot,
+            plansMerkleProof(plans, newPlan));
+
+        // upgrade subscription from plan 200 -> 201
+        expect (await consumerASubscriptions.changeSubscriptionPlan(
+            subscriptionId,
+            newPlansProof, // planProof
+            [], // discountProof
+            signedRoots, // providerSignature
+            "" // cid
+        )).to.emit(consumerASubscriptions, "SubscriptionChangedPlan");
 
         // upgrade used some funds
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.lt(daiUnits('130'));
@@ -75,7 +101,7 @@ describe("CaskSubscriptions Change", function () {
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.lt(daiUnits('110'));
         subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
-        expect(subscriptionInfo.planId).to.equal(planBId);
+        expect(subscriptionInfo.planId).to.equal(newPlan.planId);
 
     });
 

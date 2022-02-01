@@ -12,6 +12,14 @@ const {
 const {
     onePlanWithDiscountsFixture,
 } = require("./fixtures/subscriptions");
+const {
+    generatePlanProof,
+    plansMerkleProof,
+    generateDiscountCodeProof,
+    lookupDiscount,
+    generateDiscountProof,
+    discountsMerkleProof,
+} = require("../utils/plans");
 
 
 describe("CaskSubscriptions Discount", function () {
@@ -21,9 +29,13 @@ describe("CaskSubscriptions Discount", function () {
         const {
             networkAddresses,
             consumerA,
-            planId,
             vault,
-            subscriptions
+            subscriptions,
+            plans,
+            discounts,
+            plansRoot,
+            discountsRoot,
+            signedRoots,
         } = await onePlanWithDiscountsFixture();
 
         const consumerAVault = vault.connect(consumerA);
@@ -39,17 +51,31 @@ describe("CaskSubscriptions Discount", function () {
 
         let subscriptionInfo;
 
+        const ref = ethers.utils.id("user1");
 
-        const discountProof = ethers.utils.id("discount1");
+        const plan = plans.find((p) => p.planId === 501);
+        const plansProof = generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
+            plansMerkleProof(plans, plan));
+
+        const discountCodeProof = generateDiscountCodeProof("discount1");
+        const discount = lookupDiscount(discountCodeProof, discounts);
+        let discountProof = [];
+        if (discount) {
+            discountProof = generateDiscountProof(discountCodeProof, discount.discountData, discountsRoot,
+                discountsMerkleProof(discounts, discount));
+        } else {
+            discountProof = generateDiscountProof(0, 0, discountsRoot)
+        }
 
         // create subscription
         const tx = await consumerASubscriptions.createSubscription(
-            planId, // planId
-            discountProof, // discountProof - see docs for format details
-            ethers.utils.formatBytes32String("sub1"), // ref
+            plansProof, // planProof
+            discountProof, // discountProof
             0, // cancelAt
-            ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of subscription metadata
+            signedRoots, // providerSignature
+            "" // cid
         );
+
         const events = (await tx.wait()).events || [];
         const createdEvent = events.find((e) => e.event === "SubscriptionCreated");
         const subscriptionId = createdEvent.args.subscriptionId;
@@ -60,7 +86,6 @@ describe("CaskSubscriptions Discount", function () {
         // confirm discounted charge after 7 day trial ended - 50% off 10/month == 5; 100 - 5 == 95
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('95'));
         subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.paymentNumber).to.equal(1);
         expect(subscriptionInfo.discountId).to.not.equal(ethers.utils.hexZeroPad(0, 32));
 
 

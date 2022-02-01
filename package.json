@@ -34,6 +34,8 @@
     "@openzeppelin/contracts": "^4.4.0",
     "@openzeppelin/contracts-upgradeable": "^4.4.0",
     "dotenv": "^10.0.0",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.2.27",
     "yarn": "^1.22.17"
   }
 }
