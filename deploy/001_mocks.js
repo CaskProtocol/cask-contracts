@@ -1,9 +1,18 @@
 const { parseUnits } = require("ethers").utils;
-const { isDevnet } = require("../test/_helpers");
 
-const deployMocks = async ({deployments, getNamedAccounts}) => {
-    const {deploy} = deployments;
-    const {deployerAddr} = await getNamedAccounts();
+const {
+    isDevnet,
+    isTestnet
+} = require("../test/_networks");
+
+const {
+    deployWithConfirmation,
+    withConfirmation,
+    log
+} = require("../utils/deploy");
+
+const deployMocks = async ({getNamedAccounts}) => {
+    const {faucetAdmin} = await getNamedAccounts();
 
     // Deploy mock coins (assets)
     const assetContracts = [
@@ -13,30 +22,31 @@ const deployMocks = async ({deployments, getNamedAccounts}) => {
         "MockWETH",
     ];
     for (const contract of assetContracts) {
-        await deploy(contract, { from: deployerAddr });
+        await deployWithConfirmation(contract);
+
+        const deployedContract = await ethers.getContract(contract);
+
+        await withConfirmation(
+            deployedContract.grantRole(await deployedContract.MINTER_ROLE(), faucetAdmin)
+        );
+        log(`Granted MINTER_ROLE on ${contract} at ${deployedContract.address} to faucetAdmin ${faucetAdmin}`);
     }
 
-    // Deploy mock chainlink oracle price feeds.
-    await deploy("MockChainlinkOracleFeedDAI", {
-        from: deployerAddr,
-        contract: "MockChainlinkOracleFeed",
-        args: [parseUnits("1", 8).toString(), 8], // 1 DAI = 1 USD, 8 digits decimal.
-    });
-    await deploy("MockChainlinkOracleFeedUSDT", {
-        from: deployerAddr,
-        contract: "MockChainlinkOracleFeed",
-        args: [parseUnits("1", 8).toString(), 8], // 1 USDT = 1 USD, 8 digits decimal.
-    });
-    await deploy("MockChainlinkOracleFeedUSDC", {
-        from: deployerAddr,
-        contract: "MockChainlinkOracleFeed",
-        args: [parseUnits("1", 8).toString(), 8], // 1 USDC = 1 USD, 8 digits decimal.
-    });
-    await deploy("MockChainlinkOracleFeedWETH", {
-        from: deployerAddr,
-        contract: "MockChainlinkOracleFeed",
-        args: [parseUnits("3333", 8).toString(), 8],
-    });
+    await deployWithConfirmation("MockChainlinkOracleFeedDAI",
+        [parseUnits("1", 8).toString(), 8],
+        "MockChainlinkOracleFeed");
+
+    await  deployWithConfirmation("MockChainlinkOracleFeedUSDT",
+        [parseUnits("1", 8).toString(), 8],
+        "MockChainlinkOracleFeed");
+
+    await deployWithConfirmation("MockChainlinkOracleFeedUSDC",
+        [parseUnits("1", 8).toString(), 8],
+        "MockChainlinkOracleFeed");
+
+    await deployWithConfirmation("MockChainlinkOracleFeedWETH",
+        [parseUnits("3000", 8).toString(), 8],
+        "MockChainlinkOracleFeed");
 
 };
 
@@ -49,6 +59,6 @@ const main = async (hre) => {
 
 main.id = "001_mocks";
 main.tags = ["mocks"];
-main.skip = () => !isDevnet;
+main.skip = () => (!isDevnet && !isTestnet);
 
 module.exports = main

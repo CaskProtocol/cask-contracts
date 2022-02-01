@@ -4,6 +4,9 @@ const {
   daiUnits,
   day,
   month,
+} = require("../utils/units");
+
+const {
   runSubscriptionKeeper,
   advanceTimeRunSubscriptionKeeper,
 } = require("./_helpers");
@@ -12,6 +15,11 @@ const {
   onePlanFixture,
 } = require("./fixtures/subscriptions");
 
+const {
+  plansMerkleProof,
+  generatePlanProof,
+  generateDiscountProof,
+} = require("../utils/plans");
 
 describe("CaskSubscriptions General", function () {
 
@@ -20,7 +28,10 @@ describe("CaskSubscriptions General", function () {
     const {
       networkAddresses,
       consumerA,
-      planId,
+      plans,
+      plansRoot,
+      discountsRoot,
+      signedRoots,
       vault,
       subscriptions
     } = await onePlanFixture();
@@ -38,18 +49,27 @@ describe("CaskSubscriptions General", function () {
 
     let subscriptionInfo;
 
+    const ref = ethers.utils.id("user1");
+
+    const plan = plans.find((p) => p.planId === 100);
+    const plansProof = generatePlanProof(plan.provider, ref, plan.planData, plansRoot, plansMerkleProof(plans, plan));
+    const discountProof = generateDiscountProof(0, 0, discountsRoot)
+
     // create subscription
     const tx = await consumerASubscriptions.createSubscription(
-        planId, // planId
-        ethers.utils.id(""), // discountProof - keccak256 hash of bytes of discount code string
-        ethers.utils.formatBytes32String("sub1"), // ref
+        plansProof, // planProof
+        discountProof, // discountProof
         0, // cancelAt
-        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of subscription metadata
+        signedRoots, // providerSignature
+        "" // cid
     );
+
     const events = (await tx.wait()).events || [];
     const createdEvent = events.find((e) => e.event === "SubscriptionCreated");
     const subscriptionId = createdEvent.args.subscriptionId;
     expect(subscriptionId).to.not.be.undefined;
+    expect(createdEvent.args.provider).to.equal(plan.provider);
+    expect(createdEvent.args.planId).to.equal(plan.planId);
 
     await runSubscriptionKeeper();
 
@@ -67,7 +87,6 @@ describe("CaskSubscriptions General", function () {
     // confirm charge after 7 day trial ended
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('90'));
     subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-    expect(subscriptionInfo.paymentNumber).to.equal(1);
     expect(subscriptionInfo.discountId).to.equal(ethers.utils.hexZeroPad(0, 32)); // no discount code
 
     expect(await advanceTimeRunSubscriptionKeeper(1, month))
@@ -76,7 +95,6 @@ describe("CaskSubscriptions General", function () {
     // confirm charge after another month
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('80'));
     subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-    expect(subscriptionInfo.paymentNumber).to.equal(2);
 
     expect(await advanceTimeRunSubscriptionKeeper(1, month))
         .to.emit(consumerASubscriptions, "SubscriptionRenewed");
@@ -84,7 +102,6 @@ describe("CaskSubscriptions General", function () {
     // confirm charge after another month
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));
     subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-    expect(subscriptionInfo.paymentNumber).to.equal(3);
 
     // cancel
     expect(await consumerASubscriptions.cancelSubscription(subscriptionId))
@@ -96,14 +113,12 @@ describe("CaskSubscriptions General", function () {
     // confirm no charges after cancel
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));
     subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-    expect(subscriptionInfo.paymentNumber).to.equal(3);
 
     await advanceTimeRunSubscriptionKeeper(1, month);
 
     // confirm still no charges after cancel
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));
     subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-    expect(subscriptionInfo.paymentNumber).to.equal(3);
 
   });
 

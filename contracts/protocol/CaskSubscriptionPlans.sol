@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import "../interfaces/ICaskSubscriptionPlans.sol";
 
@@ -13,28 +14,22 @@ Initializable,
 OwnableUpgradeable,
 PausableUpgradeable
 {
-    /** @dev Address of subscriptions protocol. */
-    address public protocol;
+    /** @dev Address of subscription manager. */
+    address public subscriptionManager;
 
     /** @dev Map for provider to profile info. */
     mapping(address => Provider) internal providerProfiles;
 
-    /** @dev Maps for provider to plans. */
-    mapping(address => bytes32[]) internal providerPlans; // provider => planId[]
-    mapping(bytes32 => Plan) internal plans; // planId => Plan
+    /** @dev Map for current plan status. */
+    // provider->planId => Plan
+    mapping(address => mapping(uint32 => PlanStatus)) internal planStatus;
+    mapping(address => mapping(uint32 => uint32)) internal planEol;
 
     /** @dev Maps for discounts. */
-    mapping(bytes32 => bytes32[]) internal planDiscounts; // planId => discountHash[]
-    mapping(bytes32 => mapping(bytes32 => Discount)) internal discounts; // planId => discountHash => Discount
+    mapping(address => mapping(uint32 => mapping(bytes32 => uint256))) internal discountUses;
 
-
-    modifier onlyProvider(bytes32 _planId) {
-        require(msg.sender == plans[_planId].provider, "!AUTH");
-        _;
-    }
-
-    modifier onlyProtocol() {
-        require(msg.sender == protocol, "!AUTH");
+    modifier onlyManager() {
+        require(msg.sender == subscriptionManager, "!AUTH");
         _;
     }
 
@@ -46,19 +41,13 @@ PausableUpgradeable
     constructor() initializer {}
 
 
-    function setProtocol(address _protocol) external onlyOwner {
-        protocol = _protocol;
-    }
-
     function setProviderProfile(
-        bytes32 _metaHash,
-        uint8 _metaHF,
-        uint8 _metaSize
+        address _paymentAddress,
+        string calldata _cid
     ) external override {
         Provider storage profile = providerProfiles[msg.sender];
-        profile.metaHash = _metaHash;
-        profile.metaHF = _metaHF;
-        profile.metaSize = _metaSize;
+        profile.paymentAddress = _paymentAddress;
+        profile.cid = _cid;
     }
 
     function getProviderProfile(
@@ -67,186 +56,132 @@ PausableUpgradeable
         return providerProfiles[_provider];
     }
 
-    function createPlan(
-        bytes32 _planCode,
-        uint32 _period,
-        uint256 _price,
-        uint32 _minTerm,
-        uint32 _freeTrial,
-        bool _canPause,
-        uint32 _maxPastDue,
-        address _paymentAddress,
-        bytes32 _metaHash,
-        uint8 _metaHF,
-        uint8 _metaSize
-    ) external override {
-        require(_period > 0, "!INVALID(_period)");
-        require(_price > 0, "!INVALID(_price)");
-
-        bytes32 planId = keccak256(abi.encodePacked(msg.sender, _planCode, block.number));
-
-        providerPlans[msg.sender].push(planId);
-
-        Plan storage plan = plans[planId];
-        plan.provider = msg.sender;
-        plan.planCode = _planCode;
-        plan.period = _period;
-        plan.price = _price;
-        plan.minTerm = _minTerm;
-        plan.freeTrial = _freeTrial;
-        plan.canPause = _canPause;
-        plan.maxPastDue = _maxPastDue;
-        plan.paymentAddress = _paymentAddress;
-        plan.metaHash = _metaHash;
-        plan.metaHF = _metaHF;
-        plan.metaSize = _metaSize;
-        plan.status = PlanStatus.Enabled;
-
-        emit PlanCreated(plan.provider, planId, plan.planCode);
-    }
-
-    function updatePlan(
-        bytes32 _planId,
-        uint256 _price,
-        uint32 _minTerm,
-        uint32 _freeTrial,
-        bool _canPause,
-        uint32 _maxPastDue
-    ) external override onlyProvider(_planId) {
-        require(_price > 0, "!INVALID(_price)");
-        Plan storage plan = plans[_planId];
-        require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
-
-        plan.price = _price;
-        plan.minTerm = _minTerm;
-        plan.freeTrial = _freeTrial;
-        plan.canPause = _canPause;
-        plan.maxPastDue = _maxPastDue;
-
-        emit PlanUpdated(plan.provider, _planId, plan.planCode);
-    }
-
-    function setPlanDiscounts(
-        bytes32 _planId,
-        bytes32[] calldata _discountIds,
-        uint16 _percent,
-        uint32 _expiresAt,
-        uint32 _maxUses
-    ) external override onlyProvider(_planId) {
-        require(_percent > 0, "!INVALID(_percent)");
-        Plan memory plan = plans[_planId];
-        require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
-
-        for (uint256 i = 0; i < _discountIds.length; i++) {
-            Discount storage discount = discounts[_planId][_discountIds[i]];
-
-            discount.percent = _percent;
-            discount.expiresAt = _expiresAt;
-            discount.maxUses = _maxUses;
-        }
-    }
-
-    function updatePlanMeta(
-        bytes32 _planId,
-        bytes32 _metaHash,
-        uint8 _metaHF,
-        uint8 _metaSize
-    ) external override onlyProvider(_planId) {
-        Plan storage plan = plans[_planId];
-        require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
-
-        plan.metaHash = _metaHash;
-        plan.metaHF = _metaHF;
-        plan.metaSize = _metaSize;
-
-        emit PlanUpdatedMeta(plan.provider, _planId, plan.planCode, _metaHash, _metaHF, _metaSize);
-    }
-
-    function consumeDiscount(
-        bytes32 _planId,
-        bytes32 _discountId
-    ) external override onlyProtocol returns(bool) {
-        Discount storage discount = discounts[_planId][_discountId];
-        require(discount.maxUses == 0 || discount.uses < discount.maxUses, "!DISCOUNT_MAX_USES");
-        require(discount.validAfter == 0 || discount.validAfter >= uint32(block.timestamp), "!DISCOUNT_NOT_VALID_YET");
-        require(discount.expiresAt == 0 || discount.expiresAt < uint32(block.timestamp), "!DISCOUNT_EXPIRED");
-
-        discount.uses = discount.uses + 1;
-        return discount.maxUses == 0 || discount.uses < discount.maxUses;
-    }
-
-    function disablePlan(
-        bytes32 _planId
-    ) external override onlyProvider(_planId) {
-        Plan storage plan = plans[_planId];
-        require(plan.status == PlanStatus.Enabled, "!NOT_ENABLED");
-
-        plan.status = PlanStatus.Disabled;
-
-        emit PlanDisabled(plan.provider, _planId, plan.planCode);
-    }
-
-    function enablePlan(
-        bytes32 _planId
-    ) external override onlyProvider(_planId) {
-        Plan storage plan = plans[_planId];
-        require(plan.status == PlanStatus.Disabled, "!NOT_DISABLED");
-
-        plan.status = PlanStatus.Enabled;
-
-        emit PlanEnabled(plan.provider, _planId, plan.planCode);
-    }
-
-    function killPlan(
-        bytes32 _planId
-    ) external override onlyProvider(_planId) {
-        Plan storage plan = plans[_planId];
-        require(plan.status != PlanStatus.EndOfLife, "!ALREADY_EOL");
-
-        plan.status = PlanStatus.EndOfLife;
-
-        emit PlanKilled(plan.provider, _planId, plan.planCode);
+    function verifyPlan(
+        bytes32 _planData,
+        bytes32 _merkleRoot,
+        bytes32[] calldata _merkleProof
+    ) external override pure returns(bool) {
+        return MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_planData)));
     }
 
     function verifyDiscount(
-        bytes32 _planId,
-        bytes32 _discountProof
-    ) external override view returns(bytes32) {
-        bytes32 discountHash = keccak256(abi.encode(_discountProof));
-        Discount memory discount = discounts[_planId][discountHash];
-        if (discount.percent > 0 && // needed to make sure we didnt find a zeroed out non existant discount
-            (discount.maxUses == 0 || discount.uses < discount.maxUses) &&
-            (discount.validAfter == 0 || discount.validAfter >= uint32(block.timestamp)) &&
-            (discount.expiresAt == 0 || discount.expiresAt < uint32(block.timestamp)))
+        address _provider,
+        uint32 _planId,
+        bytes32 _discountId,
+        bytes32 _discountData,
+        bytes32 _merkleRoot,
+        bytes32[] calldata _merkleProof
+    ) external override view returns(bool) {
+        if (MerkleProof.verify(_merkleProof, _merkleRoot,
+            keccak256(abi.encode(_discountId, _discountData))))
         {
-            return discountHash;
+            Discount memory discountInfo = _parseDiscountData(_discountData);
+            require(discountInfo.planId == 0 || discountInfo.planId == _planId, "!INVALID(planId)");
+
+            return ((discountInfo.maxUses == 0 ||
+                    discountUses[_provider][discountInfo.planId][_discountId] < discountInfo.maxUses) &&
+                    (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
+                    (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp)));
         }
-        return 0; // no discount
+
+        return false;
     }
 
-    function getPlans(
-        address _provider
-    ) external override view returns(bytes32[] memory) {
-        return providerPlans[_provider];
+    function consumeDiscount(
+        address _provider,
+        uint32 _planId,
+        bytes32 _discountId,
+        bytes32 _discountData
+    ) external override onlyManager returns(bool) {
+        Discount memory discountInfo = _parseDiscountData(_discountData);
+
+        require(discountInfo.maxUses == 0 ||
+            discountUses[_provider][_planId][_discountId] < discountInfo.maxUses, "!DISCOUNT_MAX_USES");
+        require(discountInfo.validAfter == 0 ||
+            discountInfo.validAfter >= uint32(block.timestamp), "!DISCOUNT_NOT_VALID_YET");
+        require(discountInfo.expiresAt == 0 ||
+            discountInfo.expiresAt < uint32(block.timestamp), "!DISCOUNT_EXPIRED");
+
+        discountUses[_provider][_planId][_discountId] = discountUses[_provider][_planId][_discountId] + 1;
+
+        return discountInfo.maxUses == 0 || discountUses[_provider][_planId][_discountId] < discountInfo.maxUses;
     }
 
-    function getPlan(
-        bytes32 _planId
-    ) external override view returns(Plan memory) {
-        return plans[_planId];
+    function getPlanStatus(
+        address _provider,
+        uint32 _planId
+    ) external view returns (PlanStatus) {
+        return planStatus[_provider][_planId];
     }
 
-    function getPlanDiscount(
-        bytes32 _planId,
-        bytes32 _discountId
-    ) external override view returns(Discount memory) {
-        return discounts[_planId][_discountId];
+    function getPlanEOL(
+        address _provider,
+        uint32 _planId
+    ) external view returns (uint32) {
+        return planEol[_provider][_planId];
     }
 
-    function getPlanDiscounts(
-        bytes32 _planId
-    ) external override view returns(bytes32[] memory) {
-        return planDiscounts[_planId];
+    function disablePlan(
+        uint32 _planId
+    ) external override {
+        require(planStatus[msg.sender][_planId] == PlanStatus.Enabled, "!NOT_ENABLED");
+
+        planStatus[msg.sender][_planId] = PlanStatus.Disabled;
+
+        emit PlanDisabled(msg.sender, _planId);
+    }
+
+    function enablePlan(
+        uint32 _planId
+    ) external override {
+        require(planStatus[msg.sender][_planId] == PlanStatus.Disabled, "!NOT_DISABLED");
+
+        planStatus[msg.sender][_planId] = PlanStatus.Enabled;
+
+        emit PlanEnabled(msg.sender, _planId);
+    }
+
+    function killPlan(
+        uint32 _planId,
+        uint32 _eolAt
+    ) external override {
+        planStatus[msg.sender][_planId] = PlanStatus.EndOfLife;
+        planEol[msg.sender][_planId] = _eolAt;
+
+        emit PlanEOL(msg.sender, _planId, _eolAt);
+    }
+
+    /************************** ADMIN FUNCTIONS **************************/
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    function setManager(
+        address _subscriptionManager
+    ) external onlyOwner {
+        subscriptionManager = _subscriptionManager;
+    }
+
+
+
+    function _parseDiscountData(
+        bytes32 _discountData
+    ) internal pure returns(Discount memory) {
+        bytes2 options = bytes2(_discountData << 240);
+        return Discount({
+            value: uint256(_discountData >> 160),
+            validAfter: uint32(bytes4(_discountData << 96)),
+            expiresAt: uint32(bytes4(_discountData << 128)),
+            maxUses: uint32(bytes4(_discountData << 160)),
+            planId: uint32(bytes4(_discountData << 192)),
+            //reserved: uint16(bytes2(_discountData << 208)),
+            isFixed: options & 0x0001 == 0x0001
+        });
     }
 
 }

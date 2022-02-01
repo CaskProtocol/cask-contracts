@@ -153,6 +153,28 @@ ReentrancyGuardUpgradeable
         address _asset,
         uint256 _assetAmount
     ) external override nonReentrant {
+        _depositTo(msg.sender, _asset, _assetAmount);
+    }
+
+    /**
+     * @dev Deposit an amount of `_asset` into the vault and credit the equal value of `baseAsset`
+     * @param _to Recipient of funds
+     * @param _asset Address of incoming asset
+     * @param _assetAmount Amount of asset to deposit
+     */
+    function depositTo(
+        address _to,
+        address _asset,
+        uint256 _assetAmount
+    ) external override nonReentrant {
+        _depositTo(_to, _asset, _assetAmount);
+    }
+
+    function _depositTo(
+        address _to,
+        address _asset,
+        uint256 _assetAmount
+    ) internal {
         require(_asset == baseAsset || assets[_asset].allowed, "!invalid(_asset)");
         require(_assetAmount > 0, "!invalid(_assetAmount)");
 
@@ -174,9 +196,21 @@ ReentrancyGuardUpgradeable
         }
 
         supply = supply + shares;
-        balances[msg.sender] = balances[msg.sender] + shares;
+        balances[_to] = balances[_to] + shares;
 
-        emit AssetDeposited(msg.sender, _asset, _assetAmount, baseAssetAmount, shares);
+        emit AssetDeposited(_to, _asset, _assetAmount, baseAssetAmount, shares);
+    }
+
+    /**
+     * @dev Withdraw an amount of shares from the vault in the form of `_asset`
+     * @param _asset Address of outgoing asset
+     * @param _shares Amount of shares to withdraw
+     */
+    function withdraw(
+        address _asset,
+        uint256 _shares
+    ) external override nonReentrant {
+        _withdrawTo(msg.sender, _asset, _shares);
     }
 
     /**
@@ -185,11 +219,19 @@ ReentrancyGuardUpgradeable
      * @param _asset Address of outgoing asset
      * @param _shares Amount of shares to withdraw
      */
-    function withdraw(
+    function withdrawTo(
         address _recipient,
         address _asset,
         uint256 _shares
     ) external override nonReentrant {
+        _withdrawTo(_recipient, _asset, _shares);
+    }
+
+    function _withdrawTo(
+        address _recipient,
+        address _asset,
+        uint256 _shares
+    ) internal {
         require(assets[_asset].allowed, "!invalid(_asset)");
         require(_shares > 0, "!invalid(_sharesAmount)");
 

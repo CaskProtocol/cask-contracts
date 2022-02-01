@@ -2,9 +2,12 @@ const { expect } = require("chai");
 
 const {
     daiUnits,
-    SubscriptionStatus,
     day,
     month,
+} = require("../utils/units");
+
+const {
+    SubscriptionStatus,
     advanceTimeRunSubscriptionKeeper,
 } = require("./_helpers");
 
@@ -12,6 +15,12 @@ const {
     unpausablePlanFixture,
     minTermPlanFixture,
 } = require("./fixtures/subscriptions");
+
+const {
+    generatePlanProof,
+    plansMerkleProof,
+    generateDiscountProof,
+} = require("../utils/plans");
 
 
 describe("CaskSubscriptions Pause", function () {
@@ -21,9 +30,12 @@ describe("CaskSubscriptions Pause", function () {
         const {
             networkAddresses,
             consumerA,
-            planId,
             vault,
-            subscriptions
+            subscriptions,
+            plans,
+            plansRoot,
+            discountsRoot,
+            signedRoots,
         } = await unpausablePlanFixture();
 
         const consumerAVault = vault.connect(consumerA);
@@ -35,14 +47,22 @@ describe("CaskSubscriptions Pause", function () {
 
         let subscriptionInfo;
 
+        const ref = ethers.utils.id("user1");
+
+        const plan = plans.find((p) => p.planId === 301);
+        const plansProof = generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
+            plansMerkleProof(plans, plan));
+        const discountProof = generateDiscountProof(0, 0, discountsRoot)
+
         // create subscription
         const tx = await consumerASubscriptions.createSubscription(
-            planId, // planId
-            ethers.utils.id(""), // discountProof - keccak256 hash of bytes of discount code string
-            ethers.utils.formatBytes32String("sub1"), // ref
+            plansProof, // planProof
+            discountProof, // discountProof
             0, // cancelAt
-            ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of subscription metadata
+            signedRoots, // providerSignature
+            "" // cid
         );
+
         const events = (await tx.wait()).events || [];
         const createdEvent = events.find((e) => e.event === "SubscriptionCreated");
         const subscriptionId = createdEvent.args.subscriptionId;
@@ -61,9 +81,12 @@ describe("CaskSubscriptions Pause", function () {
         const {
             networkAddresses,
             consumerA,
-            planId,
             vault,
-            subscriptions
+            subscriptions,
+            plans,
+            plansRoot,
+            discountsRoot,
+            signedRoots,
         } = await minTermPlanFixture();
 
         const consumerAVault = vault.connect(consumerA);
@@ -75,14 +98,22 @@ describe("CaskSubscriptions Pause", function () {
 
         let subscriptionInfo;
 
+        const ref = ethers.utils.id("user1");
+
+        const plan = plans.find((p) => p.planId === 401);
+        const plansProof = generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
+            plansMerkleProof(plans, plan));
+        const discountProof = generateDiscountProof(0, 0, discountsRoot)
+
         // create subscription
         const tx = await consumerASubscriptions.createSubscription(
-            planId, // planId
-            ethers.utils.id(""), // discountProof - keccak256 hash of bytes of discount code string
-            ethers.utils.formatBytes32String("sub1"), // ref
+            plansProof, // planProof
+            discountProof, // discountProof
             0, // cancelAt
-            ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of subscription metadata
+            signedRoots, // providerSignature
+            "" // cid
         );
+
         const events = (await tx.wait()).events || [];
         const createdEvent = events.find((e) => e.event === "SubscriptionCreated");
         const subscriptionId = createdEvent.args.subscriptionId;
@@ -101,7 +132,6 @@ describe("CaskSubscriptions Pause", function () {
         // confirm current state after 13 months
         subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
-        expect(subscriptionInfo.paymentNumber).to.equal(13);
 
         // pause and confirm now that min term has elapsed
         expect(await consumerASubscriptions.pauseSubscription(subscriptionId))
@@ -116,14 +146,12 @@ describe("CaskSubscriptions Pause", function () {
             .to.emit(consumerASubscriptions, "SubscriptionResumed");
         subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
-        expect(subscriptionInfo.paymentNumber).to.equal(13);
 
         await advanceTimeRunSubscriptionKeeper(1, month);
 
         // confirm new payment after resume
         subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
-        expect(subscriptionInfo.paymentNumber).to.equal(14);
 
         // cancel and confirm will cancel at next renewal
         expect(await consumerASubscriptions.cancelSubscription(subscriptionId))

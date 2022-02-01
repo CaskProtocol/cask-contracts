@@ -1,11 +1,12 @@
 const { deployments } = require("hardhat");
 
+const { getNetworkAddresses } = require("../_helpers");
+
 const {
-    getNetworkAddresses,
     usdtUnits,
     daiUnits,
     usdcUnits,
-} = require("../_helpers");
+} = require("../../utils/units");
 
 async function vaultFixture() {
     await deployments.fixture(); // ensure you start from a fresh deployments
@@ -57,13 +58,13 @@ async function fundedFixture() {
     const usdc = await ethers.getContractAt("MockUSDC", networkAddresses.USDC);
 
     for (const consumer of [fixture.consumerA, fixture.consumerB, fixture.consumerC]) {
-        await usdt.connect(consumer).mint(usdtUnits('10000.0'));
+        await usdt.connect(fixture.deployer).mint(consumer.address, usdtUnits('10000.0'));
         await usdt.connect(consumer).approve(fixture.vault.address, usdtUnits('10000.0'));
 
-        await dai.connect(consumer).mint(daiUnits('10000.0'));
+        await dai.connect(fixture.deployer).mint(consumer.address, daiUnits('10000.0'));
         await dai.connect(consumer).approve(fixture.vault.address, daiUnits('10000.0'));
 
-        await usdc.connect(consumer).mint(usdcUnits('10000.0'));
+        await usdc.connect(fixture.deployer).mint(consumer.address, usdcUnits('10000.0'));
         await usdc.connect(consumer).approve(fixture.vault.address, usdcUnits('10000.0'));
     }
 

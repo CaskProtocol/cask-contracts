@@ -66,12 +66,27 @@ interface ICaskVault {
     function deposit(address _asset, uint256 _assetAmount) external;
 
     /**
+     * @dev Deposit `_assetAmount` of `_asset` into the vault and credit the equivalent value of `baseAsset`
+     * @param _to Recipient of funds
+     * @param _asset Address of incoming asset
+     * @param _assetAmount Amount of asset to deposit
+     */
+    function depositTo(address _to, address _asset, uint256 _assetAmount) external;
+
+    /**
+     * @dev Withdraw an amount of shares from the vault in the form of `_asset`
+     * @param _asset Address of outgoing asset
+     * @param _shares Amount of shares to withdraw
+     */
+    function withdraw(address _asset, uint256 _shares) external;
+
+    /**
      * @dev Withdraw an amount of shares from the vault in the form of `_asset`
      * @param _recipient Recipient who will receive the withdrawn assets
      * @param _asset Address of outgoing asset
      * @param _shares Amount of shares to withdraw
      */
-    function withdraw(address _recipient, address _asset, uint256 _shares) external;
+    function withdrawTo(address _recipient, address _asset, uint256 _shares) external;
 
     /**
      * @dev Get total shares of vault

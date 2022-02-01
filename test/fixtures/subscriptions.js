@@ -2,7 +2,16 @@ const {
     daiUnits,
     day,
     month,
-} = require("../_helpers");
+} = require("../../utils/units");
+
+const {
+    encodePlanData,
+    plansMerkleRoot,
+    discountsMerkleRoot,
+    signMerkleRoots,
+    encodeDiscountData,
+    generateDiscountId,
+} = require("../../utils/plans");
 
 const {
     fundedFixture,
@@ -15,6 +24,9 @@ async function protocolFixture() {
     fixture.vault = await ethers.getContract("CaskVault");
     fixture.subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
     fixture.subscriptions = await ethers.getContract("CaskSubscriptions");
+    fixture.subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
+    fixture.plans = [];
+    fixture.discounts = [];
 
     return fixture;
 }
@@ -22,23 +34,23 @@ async function protocolFixture() {
 async function onePlanFixture() {
     const fixture = await protocolFixture();
 
-    fixture.planCode = ethers.utils.formatBytes32String("plan1");
+    fixture.plans.push({
+        provider: fixture.providerA.address,
+        planId: 100,
+        planData: encodePlanData(
+            100, // planId
+            daiUnits('10'), // price
+            month, // period
+            7 * day, // freeTrial
+            0, // maxActive
+            0, // minPeriods
+            true, // canPause
+            true) // canTransfer
+    });
 
-    const tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
-        fixture.planCode, // planCode
-        month, // period
-        daiUnits('10.0'), // price - in baseAsset
-        0, // minTerm
-        7 * day, // freeTrial
-        true, // canPause
-        7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
-        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
-    );
-
-    const events = (await tx.wait()).events || [];
-    const planCreatedEvent = events.find((e) => e.event === "PlanCreated");
-    fixture.planId = planCreatedEvent.args.planId;
+    fixture.plansRoot = plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await signMerkleRoots(fixture.providerA, fixture.plansRoot, fixture.discountsRoot);
 
     return fixture;
 }
@@ -46,39 +58,37 @@ async function onePlanFixture() {
 async function twoPlanFixture() {
     const fixture = await protocolFixture();
 
-    let tx, events, planCreatedEvent;
+    fixture.plans.push({
+        provider: fixture.providerA.address,
+        planId: 200,
+        planData: encodePlanData(
+            200, // planId
+            daiUnits('10'), // price
+            month, // period
+            7 * day, // freeTrial
+            0, // maxActive
+            0, // minPeriods
+            true, // canPause
+            true) // canTransfer
+    });
 
-    fixture.planACode = ethers.utils.formatBytes32String("planA");
-    tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
-        fixture.planACode, // planCode
-        month, // period
-        daiUnits('10.0'), // price - in baseAsset
-        0, // minTerm
-        7 * day, // freeTrial
-        true, // canPause
-        7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
-        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
-    );
-    events = (await tx.wait()).events || [];
-    planCreatedEvent = events.find((e) => e.event === "PlanCreated");
-    fixture.planAId = planCreatedEvent.args.planId;
+    fixture.plans.push({
+        provider: fixture.providerA.address,
+        planId: 201,
+        planData: encodePlanData(
+            201, // planId
+            daiUnits('20'), // price
+            month, // period
+            7 * day, // freeTrial
+            0, // maxActive
+            0, // minPeriods
+            true, // canPause
+            true) // canTransfer
+    });
 
-    fixture.planBCode = ethers.utils.formatBytes32String("planB");
-    tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
-        fixture.planBCode, // planCode
-        month, // period
-        daiUnits('20.0'), // price - in baseAsset
-        0, // minTerm
-        7 * day, // freeTrial
-        true, // canPause
-        7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
-        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
-    );
-    events = (await tx.wait()).events || [];
-    planCreatedEvent = events.find((e) => e.event === "PlanCreated");
-    fixture.planBId = planCreatedEvent.args.planId;
+    fixture.plansRoot = plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await signMerkleRoots(fixture.providerA, fixture.plansRoot, fixture.discountsRoot);
 
     return fixture;
 }
@@ -86,23 +96,23 @@ async function twoPlanFixture() {
 async function unpausablePlanFixture() {
     const fixture = await protocolFixture();
 
-    fixture.planCode = ethers.utils.formatBytes32String("plan1");
+    fixture.plans.push({
+        provider: fixture.providerA.address,
+        planId: 301,
+        planData: encodePlanData(
+            301, // planId
+            daiUnits('10'), // price
+            month, // period
+            7 * day, // freeTrial
+            0, // maxActive
+            0, // minPeriods
+            false, // canPause
+            true) // canTransfer
+    });
 
-    const tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
-        fixture.planCode, // planCode
-        month, // period
-        daiUnits('10.0'), // price - in baseAsset
-        0, // minTerm
-        7 * day, // freeTrial
-        false, // canPause
-        7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
-        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
-    );
-
-    const events = (await tx.wait()).events || [];
-    const planCreatedEvent = events.find((e) => e.event === "PlanCreated");
-    fixture.planId = planCreatedEvent.args.planId;
+    fixture.plansRoot = plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await signMerkleRoots(fixture.providerA, fixture.plansRoot, fixture.discountsRoot);
 
     return fixture;
 }
@@ -110,23 +120,23 @@ async function unpausablePlanFixture() {
 async function minTermPlanFixture() {
     const fixture = await protocolFixture();
 
-    fixture.planCode = ethers.utils.formatBytes32String("plan1");
+    fixture.plans.push({
+        provider: fixture.providerA.address,
+        planId: 401,
+        planData: encodePlanData(
+            401, // planId
+            daiUnits('10'), // price
+            month, // period
+            7 * day, // freeTrial
+            0, // maxActive
+            12, // minPeriods
+            true, // canPause
+            true) // canTransfer
+    });
 
-    const tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
-        fixture.planCode, // planCode
-        month, // period
-        daiUnits('10.0'), // price - in baseAsset
-        12 * month, // minTerm
-        7 * day, // freeTrial
-        true, // canPause
-        7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
-        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
-    );
-
-    const events = (await tx.wait()).events || [];
-    const planCreatedEvent = events.find((e) => e.event === "PlanCreated");
-    fixture.planId = planCreatedEvent.args.planId;
+    fixture.plansRoot = plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await signMerkleRoots(fixture.providerA, fixture.plansRoot, fixture.discountsRoot);
 
     return fixture;
 }
@@ -134,37 +144,47 @@ async function minTermPlanFixture() {
 async function onePlanWithDiscountsFixture() {
     const fixture = await protocolFixture();
 
-    fixture.planCode = ethers.utils.formatBytes32String("plan1");
-
-    const tx = await fixture.subscriptionPlans.connect(fixture.providerA).createPlan(
-        fixture.planCode, // planCode
-        month, // period
-        daiUnits('10.0'), // price - in baseAsset
-        0, // minTerm
-        7 * day, // freeTrial
-        true, // canPause
-        7 * day, // maxPastDue
-        fixture.providerA.address, // paymentAddress
-        ethers.utils.keccak256("0x"), 0, 0 // metaHash, metaHF, metaSize - IPFS CID of plan metadata
-    );
-
-    const events = (await tx.wait()).events || [];
-    const planCreatedEvent = events.find((e) => e.event === "PlanCreated");
-    fixture.planId = planCreatedEvent.args.planId;
+    fixture.plans.push({
+        provider: fixture.providerA.address,
+        planId: 501,
+        planData: encodePlanData(
+            501, // planId
+            daiUnits('10'), // price
+            month, // period
+            7 * day, // freeTrial
+            0, // maxActive
+            0, // minPeriods
+            false, // canPause
+            true) // canTransfer
+    });
 
 
-    const createDiscount = async (code, percent, expiresAt, maxUses) => {
-        await fixture.subscriptionPlans.connect(fixture.providerA).setPlanDiscounts(
-            fixture.planId, // planId
-            [ethers.utils.keccak256(ethers.utils.id(code))], // discount codes - see docs for format details
-            percent, // discount percent in bps
-            expiresAt, // expiresAt - 0 = no expire
-            maxUses // maxUses - 0 = no max
-        );
-    };
+    fixture.discounts.push({
+        discountId: generateDiscountId('discount1'),
+        discountData: encodeDiscountData(
+            5000, // value
+            0,  // validAfter
+            0, // expiresAt
+            0, // maxUses
+            501, // planId
+            false) // isFixed
+    });
 
-    await createDiscount("discount1", 5000, 0, 0);
-    await createDiscount("discount2", 1000, 0, 0);
+    fixture.discounts.push({
+        discountId: generateDiscountId('discount2'),
+        discountData: encodeDiscountData(
+            1000, // value
+            0,  // validAfter
+            0, // expiresAt
+            0, // maxUses
+            501, // planId
+            false) // isFixed
+    });
+
+
+    fixture.plansRoot = plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await signMerkleRoots(fixture.providerA, fixture.plansRoot, fixture.discountsRoot);
 
     return fixture;
 }

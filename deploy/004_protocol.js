@@ -1,12 +1,14 @@
-
-const addresses = require("../utils/addresses");
 const {
-    getNetworkAddresses,
-    isProtocolChain,
     usdtUnits,
     usdcUnits,
     daiUnits
-} = require("../test/_helpers.js");
+} = require("../utils/units");
+
+const {
+    isProtocolChain,
+} = require("../test/_networks");
+
+const { getNetworkAddresses } = require("../test/_helpers");
 
 const {
     log,
@@ -27,6 +29,7 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
     await deployProxyWithConfirmation('CaskVault');
     await deployProxyWithConfirmation('CaskSubscriptionPlans');
     await deployProxyWithConfirmation('CaskSubscriptions');
+    await deployProxyWithConfirmation('CaskSubscriptionManager');
 
     const vaultAdmin = await ethers.getContract("CaskVaultAdmin");
     await withConfirmation(
@@ -53,19 +56,31 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
 
     const subscriptions = await ethers.getContract("CaskSubscriptions");
     await withConfirmation(
-        subscriptions.initialize(subscriptionPlans.address, vault.address)
+        subscriptions.initialize(subscriptionPlans.address)
     );
     log("Initialized CaskSubscriptions");
 
+    const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
     await withConfirmation(
-        subscriptionPlans.connect(sDeployer).setProtocol(subscriptions.address)
+        subscriptionManager.initialize(vault.address, subscriptionPlans.address, subscriptions.address)
     );
-    log(`Set CaskSubscriptionPlans protocol to ${subscriptions.address}`);
+    log("Initialized CaskSubscriptionManager");
 
     await withConfirmation(
-        vault.connect(sDeployer).addOperator(subscriptions.address)
+        vault.connect(sDeployer).addOperator(subscriptionManager.address)
     );
-    log(`Added CaskVault operator ${subscriptions.address} for CaskSubscriptions`);
+    log(`Added CaskVault operator ${subscriptionManager.address} for CaskSubscriptionManager`);
+
+    await withConfirmation(
+        subscriptions.connect(sDeployer).setManager(subscriptionManager.address)
+    );
+    log(`Set CaskSubscriptions manager to ${subscriptionManager.address}`);
+
+    await withConfirmation(
+        subscriptionPlans.connect(sDeployer).setManager(subscriptionManager.address)
+    );
+    log(`Set CaskSubscriptionPlans manager to ${subscriptionManager.address}`);
+
 
 }
 
@@ -82,6 +97,7 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     const vault = await ethers.getContract("CaskVault");
     const subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
     const subscriptions = await ethers.getContract("CaskSubscriptions");
+    const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
 
     // add supported assets to vault
 
@@ -114,6 +130,7 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     await vault.transferOwnership(governorAddr);
     await subscriptionPlans.transferOwnership(governorAddr);
     await subscriptions.transferOwnership(governorAddr);
+    await subscriptionManager.transferOwnership(governorAddr);
     log(`Protocol contracts ownership transferred to ${governorAddr}`);
 
 }
@@ -128,7 +145,7 @@ const main = async (hre) => {
 
 main.id = "004_protocol";
 main.tags = ["protocol"];
-main.dependencies = ["fakes","mocks"];
+main.dependencies = ["mocks"];
 main.skip = () => !isProtocolChain;
 
 module.exports = main;

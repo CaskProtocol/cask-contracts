@@ -13,6 +13,7 @@ require('hardhat-contract-sizer');
 
 const { accounts } = require("./tasks/account");
 const { debug } = require("./tasks/debug");
+const { fund } = require("./tasks/fund");
 
 
 // dao networks
@@ -57,6 +58,8 @@ task("accounts", "Prints the list of accounts", async (taskArguments, hre) => {
   return accounts(taskArguments, hre, privateKeys);
 });
 
+task("fund", "Funds all accounts with USDC/USDT/DAI", fund);
+
 
 module.exports = {
   solidity: {
@@ -64,7 +67,6 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 500000
       },
     }
   },

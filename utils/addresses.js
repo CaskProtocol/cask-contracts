@@ -33,12 +33,5 @@ addresses.polygon.Vault = "0x";
 /* mumbai addresses */
 addresses.mumbai = {};
 
-// Chainlink feeds
-// Source https://docs.chain.link/docs/ethereum-addresses
-addresses.mumbai.DAI_USD = "0x0FCAa9c899EC5A91eBc3D5Dd869De833b06fB046";
-addresses.mumbai.USDC_USD = "0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0";
-addresses.mumbai.USDT_USD = "0x92C09849638959196E976289418e5973CC96d645";
-addresses.mumbai.WETH_USD = "0x0715A7794a1dc8e42615F059dD6e406A6594651A";
-
 
 module.exports = addresses;
