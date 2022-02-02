@@ -184,6 +184,7 @@ PausableUpgradeable
         uint256 initialGasLeft = gasleft();
 
         Subscription storage subscription = subscriptions[_subscriptionId];
+        require(subscription.discountId == 0, "!EXISTING_DISCOUNT");
 
         if (pendingPlanChanges[_subscriptionId] > 0) {
             PlanInfo memory newPlanInfo = _parsePlanData(pendingPlanChanges[_subscriptionId]);
@@ -191,12 +192,12 @@ PausableUpgradeable
             (
             subscription.discountId,
             subscription.discountData
-            ) = _verifyDiscountProof(_subscriptionId, pendingPlanChanges[_subscriptionId], _discountProof);
+            ) = _verifyDiscountProof(subscription.provider, newPlanInfo.planId, _discountProof);
         } else {
             (
             subscription.discountId,
             subscription.discountData
-            ) = _verifyDiscountProof(_subscriptionId, subscription.planData, _discountProof);
+            ) = _verifyDiscountProof(subscription.provider, subscription.planId, _discountProof);
         }
 
         emit SubscriptionChangedDiscount(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
@@ -479,7 +480,7 @@ PausableUpgradeable
         (
         subscription.discountId,
         subscription.discountData
-        ) = _verifyDiscountProof(subscriptionId, _planProof[2], _discountProof);
+        ) = _verifyDiscountProof(subscription.provider, planInfo.planId, _discountProof);
 
         if (subscription.renewAt <= uint32(block.timestamp)) {
             subscriptionManager.renewSubscription(subscriptionId);
@@ -534,10 +535,12 @@ PausableUpgradeable
 
         subscription.cid = _cid;
 
-        (
-        subscription.discountId,
-        subscription.discountData
-        ) = _verifyDiscountProof(_subscriptionId, _planProof[2], _discountProof);
+        if (subscription.discountId == 0) {
+            (
+            subscription.discountId,
+            subscription.discountData
+            ) = _verifyDiscountProof(subscription.provider, newPlanInfo.planId, _discountProof);
+        }
 
         _performPlanChange(_subscriptionId, newPlanInfo, _planProof[2]);
     }
@@ -574,17 +577,14 @@ PausableUpgradeable
     }
 
     function _verifyDiscountProof(
-        uint256 _subscriptionId,
-        bytes32 _planData,
+        address _provider,
+        uint32 _planId,
         bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
     ) internal view returns(bytes32, bytes32) {
-        Subscription storage subscription = subscriptions[_subscriptionId];
-        PlanInfo memory planInfo = _parsePlanData(_planData);
-
         if (_discountProof.length > 3 && _discountProof[0] > 0) {
             bytes32 discountId = keccak256(abi.encode(_discountProof[0]));
-            if (subscriptionPlans.verifyDiscount(subscription.provider, planInfo.planId, planInfo.period,
-                subscription.createdAt, discountId, _discountProof[1], _discountProof[2], _discountProof[3:]))
+            if (subscriptionPlans.verifyDiscount(_provider, _planId, discountId,
+                _discountProof[1], _discountProof[2], _discountProof[3:]))
             {
                 return (discountId, _discountProof[1]);
             }
