@@ -107,7 +107,7 @@ KeeperCompatibleInterface
             expiresAt: uint32(bytes4(_discountData << 128)),
             maxUses: uint32(bytes4(_discountData << 160)),
             planId: uint32(bytes4(_discountData << 192)),
-            //reserved: uint16(bytes2(_discountData << 208)),
+            applyPeriods: uint16(bytes2(_discountData << 224)),
             isFixed: options & 0x0001 == 0x0001
         });
     }
@@ -297,15 +297,16 @@ KeeperCompatibleInterface
             subscription = subscriptions.getSubscription(_subscriptionId); // refresh
         }
 
-
-        uint256 chargeAmount = _planDataPrice(subscription.planData);
+        ICaskSubscriptions.PlanInfo memory planInfo = _parsePlanData(subscription.planData);
+        uint256 chargeAmount = planInfo.price;
 
         // maybe apply discount
         if (subscription.discountId > 0) {
             ICaskSubscriptionPlans.Discount memory discountInfo = _parseDiscountData(subscription.discountData);
 
-            try subscriptionPlans.consumeDiscount(subscription.provider, discountInfo.planId, subscription.createdAt,
-                subscription.discountId, subscription.discountData) returns (bool stillValid)
+            try subscriptionPlans.consumeDiscount(subscription.provider, discountInfo.planId, planInfo.period,
+                subscription.createdAt, subscription.discountId,
+                subscription.discountData) returns (bool stillValid)
             {
                 if (discountInfo.isFixed) {
                     chargeAmount = chargeAmount - discountInfo.value;
