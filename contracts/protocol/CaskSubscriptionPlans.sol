@@ -67,6 +67,7 @@ PausableUpgradeable
     function verifyDiscount(
         address _provider,
         uint32 _planId,
+        uint32 _subscriptionCreatedAt,
         bytes32 _discountId,
         bytes32 _discountData,
         bytes32 _merkleRoot,
@@ -81,7 +82,11 @@ PausableUpgradeable
             return ((discountInfo.maxUses == 0 ||
                     discountUses[_provider][discountInfo.planId][_discountId] < discountInfo.maxUses) &&
                     (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
-                    (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp)));
+                    (discountInfo.expiresAt == 0 ||
+                        (discountInfo.expiresAt > 500000000 && discountInfo.expiresAt < uint32(block.timestamp)) ||
+                        (discountInfo.expiresAt <= 500000000 &&
+                            _subscriptionCreatedAt + discountInfo.expiresAt < uint32(block.timestamp))
+                    ));
         }
 
         return false;
@@ -90,6 +95,7 @@ PausableUpgradeable
     function consumeDiscount(
         address _provider,
         uint32 _planId,
+        uint32 _subscriptionCreatedAt,
         bytes32 _discountId,
         bytes32 _discountData
     ) external override onlyManager returns(bool) {
@@ -100,9 +106,11 @@ PausableUpgradeable
         require(discountInfo.validAfter == 0 ||
             discountInfo.validAfter >= uint32(block.timestamp), "!DISCOUNT_NOT_VALID_YET");
         require(discountInfo.expiresAt == 0 ||
-            discountInfo.expiresAt < uint32(block.timestamp), "!DISCOUNT_EXPIRED");
+            (discountInfo.expiresAt > 500000000 && discountInfo.expiresAt < uint32(block.timestamp)) ||
+            (discountInfo.expiresAt <= 500000000 && // relative expiresAt
+                _subscriptionCreatedAt + discountInfo.expiresAt < uint32(block.timestamp)), "!DISCOUNT_EXPIRED");
 
-        discountUses[_provider][_planId][_discountId] = discountUses[_provider][_planId][_discountId] + 1;
+        discountUses[_provider][_planId][_discountId] += 1;
 
         return discountInfo.maxUses == 0 || discountUses[_provider][_planId][_discountId] < discountInfo.maxUses;
     }

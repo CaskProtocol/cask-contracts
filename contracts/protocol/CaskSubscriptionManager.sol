@@ -304,7 +304,7 @@ KeeperCompatibleInterface
         if (subscription.discountId > 0) {
             ICaskSubscriptionPlans.Discount memory discountInfo = _parseDiscountData(subscription.discountData);
 
-            try subscriptionPlans.consumeDiscount(subscription.provider, discountInfo.planId,
+            try subscriptionPlans.consumeDiscount(subscription.provider, discountInfo.planId, subscription.createdAt,
                 subscription.discountId, subscription.discountData) returns (bool stillValid)
             {
                 if (discountInfo.isFixed) {

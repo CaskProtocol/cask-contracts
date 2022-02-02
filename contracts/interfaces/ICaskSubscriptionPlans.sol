@@ -28,7 +28,7 @@ interface ICaskSubscriptionPlans {
 
     function getProviderProfile(address _provider) external view returns(Provider memory);
 
-    function consumeDiscount(address _provider, uint32 _planId,
+    function consumeDiscount(address _provider, uint32 _planId, uint32 _subscriptionCreatedAt,
         bytes32 _discountId, bytes32 _discountData) external returns(bool);
 
     function getPlanStatus(address _provider, uint32 _planId) external view returns (PlanStatus);
@@ -44,7 +44,7 @@ interface ICaskSubscriptionPlans {
     function verifyPlan(bytes32 _planData, bytes32 _merkleRoot,
         bytes32[] calldata _merkleProof) external view returns(bool);
 
-    function verifyDiscount(address _provider, uint32 _planId, bytes32 _discountId,
+    function verifyDiscount(address _provider, uint32 _planId, uint32 _subscriptionCreatedAt, bytes32 _discountId,
         bytes32 _discountData, bytes32 _merkleRoot, bytes32[] calldata _merkleProof) external view returns(bool);
 
 

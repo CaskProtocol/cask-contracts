@@ -191,12 +191,12 @@ PausableUpgradeable
             (
             subscription.discountId,
             subscription.discountData
-            ) = _verifyDiscountProof(subscription.provider, newPlanInfo.planId, _discountProof);
+            ) = _verifyDiscountProof(subscription.provider, newPlanInfo.planId, subscription.createdAt, _discountProof);
         } else {
             (
             subscription.discountId,
             subscription.discountData
-            ) = _verifyDiscountProof(subscription.provider, subscription.planId, _discountProof);
+            ) = _verifyDiscountProof(subscription.provider, subscription.planId, subscription.createdAt, _discountProof);
         }
 
         emit SubscriptionChangedDiscount(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
@@ -296,7 +296,7 @@ PausableUpgradeable
         subscription.planData = pendingPlanData;
 
         if (newPlanInfo.minPeriods > 0) {
-            subscription.minTermAt = uint32(block.timestamp) + (newPlanInfo.period * newPlanInfo.minPeriods);
+            subscription.minTermAt = uint32(block.timestamp + (newPlanInfo.period * newPlanInfo.minPeriods));
         }
 
         delete pendingPlanChanges[_subscriptionId]; // free up memory
@@ -479,7 +479,7 @@ PausableUpgradeable
         (
         subscription.discountId,
         subscription.discountData
-        ) = _verifyDiscountProof(provider, subscription.planId, _discountProof);
+        ) = _verifyDiscountProof(provider, subscription.planId, subscription.createdAt, _discountProof);
 
         if (subscription.renewAt <= uint32(block.timestamp)) {
             subscriptionManager.renewSubscription(subscriptionId);
@@ -537,7 +537,7 @@ PausableUpgradeable
         (
         subscription.discountId,
         subscription.discountData
-        ) = _verifyDiscountProof(provider, subscription.planId, _discountProof);
+        ) = _verifyDiscountProof(provider, subscription.planId, subscription.createdAt, _discountProof);
 
         _performPlanChange(_subscriptionId, newPlanInfo, _planProof[2]);
     }
@@ -576,12 +576,13 @@ PausableUpgradeable
     function _verifyDiscountProof(
         address _provider,
         uint32 _planId,
+        uint32 _subscriptionCreatedAt,
         bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
     ) internal view returns(bytes32, bytes32) {
         if (_discountProof.length > 3 && _discountProof[0] > 0) {
             bytes32 discountId = keccak256(abi.encode(_discountProof[0]));
             bytes32 discountData = _discountProof[1];
-            if (subscriptionPlans.verifyDiscount(_provider, _planId, discountId, discountData,
+            if (subscriptionPlans.verifyDiscount(_provider, _planId, _subscriptionCreatedAt, discountId, discountData,
                 _discountProof[2], _discountProof[3:]))
             {
                 return (discountId, discountData);
