@@ -45,8 +45,7 @@ interface ICaskSubscriptionPlans {
     function verifyPlan(bytes32 _planData, bytes32 _merkleRoot,
         bytes32[] calldata _merkleProof) external view returns(bool);
 
-    function verifyDiscount(address _provider, uint32 _planId, uint32 _planPeriod, uint32 _subscriptionCreatedAt,
-        bytes32 _discountId, bytes32 _discountData,
+    function verifyDiscount(address _provider, uint32 _planId, bytes32 _discountId, bytes32 _discountData,
         bytes32 _merkleRoot, bytes32[] calldata _merkleProof) external view returns(bool);
 
 
