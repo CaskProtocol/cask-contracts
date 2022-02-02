@@ -67,8 +67,6 @@ PausableUpgradeable
     function verifyDiscount(
         address _provider,
         uint32 _planId,
-        uint32 _planPeriod,
-        uint32 _subscriptionCreatedAt,
         bytes32 _discountId,
         bytes32 _discountData,
         bytes32 _merkleRoot,
@@ -80,13 +78,10 @@ PausableUpgradeable
             Discount memory discountInfo = _parseDiscountData(_discountData);
             require(discountInfo.planId == 0 || discountInfo.planId == _planId, "!INVALID(planId)");
 
-            return ((discountInfo.maxUses == 0 ||
-                    discountUses[_provider][discountInfo.planId][_discountId] < discountInfo.maxUses) &&
-                    (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
-                    (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp)) &&
-                    (discountInfo.applyPeriods == 0 || _subscriptionCreatedAt +
-                            (_planPeriod * discountInfo.applyPeriods) <= uint32(block.timestamp))
-                    );
+            return ( (discountInfo.maxUses == 0 ||
+                     discountUses[_provider][discountInfo.planId][_discountId] < discountInfo.maxUses) &&
+                     (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
+                     (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp)) );
         }
 
         return false;
@@ -106,7 +101,6 @@ PausableUpgradeable
             discountUses[_provider][_planId][_discountId] < discountInfo.maxUses, "!DISCOUNT_MAX_USES");
         require(discountInfo.validAfter == 0 ||
             discountInfo.validAfter >= uint32(block.timestamp), "!DISCOUNT_NOT_VALID_YET");
-        require(discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp), "!DISCOUNT_EXPIRED");
         require(discountInfo.applyPeriods == 0 || _subscriptionCreatedAt +
                     (_planPeriod * discountInfo.applyPeriods) < uint32(block.timestamp), "!DISCOUNT_EXHAUSTED");
 
