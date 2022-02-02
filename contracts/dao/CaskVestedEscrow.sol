@@ -53,7 +53,7 @@ contract CaskVestedEscrow is ReentrancyGuard{
         uint256 duration_,
         bool canDisable_,
         address fundAdmin_
-    ) public {
+    ) {
         require(startafter_ >= block.timestamp,"start must be future");
         require(duration_ > 0,"duration must be greater");
 
