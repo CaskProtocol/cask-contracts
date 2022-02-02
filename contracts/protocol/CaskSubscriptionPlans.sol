@@ -67,6 +67,7 @@ PausableUpgradeable
     function verifyDiscount(
         address _provider,
         uint32 _planId,
+        uint32 _planPeriod,
         uint32 _subscriptionCreatedAt,
         bytes32 _discountId,
         bytes32 _discountData,
@@ -82,11 +83,10 @@ PausableUpgradeable
             return ((discountInfo.maxUses == 0 ||
                     discountUses[_provider][discountInfo.planId][_discountId] < discountInfo.maxUses) &&
                     (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
-                    (discountInfo.expiresAt == 0 ||
-                        (discountInfo.expiresAt > 500000000 && discountInfo.expiresAt < uint32(block.timestamp)) ||
-                        (discountInfo.expiresAt <= 500000000 &&
-                            _subscriptionCreatedAt + discountInfo.expiresAt < uint32(block.timestamp))
-                    ));
+                    (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp)) &&
+                    (discountInfo.applyPeriods == 0 || _subscriptionCreatedAt +
+                            (_planPeriod * discountInfo.applyPeriods) <= uint32(block.timestamp))
+                    );
         }
 
         return false;
@@ -95,6 +95,7 @@ PausableUpgradeable
     function consumeDiscount(
         address _provider,
         uint32 _planId,
+        uint32 _planPeriod,
         uint32 _subscriptionCreatedAt,
         bytes32 _discountId,
         bytes32 _discountData
@@ -105,10 +106,9 @@ PausableUpgradeable
             discountUses[_provider][_planId][_discountId] < discountInfo.maxUses, "!DISCOUNT_MAX_USES");
         require(discountInfo.validAfter == 0 ||
             discountInfo.validAfter >= uint32(block.timestamp), "!DISCOUNT_NOT_VALID_YET");
-        require(discountInfo.expiresAt == 0 ||
-            (discountInfo.expiresAt > 500000000 && discountInfo.expiresAt < uint32(block.timestamp)) ||
-            (discountInfo.expiresAt <= 500000000 && // relative expiresAt
-                _subscriptionCreatedAt + discountInfo.expiresAt < uint32(block.timestamp)), "!DISCOUNT_EXPIRED");
+        require(discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp), "!DISCOUNT_EXPIRED");
+        require(discountInfo.applyPeriods == 0 || _subscriptionCreatedAt +
+                    (_planPeriod * discountInfo.applyPeriods) < uint32(block.timestamp), "!DISCOUNT_EXHAUSTED");
 
         discountUses[_provider][_planId][_discountId] += 1;
 
@@ -187,7 +187,7 @@ PausableUpgradeable
             expiresAt: uint32(bytes4(_discountData << 128)),
             maxUses: uint32(bytes4(_discountData << 160)),
             planId: uint32(bytes4(_discountData << 192)),
-            //reserved: uint16(bytes2(_discountData << 208)),
+            applyPeriods: uint16(bytes2(_discountData << 224)),
             isFixed: options & 0x0001 == 0x0001
         });
     }

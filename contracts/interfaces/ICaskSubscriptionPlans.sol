@@ -15,6 +15,7 @@ interface ICaskSubscriptionPlans {
         uint32 expiresAt;
         uint32 maxUses;
         uint32 planId;
+        uint16 applyPeriods;
         bool isFixed;
     }
 
@@ -28,7 +29,7 @@ interface ICaskSubscriptionPlans {
 
     function getProviderProfile(address _provider) external view returns(Provider memory);
 
-    function consumeDiscount(address _provider, uint32 _planId, uint32 _subscriptionCreatedAt,
+    function consumeDiscount(address _provider, uint32 _planId, uint32 _planPeriod, uint32 _subscriptionCreatedAt,
         bytes32 _discountId, bytes32 _discountData) external returns(bool);
 
     function getPlanStatus(address _provider, uint32 _planId) external view returns (PlanStatus);
@@ -44,8 +45,9 @@ interface ICaskSubscriptionPlans {
     function verifyPlan(bytes32 _planData, bytes32 _merkleRoot,
         bytes32[] calldata _merkleProof) external view returns(bool);
 
-    function verifyDiscount(address _provider, uint32 _planId, uint32 _subscriptionCreatedAt, bytes32 _discountId,
-        bytes32 _discountData, bytes32 _merkleRoot, bytes32[] calldata _merkleProof) external view returns(bool);
+    function verifyDiscount(address _provider, uint32 _planId, uint32 _planPeriod, uint32 _subscriptionCreatedAt,
+        bytes32 _discountId, bytes32 _discountData,
+        bytes32 _merkleRoot, bytes32[] calldata _merkleProof) external view returns(bool);
 
 
     /** @dev Emitted when `provider` disables a subscription plan */
