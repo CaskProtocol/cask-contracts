@@ -191,12 +191,12 @@ PausableUpgradeable
             (
             subscription.discountId,
             subscription.discountData
-            ) = _verifyDiscountProof(subscription.provider, newPlanInfo.planId, subscription.createdAt, _discountProof);
+            ) = _verifyDiscountProof(_subscriptionId, pendingPlanChanges[_subscriptionId], _discountProof);
         } else {
             (
             subscription.discountId,
             subscription.discountData
-            ) = _verifyDiscountProof(subscription.provider, subscription.planId, subscription.createdAt, _discountProof);
+            ) = _verifyDiscountProof(_subscriptionId, subscription.planData, _discountProof);
         }
 
         emit SubscriptionChangedDiscount(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
@@ -479,7 +479,7 @@ PausableUpgradeable
         (
         subscription.discountId,
         subscription.discountData
-        ) = _verifyDiscountProof(provider, subscription.planId, subscription.createdAt, _discountProof);
+        ) = _verifyDiscountProof(subscriptionId, _planProof[2], _discountProof);
 
         if (subscription.renewAt <= uint32(block.timestamp)) {
             subscriptionManager.renewSubscription(subscriptionId);
@@ -537,7 +537,7 @@ PausableUpgradeable
         (
         subscription.discountId,
         subscription.discountData
-        ) = _verifyDiscountProof(provider, subscription.planId, subscription.createdAt, _discountProof);
+        ) = _verifyDiscountProof(_subscriptionId, _planProof[2], _discountProof);
 
         _performPlanChange(_subscriptionId, newPlanInfo, _planProof[2]);
     }
@@ -574,18 +574,19 @@ PausableUpgradeable
     }
 
     function _verifyDiscountProof(
-        address _provider,
-        uint32 _planId,
-        uint32 _subscriptionCreatedAt,
+        uint256 _subscriptionId,
+        bytes32 _planData,
         bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
     ) internal view returns(bytes32, bytes32) {
+        Subscription storage subscription = subscriptions[_subscriptionId];
+        PlanInfo memory planInfo = _parsePlanData(_planData);
+
         if (_discountProof.length > 3 && _discountProof[0] > 0) {
             bytes32 discountId = keccak256(abi.encode(_discountProof[0]));
-            bytes32 discountData = _discountProof[1];
-            if (subscriptionPlans.verifyDiscount(_provider, _planId, _subscriptionCreatedAt, discountId, discountData,
-                _discountProof[2], _discountProof[3:]))
+            if (subscriptionPlans.verifyDiscount(subscription.provider, planInfo.planId, planInfo.period,
+                subscription.createdAt, discountId, _discountProof[1], _discountProof[2], _discountProof[3:]))
             {
-                return (discountId, discountData);
+                return (discountId, _discountProof[1]);
             }
         }
         return (0,0);
