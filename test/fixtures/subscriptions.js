@@ -1,3 +1,5 @@
+const cask = require('@caskprotocol/sdk');
+
 const {
     daiUnits,
     day,
@@ -7,8 +9,6 @@ const {
 const {
     fundedFixture,
 } = require("./vault");
-
-const cask = require('@caskprotocol/sdk');
 
 
 async function protocolFixture() {

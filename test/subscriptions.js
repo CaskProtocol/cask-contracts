@@ -1,4 +1,5 @@
 const { expect } = require("chai");
+const cask = require('@caskprotocol/sdk');
 
 const {
   daiUnits,
@@ -15,7 +16,6 @@ const {
   onePlanFixture,
 } = require("./fixtures/subscriptions");
 
-const cask = require('@caskprotocol/sdk');
 
 describe("CaskSubscriptions General", function () {
 
