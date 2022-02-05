@@ -537,7 +537,7 @@ PausableUpgradeable
 
         subscription.cid = _cid;
 
-        if (subscription.discountId == 0 && _discountProof[0] > 0) {
+        if (subscription.discountId == 0 && _discountProof.length >= 3 && _discountProof[0] > 0) {
             (
             subscription.discountId,
             subscription.discountData

@@ -15,11 +15,7 @@ const {
   onePlanFixture,
 } = require("./fixtures/subscriptions");
 
-const {
-  plansMerkleProof,
-  generatePlanProof,
-  generateDiscountProof,
-} = require("../utils/plans");
+const cask = require('@caskprotocol/sdk');
 
 describe("CaskSubscriptions General", function () {
 
@@ -52,8 +48,9 @@ describe("CaskSubscriptions General", function () {
     const ref = ethers.utils.id("user1");
 
     const plan = plans.find((p) => p.planId === 100);
-    const plansProof = generatePlanProof(plan.provider, ref, plan.planData, plansRoot, plansMerkleProof(plans, plan));
-    const discountProof = generateDiscountProof(0, 0, discountsRoot)
+    const plansProof = cask.utils.generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
+        cask.utils.plansMerkleProof(plans, plan));
+    const discountProof = cask.utils.generateDiscountProof(0, 0, discountsRoot)
 
     // create subscription
     const tx = await consumerASubscriptions.createSubscription(
