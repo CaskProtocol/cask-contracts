@@ -76,6 +76,7 @@ async function _debug_protocol(taskArguments, hre) {
     const vault = await hre.ethers.getContract("CaskVault");
     const subscriptionPlans = await hre.ethers.getContract("CaskSubscriptionPlans");
     const subscriptions = await hre.ethers.getContract("CaskSubscriptions");
+    const subscriptionManager = await hre.ethers.getContract("CaskSubscriptionManager");
     const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
 
     //
@@ -107,37 +108,28 @@ async function _debug_protocol(taskArguments, hre) {
     console.log(`DefaultProxyAdmin:                              ${defaultProxyAdmin.address}`);
     console.log(`DefaultProxyAdmin Owner:                        ${await defaultProxyAdmin.owner()}`);
 
-    //
-    // Config
-    //
-    const paymentFeeFixed = await subscriptions.paymentFeeFixed();
-    const paymentFeeRateMin = await subscriptions.paymentFeeRateMin();
-    const paymentFeeRateMax = await subscriptions.paymentFeeRateMax();
 
-    console.log("\nProtocol Configuration");
+    //
+    // Vault Config
+    //
+    const strategyAllocationRate = await vaultAdmin.strategyAllocationRate();
+    const yieldFeeBps = await vaultAdmin.yieldFeeBps();
+    const strategist = await vaultAdmin.strategist();
+
+    console.log("\nVault Configuration");
     console.log("====================");
-    console.log(`CaskVaultAdmin vault:                           ${await vaultAdmin.vault()}`);
-    console.log(`CaskVaultAdmin strategist:                      ${await vaultAdmin.strategist()}`);
-    console.log(`CaskVault baseAsset:                            ${await vault.getBaseAsset()}`);
+    console.log(`VaultAdmin strategyAllocationRate:              ${strategyAllocationRate}`);
+    console.log(`VaultAdmin yieldFeeBps:                         ${yieldFeeBps}`);
+    console.log(`VaultAdmin strategist:                          ${strategist}`);
+    console.log(`VaultAdmin vault:                               ${await vaultAdmin.vault()}`);
     console.log(`CaskVault vaultAdmin:                           ${await vault.vaultAdmin()}`);
+    console.log(`CaskVault baseAsset:                            ${await vault.getBaseAsset()}`);
     const operatorCount = await vault.operatorCount();
     console.log(`CaskVault operatorCount:                        ${operatorCount}`);
     for (let i = 0; i < operatorCount; i++) {
         console.log(`   operator ${i}:                                  ${await vault.operators(i)}`);
     }
-    console.log(`CaskSubscriptionPlans protocol:                 ${await subscriptionPlans.protocol()}`);
-    console.log(`CaskSubscriptions vault:                        ${await subscriptions.vault()}`);
-    console.log(`CaskSubscriptions subscriptionPlans:            ${await subscriptions.subscriptionPlans()}`);
-    console.log(`CaskSubscriptions paymentFeeFixed:              ${paymentFeeFixed}`);
-    console.log(`CaskSubscriptions paymentFeeRateMin:            ${paymentFeeRateMin} (${paymentFeeRateMin / 100}%)`);
-    console.log(`CaskSubscriptions paymentFeeRateMax:            ${paymentFeeRateMax} (${paymentFeeRateMax / 100}%)`);
 
-
-    //
-    // Vault
-    //
-    console.log("\nVault");
-    console.log("====================");
     console.log(`paused:                                         ${await vault.paused()}`);
     console.log(`totalSupply:                                    ${await vault.totalSupply()}`);
     const allAssets = await vault.getAllAssets();
@@ -148,6 +140,28 @@ async function _debug_protocol(taskArguments, hre) {
         console.log(`Asset ${allAssets[i]}:             Balance: ${formatUnits(assetBalance, assetInfo.assetDecimals)}`)
     }
 
+
+    //
+    // Protocol Config
+    //
+    const paymentFeeFixed = await subscriptionManager.paymentFeeFixed();
+    const paymentFeeRateMin = await subscriptionManager.paymentFeeRateMin();
+    const paymentFeeRateMax = await subscriptionManager.paymentFeeRateMax();
+
+    console.log("\nProtocol Configuration");
+    console.log("====================");
+    console.log(`CaskSubscriptions subscriptionManager:          ${await subscriptions.subscriptionManager()}`);
+    console.log(`CaskSubscriptions subscriptionPlans:            ${await subscriptions.subscriptionPlans()}`);
+
+    console.log(`CaskSubscriptionPlans subscriptionManager:      ${await subscriptionPlans.subscriptionManager()}`);
+
+    console.log(`CaskSubscriptionManagers vault:                 ${await subscriptionManager.vault()}`);
+    console.log(`CaskSubscriptionManagers subscriptionPlans:     ${await subscriptionManager.subscriptionPlans()}`);
+    console.log(`CaskSubscriptionManagers subscriptions:         ${await subscriptionManager.subscriptions()}`);
+    console.log(`CaskSubscriptionManagers paymentFeeFixed:       ${paymentFeeFixed} (${paymentFeeFixed / 100}%)`);
+    console.log(`CaskSubscriptionManagers paymentFeeRateMin:     ${paymentFeeRateMin} (${paymentFeeRateMin / 100}%)`);
+    console.log(`CaskSubscriptionManagers paymentFeeRateMax:     ${paymentFeeRateMax} (${paymentFeeRateMax / 100}%)`);
+    console.log(`CaskSubscriptionManagers stakeTargetFactor:     ${await subscriptionManager.stakeTargetFactor()}`);
 
 }
 
