@@ -21,7 +21,6 @@ interface ICaskSubscriptionPlans {
 
     struct Provider {
         address paymentAddress;
-        bytes32 discountMerkleRoot;
         string cid;
     }
 
