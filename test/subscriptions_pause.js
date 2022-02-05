@@ -1,4 +1,5 @@
 const { expect } = require("chai");
+const cask = require('@caskprotocol/sdk');
 
 const {
     daiUnits,
@@ -15,12 +16,6 @@ const {
     unpausablePlanFixture,
     minTermPlanFixture,
 } = require("./fixtures/subscriptions");
-
-const {
-    generatePlanProof,
-    plansMerkleProof,
-    generateDiscountProof,
-} = require("../utils/plans");
 
 
 describe("CaskSubscriptions Pause", function () {
@@ -50,9 +45,9 @@ describe("CaskSubscriptions Pause", function () {
         const ref = ethers.utils.id("user1");
 
         const plan = plans.find((p) => p.planId === 301);
-        const plansProof = generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
-            plansMerkleProof(plans, plan));
-        const discountProof = generateDiscountProof(0, 0, discountsRoot)
+        const plansProof = cask.utils.generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
+            cask.utils.plansMerkleProof(plans, plan));
+        const discountProof = cask.utils.generateDiscountProof(0, 0, discountsRoot)
 
         // create subscription
         const tx = await consumerASubscriptions.createSubscription(
@@ -101,9 +96,9 @@ describe("CaskSubscriptions Pause", function () {
         const ref = ethers.utils.id("user1");
 
         const plan = plans.find((p) => p.planId === 401);
-        const plansProof = generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
-            plansMerkleProof(plans, plan));
-        const discountProof = generateDiscountProof(0, 0, discountsRoot)
+        const plansProof = cask.utils.generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
+            cask.utils.plansMerkleProof(plans, plan));
+        const discountProof = cask.utils.generateDiscountProof(0, 0, discountsRoot)
 
         // create subscription
         const tx = await consumerASubscriptions.createSubscription(

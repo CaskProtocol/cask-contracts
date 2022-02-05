@@ -203,7 +203,9 @@ PausableUpgradeable
         emit SubscriptionChangedDiscount(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
             subscription.ref, subscription.planId, subscription.discountData);
 
-        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
+        if (msg.sender == ownerOf(_subscriptionId)) {
+            subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
+        }
     }
 
     function pauseSubscription(
@@ -230,7 +232,9 @@ PausableUpgradeable
         emit SubscriptionPaused(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
             subscription.ref, subscription.planId);
 
-        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
+        if (msg.sender == ownerOf(_subscriptionId)) {
+            subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
+        }
     }
 
     function resumeSubscription(
@@ -278,14 +282,16 @@ PausableUpgradeable
         emit SubscriptionPendingCancel(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
             subscription.ref, subscription.planId);
 
-        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitCancelSubscription);
+        if (msg.sender == ownerOf(_subscriptionId)) {
+            subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitCancelSubscription);
+        }
     }
 
     function managerPlanChange(
         uint256 _subscriptionId
     ) external override onlyManager whenNotPaused {
         bytes32 pendingPlanData = pendingPlanChanges[_subscriptionId];
-        require(pendingPlanData > 0, "!INVALID(planId)");
+        require(pendingPlanData > 0, "!INVALID(pendingPlanData)");
 
         Subscription storage subscription = subscriptions[_subscriptionId];
         PlanInfo memory newPlanInfo = _parsePlanData(pendingPlanData);
@@ -505,7 +511,7 @@ PausableUpgradeable
         bytes memory _providerSignature,
         string calldata _cid
     ) internal {
-        require(_planProof.length >= 4, "!INVALID(planProofLen)");
+        require(_planProof.length >= 4, "!INVALID(planProof)");
 
         Subscription storage subscription = subscriptions[_subscriptionId];
 
@@ -528,21 +534,21 @@ PausableUpgradeable
         PlanInfo memory newPlanInfo = _parsePlanData(_planProof[2]);
 
         require(subscription.provider == provider, "!INVALID(provider)");
-        require(subscription.planId != newPlanInfo.planId, "!INVALID(planId)");
-
-        require(subscriptionPlans.getPlanStatus(provider, newPlanInfo.planId) ==
-            ICaskSubscriptionPlans.PlanStatus.Enabled, "!NOT_ENABLED");
 
         subscription.cid = _cid;
 
-        if (subscription.discountId == 0) {
+        if (subscription.discountId == 0 && _discountProof.length >= 3 && _discountProof[0] > 0) {
             (
             subscription.discountId,
             subscription.discountData
             ) = _verifyDiscountProof(subscription.provider, newPlanInfo.planId, _discountProof);
         }
 
-        _performPlanChange(_subscriptionId, newPlanInfo, _planProof[2]);
+        if (subscription.planId != newPlanInfo.planId) {
+            require(subscriptionPlans.getPlanStatus(provider, newPlanInfo.planId) ==
+                ICaskSubscriptionPlans.PlanStatus.Enabled, "!NOT_ENABLED");
+            _performPlanChange(_subscriptionId, newPlanInfo, _planProof[2]);
+        }
     }
 
     function _performPlanChange(
