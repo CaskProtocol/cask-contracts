@@ -21,6 +21,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        path: 'p-cask-contracts'
     - name: Checkout
       uses: actions/checkout@v2
       with:
