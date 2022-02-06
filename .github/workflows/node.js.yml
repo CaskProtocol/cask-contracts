@@ -35,6 +35,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
+        cache-dependency-path: p-cask-contracts/yarn.lock
     - run: cd p-cask-contracts/
     - run: yarn install
     - run: yarn run test
