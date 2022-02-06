@@ -21,6 +21,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        repository: p-cask-web-sdk
+        path: '../p-cask-web-sdk'
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
