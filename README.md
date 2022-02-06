@@ -5,13 +5,11 @@ This project demonstrates a basic Hardhat use case. It comes with a sample contr
 Try running some of the following tasks:
 
 ```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/old_deploy.js
-npx hardhat help
+yarn test
+yarn hardhat compile
+yarn hardhat console
+yarn hardhat node
+yarn hardhat deploy
+yarn hardhat debug
+yarn hardhat accounts
 ```
-
-4

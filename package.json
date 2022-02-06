@@ -9,10 +9,7 @@
     "yarn": ">= 1.22"
   },
   "scripts": {
-    "hardhat:node": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat node",
-    "hardhat:console": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat console",
-    "hardhat:compile": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat compile",
-    "hardhat:deploy": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat deploy",
+    "hardhat": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat",
     "export": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat deploy --export '../p-cask-frontend/src/abi/network.json'",
     "test": "NODE_OPTIONS=--openssl-legacy-provider IS_TEST=true npx hardhat test",
     "clean": "rm -rf artifacts cache deployments/local*"
