@@ -14,4 +14,4 @@ node scripts/old_deploy.js
 npx hardhat help
 ```
 
-p
+2
