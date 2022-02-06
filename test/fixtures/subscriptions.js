@@ -165,6 +165,7 @@ async function onePlanWithDiscountsFixture() {
             0, // expiresAt
             0, // maxUses
             501, // planId
+            0, // applyPeriods
             false) // isFixed
     });
 
@@ -176,6 +177,7 @@ async function onePlanWithDiscountsFixture() {
             0, // expiresAt
             0, // maxUses
             501, // planId
+            0, // applyPeriods
             false) // isFixed
     });
 
