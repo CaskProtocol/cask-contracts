@@ -23,6 +23,14 @@ async function vestingFixture() {
     const teamVestedEscrow = await ethers.getContract("TeamVestedEscrow");
     const investorVestedEscrow = await ethers.getContract("InvestorVestedEscrow");
 
+    // send remaining CASK tokens to governor
+    await caskToken.connect(deployer).transfer(governor.address, caskUnits('170000000'));
+
+    // example funding of investorVestedEscrow for testing
+    await caskToken.connect(governor).approve(investorVestedEscrow.address, caskUnits('170000000'));
+    await investorVestedEscrow.connect(governor).addTokens(caskUnits('170000000'));
+
+
     return {
         //accounts
         deployer,
