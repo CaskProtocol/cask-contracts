@@ -120,18 +120,6 @@ const deployDao = async ({ethers, getNamedAccounts}) => {
     log(`Added 200M CASK to TeamVestedEscrow at ${teamVestedEscrow.address}`, result);
 
 
-    /** investor vesting - 170M **/
-
-    // to be done manually from the multisig at a later date
-    // result = await withConfirmation(
-    //     caskToken.connect(sDeployer).approve(investorVestedEscrow.address, caskUnits('170000000'))
-    // );
-    // log(`Approved InvestorVestedEscrow to spend deployer CASK`, result);
-    // result = await withConfirmation(
-    //     investorVestedEscrow.connect(sDeployer).addTokens(caskUnits('170000000'))
-    // );
-    // log(`Added 150M CASK to InvestorVestedEscrow at ${investorVestedEscrow.address}`, result);
-
 
     /** change vesting contract owners to governor */
 
