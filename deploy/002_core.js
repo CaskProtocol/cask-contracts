@@ -3,7 +3,6 @@ const {
 } = require("../test/_networks");
 
 const {
-    log,
     deployWithConfirmation,
 } = require("../utils/deploy");
 
@@ -11,10 +10,6 @@ const {
 const deployCore = async ({ethers}) => {
 
     await deployWithConfirmation('CaskToken');
-
-    const caskToken = await ethers.getContract("CaskToken");
-
-    log(`CaskToken deployed at ${caskToken.address}`);
 }
 
 

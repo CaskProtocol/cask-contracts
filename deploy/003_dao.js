@@ -21,6 +21,7 @@ const deployDao = async ({ethers, getNamedAccounts}) => {
 
     const caskToken = await ethers.getContract("CaskToken");
 
+    let result;
 
 
     /************  INITIAL TOKEN SUPPLY AND VESTING DEFINITIONS **************/
@@ -62,88 +63,92 @@ const deployDao = async ({ethers, getNamedAccounts}) => {
 
     /** mint tokens and send to deployer **/
 
-    await withConfirmation(
+    result = await withConfirmation(
         caskToken.connect(sDeployer).mint(deployerAddr, caskUnits(tokenSupply))
     );
-    log(`Minted initial CASK token supply of ${tokenSupply} tokens to ${deployerAddr}`);
+    log(`Minted initial CASK token supply of ${tokenSupply} tokens to ${deployerAddr}`, result);
 
 
     /** deploy treasury  **/
 
-    await deployWithConfirmation('CaskTreasury');
+    result = await deployWithConfirmation('CaskTreasury');
 
     const caskTreasury = await ethers.getContract("CaskTreasury");
 
-    await withConfirmation(
+    result = await withConfirmation(
         caskTreasury.connect(sDeployer).transferOwnership(governorAddr)
     );
-    log(`Transferred CaskTreasury ownership to ${governorAddr}`);
+    log(`Transferred CaskTreasury ownership to ${governorAddr}`, result);
 
 
-    /** fund treasury - 400M (100M community funds + 50M LBP + 250M for protocol chain staking rewards) **/
+    /** fund treasury - 380M (100M community funds + 30M LBP + 250M for protocol chain staking rewards) **/
 
-    await withConfirmation(
-        caskToken.connect(sDeployer).transfer(caskTreasury.address, caskUnits('400000000'))
+    result = await withConfirmation(
+        caskToken.connect(sDeployer).transfer(caskTreasury.address, caskUnits('380000000'))
     );
-    log(`Sent 400M CASK to treasury at ${caskTreasury.address}`);
+    log(`Sent 380M CASK to treasury at ${caskTreasury.address}`, result);
 
 
     /** treasury vesting - 250M community funds **/
 
-    await withConfirmation(
+    result = await withConfirmation(
         caskToken.connect(sDeployer).approve(treasuryVestedEscrow.address, caskUnits('250000000'))
     );
-    await withConfirmation(
+    log(`Approved TreasuryVestedEscrow to spend deployer CASK`, result);
+    result = await withConfirmation(
         treasuryVestedEscrow.connect(sDeployer).addTokens(caskUnits('250000000'))
     );
-    log(`Added 250M CASK to TreasuryVestedEscrow at ${treasuryVestedEscrow.address}`);
+    log(`Added 250M CASK to TreasuryVestedEscrow at ${treasuryVestedEscrow.address}`, result);
 
-    await withConfirmation(
+    result = await withConfirmation(
         treasuryVestedEscrow.connect(sDeployer)['fund(uint256,address[],uint256[])'](
             treasuryVestStart, [caskTreasury.address],[caskUnits('250000000')]
         )
     );
-    log(`Funded 250M CASK in TreasuryVestedEscrow for treasury at ${caskTreasury.address}`);
+    log(`Funded 250M CASK in TreasuryVestedEscrow for treasury at ${caskTreasury.address}`, result);
 
 
     /** team vesting - 200M **/
 
-    await withConfirmation(
+    result = await withConfirmation(
         caskToken.connect(sDeployer).approve(teamVestedEscrow.address, caskUnits('200000000'))
     );
-    await withConfirmation(
+    log(`Approved TeamVestedEscrow to spend deployer CASK`, result);
+    result = await withConfirmation(
         teamVestedEscrow.connect(sDeployer).addTokens(caskUnits('200000000'))
     );
-    log(`Added 200M CASK to TeamVestedEscrow at ${teamVestedEscrow.address}`);
+    log(`Added 200M CASK to TeamVestedEscrow at ${teamVestedEscrow.address}`, result);
 
 
-    /** investor vesting - 150M **/
+    /** investor vesting - 170M **/
 
-    await withConfirmation(
-        caskToken.connect(sDeployer).approve(investorVestedEscrow.address, caskUnits('150000000'))
-    );
-    await withConfirmation(
-        investorVestedEscrow.connect(sDeployer).addTokens(caskUnits('150000000'))
-    );
-    log(`Added 150M CASK to InvestorVestedEscrow at ${investorVestedEscrow.address}`);
+    // to be done manually from the multisig at a later date
+    // result = await withConfirmation(
+    //     caskToken.connect(sDeployer).approve(investorVestedEscrow.address, caskUnits('170000000'))
+    // );
+    // log(`Approved InvestorVestedEscrow to spend deployer CASK`, result);
+    // result = await withConfirmation(
+    //     investorVestedEscrow.connect(sDeployer).addTokens(caskUnits('170000000'))
+    // );
+    // log(`Added 150M CASK to InvestorVestedEscrow at ${investorVestedEscrow.address}`, result);
 
 
     /** change vesting contract owners to governor */
 
-    await withConfirmation(
+    result = await withConfirmation(
         investorVestedEscrow.connect(sDeployer).setAdmin(governorAddr)
     );
-    log(`Set admin on InvestorVestedEscrow to ${governorAddr}`);
+    log(`Set admin on InvestorVestedEscrow to ${governorAddr}`, result);
 
-    await withConfirmation(
+    result = await withConfirmation(
         teamVestedEscrow.connect(sDeployer).setAdmin(governorAddr)
     );
-    log(`Set admin on TeamVestedEscrow to ${governorAddr}`);
+    log(`Set admin on TeamVestedEscrow to ${governorAddr}`, result);
 
-    await withConfirmation(
+    result = await withConfirmation(
         treasuryVestedEscrow.connect(sDeployer).setAdmin(governorAddr)
     );
-    log(`Set admin on TreasuryVestedEscrow to ${governorAddr}`);
+    log(`Set admin on TreasuryVestedEscrow to ${governorAddr}`, result);
 
 
     const deployerBalance = await caskToken.connect(sDeployer).balanceOf(deployerAddr);

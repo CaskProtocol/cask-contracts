@@ -19,7 +19,10 @@ function log(msg, deployResult = null) {
     if (isRealChain || process.env.VERBOSE) {
         if (deployResult && deployResult.receipt) {
             const gasUsed = Number(deployResult.receipt.gasUsed.toString());
-            msg += ` Address: ${deployResult.address} Gas Used: ${gasUsed}`;
+            msg += ` Address: ${deployResult.address} [Gas Used: ${gasUsed}]`;
+        } else if (deployResult && deployResult.gasLimit) {
+            const gasUsed = Number(deployResult.gasLimit.toString());
+            msg += ` [Gas Limit: ${gasUsed}]`;
         }
         console.log("INFO:", msg);
     }
