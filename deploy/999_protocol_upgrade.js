@@ -43,7 +43,7 @@ const main = async (hre) => {
 };
 
 main.id = "999_protocol_upgrade";
-main.tags = ["protocol_upgrade"];
+main.tags = ["protocol"];
 main.dependencies = ["mocks"];
 main.skip = () => !isProtocolChain || isDevnet;
 
