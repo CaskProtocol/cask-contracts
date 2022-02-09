@@ -102,7 +102,8 @@ module.exports = {
       accounts: [
         process.env.MAINNET_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
-      timeout: 300000,
+      gasPrice: 55000000000, // TODO: make sure to set to appropriate gwei!
+      timeout: 900000,
     },
     polygon: {
       url: `${process.env.POLYGON_PROVIDER_URL || process.env.PROVIDER_URL}`,
