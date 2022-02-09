@@ -12,10 +12,13 @@ async function fund(taskArguments, hre) {
     const dai = await ethers.getContract("MockDAI");
     const usdc = await ethers.getContract("MockUSDC");
 
+    const {deployerAddr} = await getNamedAccounts();
+    const deployer = await ethers.provider.getSigner(deployerAddr);
+
     for (const account of accounts) {
-        await usdt.connect(account).mint(usdtUnits('10000.0'));
-        await dai.connect(account).mint(daiUnits('10000.0'));
-        await usdc.connect(account).mint(usdcUnits('10000.0'));
+        await usdt.connect(deployer).mint(account.address, usdtUnits('10000.0'));
+        await dai.connect(deployer).mint(account.address, daiUnits('10000.0'));
+        await usdc.connect(deployer).mint(account.address, usdcUnits('10000.0'));
         console.log(`Minted MockUSDT/MockDAI/MockUSDC to ${account.address}`);
     }
 }
