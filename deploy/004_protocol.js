@@ -67,9 +67,9 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
     log("Initialized CaskSubscriptionManager");
 
     await withConfirmation(
-        vault.connect(sDeployer).addOperator(subscriptionManager.address)
+        vault.connect(sDeployer).addProtocol(subscriptionManager.address)
     );
-    log(`Added CaskVault operator ${subscriptionManager.address} for CaskSubscriptionManager`);
+    log(`Authorized CaskVault protocol ${subscriptionManager.address} for CaskSubscriptionManager`);
 
     await withConfirmation(
         subscriptions.connect(sDeployer).setManager(subscriptionManager.address)

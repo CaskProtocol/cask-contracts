@@ -88,12 +88,6 @@ interface ICaskVault is IERC20MetadataUpgradeable {
         uint256 _value
     ) external;
 
-    /**
-     * @dev Pay `_baseAssetAmount` of `baseAsset` directly from a sender to `_to`
-     * @param _to To address
-     * @param _baseAssetAmount Amount of asset to transfer
-     */
-    function payment(address _to, uint256 _baseAssetAmount) external;
 
     /**
      * @dev Deposit `_assetAmount` of `_asset` into the vault and credit the equivalent value of `baseAsset`

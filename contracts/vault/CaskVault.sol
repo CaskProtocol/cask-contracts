@@ -22,8 +22,8 @@ CaskVault is where:
 - the approved asset list lives
 - users deposit/withdraw approved assets which results in a mint/burn of the vault token
 - a minimum reserve rate is enforced
-- vault operators can tell the vault to send unallocated assets to strategies
-- protocols can process a payment between parties
+- vault manager can tell the vault to send unallocated assets to strategies
+- approved protocols can process a payment between parties
 - one can query the value of all unallocated assets
 
 */
@@ -37,15 +37,15 @@ ReentrancyGuardUpgradeable
 {
     using SafeERC20 for IERC20;
 
-    modifier onlyOperator {
-        bool isOperator = false;
-        for (uint256 i = 0; i < operators.length; i++) {
-            if (msg.sender == operators[i]) {
-                isOperator = true;
+    modifier onlyProtocol {
+        bool isProtocol = false;
+        for (uint256 i = 0; i < protocols.length; i++) {
+            if (msg.sender == protocols[i]) {
+                isProtocol = true;
                 break;
             }
         }
-        require(isOperator, "!auth");
+        require(isProtocol, "!auth");
         _;
     }
 
@@ -74,7 +74,7 @@ ReentrancyGuardUpgradeable
     mapping(address => Asset) internal assets;
     address[] internal allAssets;
 
-    address[] public operators;
+    address[] public protocols;
 
     function initialize(
         address _vaultManager,
@@ -114,7 +114,7 @@ ReentrancyGuardUpgradeable
         uint256 _protocolFee,
         address _network,
         uint256 _networkFee
-    ) external override nonReentrant onlyOperator {
+    ) external override nonReentrant onlyProtocol {
         _protocolPayment(_from, _to, _value, _protocolFee, _network, _networkFee);
     }
 
@@ -130,7 +130,7 @@ ReentrancyGuardUpgradeable
         address _to,
         uint256 _value,
         uint256 _protocolFee
-    ) external override nonReentrant onlyOperator {
+    ) external override nonReentrant onlyProtocol {
         _protocolPayment(_from, _to, _value, _protocolFee, address(0), 0);
     }
 
@@ -144,7 +144,7 @@ ReentrancyGuardUpgradeable
         address _from,
         address _to,
         uint256 _value
-    ) external override nonReentrant onlyOperator {
+    ) external override nonReentrant onlyProtocol {
         _protocolPayment(_from, _to, _value, 0, address(0), 0);
     }
 
@@ -177,21 +177,6 @@ ReentrancyGuardUpgradeable
         }
 
         emit Payment(_from, _to, _value, _protocolFee, shares);
-    }
-
-    function payment(
-        address _to,
-        uint256 _baseAssetAmount
-    ) external override nonReentrant {
-
-        uint256 shares = _sharesForValue(_baseAssetAmount);
-        uint256 baseAssetFee = transferFeeFixed + (_baseAssetAmount * transferFeeRate / 10000);
-        uint256 feeShares = _sharesForValue(baseAssetFee);
-
-        _transfer(msg.sender, _to, shares - feeShares); // payment - fee from consumer to provider
-        _transfer(msg.sender, feeDistributor, feeShares); // fee from consumer to fee distributor
-
-        emit Payment(msg.sender, _to, _baseAssetAmount, baseAssetFee, shares);
     }
 
     /**
@@ -367,7 +352,7 @@ ReentrancyGuardUpgradeable
         address _strategy,
         address _asset,
         uint256 _assetAmount
-    ) external override onlyOperator {
+    ) external override onlyProtocol {
         require(assets[_asset].allowed, "!allowed");
         IERC20(_asset).safeTransfer(_strategy, _assetAmount);
         emit AllocatedToStrategy(_strategy, _asset, _assetAmount);
@@ -384,30 +369,30 @@ ReentrancyGuardUpgradeable
         _unpause();
     }
 
-    function addOperator(
-        address _operator
+    function addProtocol(
+        address _protocol
     ) external onlyOwner {
-        operators.push(_operator);
+        protocols.push(_protocol);
     }
 
-    function removeOperator(
-        address _operator
+    function removeProtocol(
+        address _protocol
     ) external onlyOwner {
-        uint256 idx = operators.length;
-        for (uint256 i = 0; i < operators.length; i++) {
-            if (operators[i] == _operator) {
+        uint256 idx = protocols.length;
+        for (uint256 i = 0; i < protocols.length; i++) {
+            if (protocols[i] == _protocol) {
                 idx = i;
                 break;
             }
         }
-        if (idx < operators.length) {
-            operators[idx] = operators[operators.length - 1];
-            operators.pop();
+        if (idx < protocols.length) {
+            protocols[idx] = protocols[protocols.length - 1];
+            protocols.pop();
         }
     }
 
-    function operatorCount() external view returns(uint256) {
-        return operators.length;
+    function protocolCount() external view returns(uint256) {
+        return protocols.length;
     }
 
     function setParameters(
