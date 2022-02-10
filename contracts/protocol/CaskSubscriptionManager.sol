@@ -116,18 +116,18 @@ KeeperCompatibleInterface
         address _consumer,
         address _provider,
         uint256 _subscriptionId,
-        uint256 _amount
+        uint256 _value
     ) external onlySubscriptions {
-        _processPayment(_consumer, _provider, _subscriptionId, _amount);
+        _processPayment(_consumer, _provider, _subscriptionId, _value);
     }
 
     function _processPayment(
         address _consumer,
         address _provider,
         uint256 _subscriptionId,
-        uint256 _amount
+        uint256 _value
     ) internal {
-        require(vault.currentValueOf(_consumer) >= _amount, "!BALANCE");
+        require(vault.currentValueOf(_consumer) >= _value, "!BALANCE");
 
         // TODO: reduce fee based on staked balance
         //        uint256 stakedBalance = ICaskStakeManager(stakeManager).providerStakeBalanceOf(_provider);
@@ -155,24 +155,24 @@ KeeperCompatibleInterface
             paymentAddress = providerProfile.paymentAddress;
         }
 
-        _sendPayment(subscription, _consumer, paymentAddress, _amount, paymentFeeRateAdjusted);
+        _sendPayment(subscription, _consumer, paymentAddress, _value, paymentFeeRateAdjusted);
     }
 
     function _sendPayment(
         ICaskSubscriptions.Subscription memory _subscription,
         address _consumer,
         address _paymentAddress,
-        uint256 _amount,
+        uint256 _value,
         uint256 _protocolFeeBps
     ) internal {
         if (_subscription.networkData > 0) {
             ICaskSubscriptions.NetworkInfo memory networkData = _parseNetworkData(_subscription.networkData);
-            vault.protocolPayment(_consumer, _paymentAddress, _amount,
-                paymentFeeFixed + (_amount * _protocolFeeBps / 10000),
-                networkData.network, _amount * networkData.feeBps / 10000);
+            vault.protocolPayment(_consumer, _paymentAddress, _value,
+                paymentFeeFixed + (_value * _protocolFeeBps / 10000),
+                networkData.network, _value * networkData.feeBps / 10000);
         } else {
-            vault.protocolPayment(_consumer, _paymentAddress, _amount,
-                paymentFeeFixed + (_amount * _protocolFeeBps / 10000));
+            vault.protocolPayment(_consumer, _paymentAddress, _value,
+                paymentFeeFixed + (_value * _protocolFeeBps / 10000));
         }
     }
 
@@ -310,7 +310,7 @@ KeeperCompatibleInterface
         }
 
         ICaskSubscriptions.PlanInfo memory planInfo = _parsePlanData(subscription.planData);
-        uint256 chargeAmount = planInfo.price;
+        uint256 chargePrice = planInfo.price;
 
         // maybe apply discount
         if (subscription.discountId > 0) {
@@ -321,9 +321,9 @@ KeeperCompatibleInterface
                 subscription.discountData) returns (bool stillValid)
             {
                 if (discountInfo.isFixed) {
-                    chargeAmount = chargeAmount - discountInfo.value;
+                    chargePrice = chargePrice - discountInfo.value;
                 } else {
-                    chargeAmount = chargeAmount - (chargeAmount * discountInfo.value / 10000);
+                    chargePrice = chargePrice - (chargePrice * discountInfo.value / 10000);
                 }
 
                 if (!stillValid) {
@@ -335,7 +335,7 @@ KeeperCompatibleInterface
         }
 
         // consumer does not have enough balance to cover payment
-        if (chargeAmount > 0 && vault.currentValueOf(subscriptions.ownerOf(_subscriptionId)) < chargeAmount) {
+        if (chargePrice > 0 && vault.currentValueOf(subscriptions.ownerOf(_subscriptionId)) < chargePrice) {
             // if have not been able to renew for 7 days, cancel subscription
             if (subscription.renewAt < timestamp - 7 days) {
                 subscriptions.managerCancelSubscription(_subscriptionId);
@@ -343,8 +343,8 @@ KeeperCompatibleInterface
                 subscriptions.managerPastDueSubscription(_subscriptionId);
             }
 
-        } else if (chargeAmount > 0) {
-            _processPayment(subscriptions.ownerOf(_subscriptionId), subscription.provider, _subscriptionId, chargeAmount);
+        } else if (chargePrice > 0) {
+            _processPayment(subscriptions.ownerOf(_subscriptionId), subscription.provider, _subscriptionId, chargePrice);
             subscriptions.managerRenewSubscription(_subscriptionId);
 
         } else { // no charge, move along now

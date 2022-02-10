@@ -55,9 +55,6 @@ contract MockVault is ICaskVault, ERC20Upgradeable {
         uint256 _value
     ) external override {}
 
-    function payment(address _to, uint256 _amount) external override {
-    }
-
     function deposit(address _asset, uint256 _amount) external override {
     }
 
