@@ -79,6 +79,7 @@ ReentrancyGuardUpgradeable
     function initialize(
         address _vaultManager,
         address _baseAsset,
+        address _baseAssetPriceFeed,
         address _feeDistributor
     ) public initializer {
         __Ownable_init();
@@ -86,8 +87,19 @@ ReentrancyGuardUpgradeable
         __ReentrancyGuard_init();
         __ERC20_init("Cask Vault Shares","vCASK");
 
+        require(IERC20Metadata(_baseAsset).decimals() > 0, "!INVALID(baseAsset)");
+        require(AggregatorV3Interface(_baseAssetPriceFeed).decimals() > 0, "!INVALID(baseAssetPriceFeed)");
+
+        Asset storage asset = assets[_baseAsset];
+        asset.priceFeed = _baseAssetPriceFeed;
+        asset.assetDecimals = IERC20Metadata(_baseAsset).decimals();
+        asset.priceFeedDecimals = AggregatorV3Interface(_baseAssetPriceFeed).decimals();
+        asset.slippageBps = 0;
+        asset.allowed = true;
+        allAssets.push(_baseAsset);
+
         vaultManager = _vaultManager;
-        baseAsset = _baseAsset; // TODO: require price feed address in ctor? fix issues with allAssets and baseAsset
+        baseAsset = _baseAsset;
         feeDistributor = _feeDistributor;
 
         // parameter defaults
@@ -210,8 +222,8 @@ ReentrancyGuardUpgradeable
         address _asset,
         uint256 _assetAmount
     ) internal {
-        require(_asset == baseAsset || assets[_asset].allowed, "!invalid(_asset)");
-        require(_assetAmount > 0, "!invalid(_assetAmount)");
+        require(assets[_asset].allowed, "!NOT_ALLOWED(asset)");
+        require(_assetAmount > 0, "!INVALID(assetAmount)");
 
         uint256 baseAssetAmount = _assetAmount;
         if (_asset != baseAsset) {
@@ -264,8 +276,8 @@ ReentrancyGuardUpgradeable
         address _asset,
         uint256 _shares
     ) internal {
-        require(assets[_asset].allowed, "!invalid(_asset)");
-        require(_shares > 0, "!invalid(_sharesAmount)");
+        require(assets[_asset].allowed, "!NOT_ALLOWED(asset)");
+        require(_shares > 0, "!INVALID(sharesAmount)");
 
         // calculate amount before supply adjustment
         uint256 baseAmount = _shareValue(_shares);
@@ -296,7 +308,7 @@ ReentrancyGuardUpgradeable
     }
 
     function pricePerShare() external override view returns(uint256) {
-        return _shareValue(1);
+        return _shareValue(10 ** assets[baseAsset].assetDecimals);
     }
 
     /************************** SHARES FUNCTIONS **************************/
@@ -353,7 +365,7 @@ ReentrancyGuardUpgradeable
         address _asset,
         uint256 _assetAmount
     ) external override onlyProtocol {
-        require(assets[_asset].allowed, "!allowed");
+        require(assets[_asset].allowed, "!NOT_ALLOWED(asset)");
         IERC20(_asset).safeTransfer(_strategy, _assetAmount);
         emit AllocatedToStrategy(_strategy, _asset, _assetAmount);
     }
@@ -449,8 +461,8 @@ ReentrancyGuardUpgradeable
         uint256 _depositLimit,
         uint256 _slippageBps
     ) external onlyOwner {
-        require(IERC20Metadata(_asset).decimals() > 0, "!invalid(_asset)");
-        require(AggregatorV3Interface(_priceFeed).decimals() > 0, "!invalid(_priceFeed)");
+        require(IERC20Metadata(_asset).decimals() > 0, "!INVALID(asset)");
+        require(AggregatorV3Interface(_priceFeed).decimals() > 0, "!INVALID(priceFeed)");
 
         Asset storage asset = assets[_asset];
         asset.priceFeed = _priceFeed;
@@ -484,9 +496,9 @@ ReentrancyGuardUpgradeable
         address _toAsset,
         uint256 _fromAmount
     ) internal view returns(uint256) {
-        require(_fromAsset != _toAsset, "!invalid");
-        require(assets[_fromAsset].allowed, "!invalid(_fromAsset)");
-        require(assets[_toAsset].allowed, "!invalid(_toAsset)");
+        require(_fromAsset != _toAsset, "!INVALID(fromAsset");
+        require(assets[_fromAsset].allowed, "!NOT_ALLOWED(fromAsset)");
+        require(assets[_toAsset].allowed, "!NOT_ALLOWED(toAsset)");
 
         if (_fromAmount == 0) {
             return 0;
