@@ -17,7 +17,7 @@ const {
  */
 
 const deployProtocolUpgrade = async () => {
-    await upgradeContract('CaskVaultAdmin');
+    await upgradeContract('CaskVaultManager');
     await upgradeContract('CaskVault');
     await upgradeContract('CaskSubscriptionPlans');
     await upgradeContract('CaskSubscriptions');

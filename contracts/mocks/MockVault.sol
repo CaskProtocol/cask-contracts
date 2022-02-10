@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+
 import "../interfaces/ICaskVault.sol";
 
-contract MockVault is ICaskVault {
+contract MockVault is ICaskVault, ERC20Upgradeable {
 
     address baseAsset;
 
     constructor(address _baseAsset) {
+        __ERC20_init("Mock Vault","vMockCASK");
         baseAsset = _baseAsset;
     }
 
@@ -30,8 +33,27 @@ contract MockVault is ICaskVault {
         });
     }
 
-    function protocolPayment(address _from, address _to, uint256 _amount, uint256 _fee) external override {
-    }
+    function protocolPayment(
+        address _from,
+        address _to,
+        uint256 _value,
+        uint256 _protocolFee,
+        address _network,
+        uint256 _networkFee
+    ) external override {}
+
+    function protocolPayment(
+        address _from,
+        address _to,
+        uint256 _value,
+        uint256 _protocolFee
+    ) external override {}
+
+    function protocolPayment(
+        address _from,
+        address _to,
+        uint256 _value
+    ) external override {}
 
     function payment(address _to, uint256 _amount) external override {
     }
@@ -48,16 +70,12 @@ contract MockVault is ICaskVault {
     function withdrawTo(address _recipient, address _asset, uint256 _amount) external override {
     }
 
-    function totalSupply() external override view returns(uint256) {
-        return 0;
-    }
-
-    function balanceOf(address _address) external override view returns(uint256) {
-        return 0;
-    }
-
     function currentValueOf(address _address) external override view returns (uint256) {
         return 0;
+    }
+
+    function pricePerShare() external override view returns(uint256) {
+        return 1;
     }
 
     function supportsAsset(address _asset) external override view returns (bool) {

@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
  * @title  Interface for vault admin
   */
 
-interface ICaskVaultAdmin {
+interface ICaskVaultManager {
 
     /**
       * @dev total value of `_asset` managed by admin - denominated in native asset
