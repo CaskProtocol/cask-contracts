@@ -39,7 +39,7 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
 
     const vault = await ethers.getContract("CaskVault");
     await withConfirmation(
-        vault.initialize(vaultManager.address, networkAddresses.DAI, governorAddr)
+        vault.initialize(vaultManager.address, networkAddresses.DAI, networkAddresses.DAI_USD, governorAddr)
     );
     log("Initialized CaskVault");
 
@@ -108,14 +108,6 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
         10, // slippageBps - 0.1%
     );
     log("Allowed USDT in vault");
-
-    await vault.connect(sDeployer).allowAsset(
-        networkAddresses.DAI, // address
-        networkAddresses.DAI_USD, //priceFeed
-        daiUnits('100000000'), // depositLimit - 100M
-        10, // slippageBps - 0.1%
-    );
-    log("Allowed DAI in vault");
 
     await vault.connect(sDeployer).allowAsset(
         networkAddresses.USDC, // address
