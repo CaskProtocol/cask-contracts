@@ -132,23 +132,20 @@ KeeperCompatibleInterface
         // TODO: reduce fee based on staked balance
         //        uint256 stakedBalance = ICaskStakeManager(stakeManager).providerStakeBalanceOf(_provider);
         uint256 stakedBalance = 0;
-        uint256 paymentFeeRateAdjusted;
+        uint256 paymentFeeRateAdjusted = paymentFeeRateMax;
 
         ICaskSubscriptions.Subscription memory subscription = subscriptions.getSubscription(_subscriptionId);
         ICaskSubscriptions.PlanInfo memory planData = _parsePlanData(subscription.planData);
 
-        uint256 activeCount = subscriptions.getProviderActiveSubscriptionCount(subscription.provider);
-
         if (stakedBalance > 0) {
             uint256 loadFactor = 365 / (planData.period / 1 days);
-            uint256 noFeeTarget = activeCount * stakeTargetFactor * loadFactor;
+            uint256 noFeeTarget = subscriptions.getProviderActiveSubscriptionCount(subscription.provider) *
+                    stakeTargetFactor * loadFactor;
 
             paymentFeeRateAdjusted = paymentFeeRateMax - (paymentFeeRateMax * (stakedBalance / noFeeTarget));
             if (paymentFeeRateAdjusted < paymentFeeRateMin) {
                 paymentFeeRateAdjusted = paymentFeeRateMin;
             }
-        } else {
-            paymentFeeRateAdjusted = paymentFeeRateMax;
         }
 
         ICaskSubscriptionPlans.Provider memory providerProfile = subscriptionPlans.getProviderProfile(_provider);
@@ -158,10 +155,25 @@ KeeperCompatibleInterface
             paymentAddress = providerProfile.paymentAddress;
         }
 
-        // TODO: handle network fee
+        _sendPayment(subscription, _consumer, paymentAddress, _amount, paymentFeeRateAdjusted);
+    }
 
-        uint256 fee = paymentFeeFixed + (_amount * paymentFeeRateAdjusted / 10000);
-        vault.protocolPayment(_consumer, paymentAddress, _amount, fee);
+    function _sendPayment(
+        ICaskSubscriptions.Subscription memory _subscription,
+        address _consumer,
+        address _paymentAddress,
+        uint256 _amount,
+        uint256 _protocolFeeBps
+    ) internal {
+        if (_subscription.networkData > 0) {
+            ICaskSubscriptions.NetworkInfo memory networkData = _parseNetworkData(_subscription.networkData);
+            vault.protocolPayment(_consumer, _paymentAddress, _amount,
+                paymentFeeFixed + (_amount * _protocolFeeBps / 10000),
+                networkData.network, _amount * networkData.feeBps / 10000);
+        } else {
+            vault.protocolPayment(_consumer, _paymentAddress, _amount,
+                paymentFeeFixed + (_amount * _protocolFeeBps / 10000));
+        }
     }
 
     function rebateGas(

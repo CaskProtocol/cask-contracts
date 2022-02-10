@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+
 /**
  * @title  Interface for vault
   */
 
-interface ICaskVault {
+interface ICaskVault is IERC20MetadataUpgradeable {
 
     // whitelisted stablecoin assets supported by the vault
     struct Asset {
@@ -43,13 +45,48 @@ interface ICaskVault {
     function supportsAsset(address _asset) external view returns (bool);
 
     /**
-     * @dev Pay `_baseAssetAmount` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
+     * @dev Pay `_value` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
      * @param _from From address
      * @param _to To address
-     * @param _baseAssetAmount Amount of asset to transfer
-     * @param _baseAssetFee Fee to deduct from `_baseAssetAmount`
+     * @param _value Amount of baseAsset value to transfer
+     * @param _protocolFee Protocol fee to deduct from `_value`
+     * @param _network Address of network fee collector
+     * @param _networkFee Network fee to deduct from `_value`
      */
-    function protocolPayment(address _from, address _to, uint256 _baseAssetAmount, uint256 _baseAssetFee) external;
+    function protocolPayment(
+        address _from,
+        address _to,
+        uint256 _value,
+        uint256 _protocolFee,
+        address _network,
+        uint256 _networkFee
+    ) external;
+
+    /**
+     * @dev Pay `_value` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
+     * @param _from From address
+     * @param _to To address
+     * @param _value Amount of baseAsset value to transfer
+     * @param _protocolFee Protocol fee to deduct from `_value`
+     */
+    function protocolPayment(
+        address _from,
+        address _to,
+        uint256 _value,
+        uint256 _protocolFee
+    ) external;
+
+    /**
+     * @dev Pay `_value` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
+     * @param _from From address
+     * @param _to To address
+     * @param _value Amount of baseAsset value to transfer
+     */
+    function protocolPayment(
+        address _from,
+        address _to,
+        uint256 _value
+    ) external;
 
     /**
      * @dev Pay `_baseAssetAmount` of `baseAsset` directly from a sender to `_to`
@@ -91,19 +128,24 @@ interface ICaskVault {
     /**
      * @dev Get total shares of vault
      */
-    function totalSupply() external view returns(uint256);
+//    function totalSupply() external view returns(uint256);
 
     /**
      * @dev Get current balance of shares for an address
      * @param _address Address to check
      */
-    function balanceOf(address _address) external view returns(uint256);
+//    function balanceOf(address _address) external view returns(uint256);
 
     /**
      * @dev Get current vault value of `_address` denominated in `baseAsset`
      * @param _address Address to check
      */
     function currentValueOf(address _address) external view returns(uint256);
+
+    /**
+     * @dev Get current vault value a vault share
+     */
+    function pricePerShare() external view returns(uint256);
 
     /**
      * @dev Get total value in vault and managed by admin - denominated in `baseAsset`

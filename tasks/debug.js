@@ -72,7 +72,7 @@ async function _debug_dao(taskArguments, hre) {
 
 async function _debug_protocol(taskArguments, hre) {
 
-    const vaultAdmin = await hre.ethers.getContract("CaskVaultAdmin");
+    const vaultManager = await hre.ethers.getContract("CaskVaultManager");
     const vault = await hre.ethers.getContract("CaskVault");
     const subscriptionPlans = await hre.ethers.getContract("CaskSubscriptionPlans");
     const subscriptions = await hre.ethers.getContract("CaskSubscriptions");
@@ -85,10 +85,10 @@ async function _debug_protocol(taskArguments, hre) {
     console.log("\nProtocol Contract addresses");
     console.log("====================");
 
-    console.log(`CaskVaultAdmin:                                 ${vaultAdmin.address}`);
-    console.log(`CaskVaultAdmin Proxy Admin:                     ${await hre.upgrades.erc1967.getAdminAddress(vaultAdmin.address)}`);
-    console.log(`CaskVaultAdmin Impl:                            ${await hre.upgrades.erc1967.getImplementationAddress(vaultAdmin.address)}`);
-    console.log(`CaskVaultAdmin Owner:                           ${await vaultAdmin.owner()}`);
+    console.log(`CaskVaultManager:                               ${vaultManager.address}`);
+    console.log(`CaskVaultManager Proxy Admin:                   ${await hre.upgrades.erc1967.getAdminAddress(vaultManager.address)}`);
+    console.log(`CaskVaultManager Impl:                          ${await hre.upgrades.erc1967.getImplementationAddress(vaultManager.address)}`);
+    console.log(`CaskVaultManager Owner:                         ${await vaultManager.owner()}`);
 
     console.log(`CaskVault:                                      ${vault.address}`);
     console.log(`CaskVault Proxy Admin:                          ${await hre.upgrades.erc1967.getAdminAddress(vault.address)}`);
@@ -112,17 +112,17 @@ async function _debug_protocol(taskArguments, hre) {
     //
     // Vault Config
     //
-    const strategyAllocationRate = await vaultAdmin.strategyAllocationRate();
-    const yieldFeeBps = await vaultAdmin.yieldFeeBps();
-    const strategist = await vaultAdmin.strategist();
+    const strategyAllocationRate = await vaultManager.strategyAllocationRate();
+    const yieldFeeBps = await vaultManager.yieldFeeBps();
+    const strategist = await vaultManager.strategist();
 
     console.log("\nVault Configuration");
     console.log("====================");
-    console.log(`VaultAdmin strategyAllocationRate:              ${strategyAllocationRate}`);
-    console.log(`VaultAdmin yieldFeeBps:                         ${yieldFeeBps}`);
-    console.log(`VaultAdmin strategist:                          ${strategist}`);
-    console.log(`VaultAdmin vault:                               ${await vaultAdmin.vault()}`);
-    console.log(`CaskVault vaultAdmin:                           ${await vault.vaultAdmin()}`);
+    console.log(`CaskVaultManager strategyAllocationRate:        ${strategyAllocationRate}`);
+    console.log(`CaskVaultManager yieldFeeBps:                   ${yieldFeeBps}`);
+    console.log(`CaskVaultManager strategist:                    ${strategist}`);
+    console.log(`CaskVaultManager vault:                         ${await vaultManager.vault()}`);
+    console.log(`CaskVault vaultManager:                         ${await vault.vaultManager()}`);
     console.log(`CaskVault baseAsset:                            ${await vault.getBaseAsset()}`);
     const operatorCount = await vault.operatorCount();
     console.log(`CaskVault operatorCount:                        ${operatorCount}`);

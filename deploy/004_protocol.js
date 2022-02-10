@@ -25,28 +25,28 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
     const networkAddresses = await getNetworkAddresses(deployments);
     log(`Deploying protocol contracts using network addresses: ${JSON.stringify(networkAddresses, null, 2)}`);
 
-    await deployProxyWithConfirmation('CaskVaultAdmin');
+    await deployProxyWithConfirmation('CaskVaultManager');
     await deployProxyWithConfirmation('CaskVault');
     await deployProxyWithConfirmation('CaskSubscriptionPlans');
     await deployProxyWithConfirmation('CaskSubscriptions');
     await deployProxyWithConfirmation('CaskSubscriptionManager');
 
-    const vaultAdmin = await ethers.getContract("CaskVaultAdmin");
+    const vaultManager = await ethers.getContract("CaskVaultManager");
     await withConfirmation(
-        vaultAdmin.initialize(0, 0)
+        vaultManager.initialize(0, 0)
     );
-    log("Initialized CaskVaultAdmin");
+    log("Initialized CaskVaultManager");
 
     const vault = await ethers.getContract("CaskVault");
     await withConfirmation(
-        vault.initialize(vaultAdmin.address, networkAddresses.DAI)
+        vault.initialize(vaultManager.address, networkAddresses.DAI, governorAddr)
     );
     log("Initialized CaskVault");
 
     await withConfirmation(
-        vaultAdmin.connect(sDeployer).setVault(vault.address)
+        vaultManager.connect(sDeployer).setVault(vault.address)
     );
-    log("Connected CaskVault to CaskVaultAdmin");
+    log("Connected CaskVault to CaskVaultManager");
 
     const subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
     await withConfirmation(
@@ -93,7 +93,7 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     const {deployerAddr, governorAddr} = await getNamedAccounts();
     const sDeployer = await ethers.provider.getSigner(deployerAddr);
 
-    const vaultAdmin = await ethers.getContract("CaskVaultAdmin");
+    const vaultManager = await ethers.getContract("CaskVaultManager");
     const vault = await ethers.getContract("CaskVault");
     const subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
     const subscriptions = await ethers.getContract("CaskSubscriptions");
@@ -126,7 +126,7 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     log("Allowed USDC in vault");
 
 
-    await vaultAdmin.transferOwnership(governorAddr);
+    await vaultManager.transferOwnership(governorAddr);
     await vault.transferOwnership(governorAddr);
     await subscriptionPlans.transferOwnership(governorAddr);
     await subscriptions.transferOwnership(governorAddr);

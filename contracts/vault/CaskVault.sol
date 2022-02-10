@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -12,7 +13,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 
 import "../interfaces/ICaskVault.sol";
-import "../interfaces/ICaskVaultAdmin.sol";
+import "../interfaces/ICaskVaultManager.sol";
 import "../interfaces/ICaskStrategy.sol";
 
 /**
@@ -29,6 +30,7 @@ CaskVault is where:
 
 contract CaskVault is
 ICaskVault,
+ERC20Upgradeable,
 OwnableUpgradeable,
 PausableUpgradeable,
 ReentrancyGuardUpgradeable
@@ -59,87 +61,135 @@ ReentrancyGuardUpgradeable
 
     /************************** STATE **************************/
 
-    // address of ICaskVaultAdmin that administers the vault
-    address public vaultAdmin;
+    // address of ICaskVaultManager that manages the vault
+    address public vaultManager;
 
     // base asset for vault - much is denominated in this
     address public baseAsset;
 
-    // share balance handling
-    mapping(address => uint256) internal balances;
-    uint256 internal supply;
+    // address of contract that collects and distributes fees
+    address public feeDistributor;
 
     // assets supported by vault
     mapping(address => Asset) internal assets;
     address[] internal allAssets;
 
-    /** @dev total fees collected by vault - denominated in vault shares */
-    uint256 public feeBalance;
-
-
     address[] public operators;
 
     function initialize(
-        address _vaultAdmin,
-        address _baseAsset
+        address _vaultManager,
+        address _baseAsset,
+        address _feeDistributor
     ) public initializer {
         __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
+        __ERC20_init("Cask Vault Shares","vCASK");
 
-        vaultAdmin = _vaultAdmin;
+        vaultManager = _vaultManager;
         baseAsset = _baseAsset; // TODO: require price feed address in ctor? fix issues with allAssets and baseAsset
+        feeDistributor = _feeDistributor;
 
         // parameter defaults
         transferFeeFixed = 0;
         transferFeeRate = 0;
-
-        feeBalance = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
 
     /**
-     * @dev Pay `_baseAssetAmount` of `baseAsset` from `_from` to `_to`
+     * @dev Pay `_value` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
      * @param _from From address
      * @param _to To address
-     * @param _baseAssetAmount Amount of baseAsset to transfer
-     * @param _baseAssetFee Fee to deduct from `_baseAssetAmount`
+     * @param _value Amount of baseAsset value to transfer
+     * @param _protocolFee Protocol fee to deduct from `_value`
+     * @param _network Address of network fee collector
+     * @param _networkFee Network fee to deduct from `_value`
      */
     function protocolPayment(
         address _from,
         address _to,
-        uint256 _baseAssetAmount,
-        uint256 _baseAssetFee
+        uint256 _value,
+        uint256 _protocolFee,
+        address _network,
+        uint256 _networkFee
     ) external override nonReentrant onlyOperator {
-        uint256 shares = _sharesForAmount(_baseAssetAmount);
-        require(balances[_from] >= shares, "!balance");
+        _protocolPayment(_from, _to, _value, _protocolFee, _network, _networkFee);
+    }
 
-        uint256 feeShares = _sharesForAmount(_baseAssetFee);
+    /**
+     * @dev Pay `_value` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
+     * @param _from From address
+     * @param _to To address
+     * @param _value Amount of baseAsset value to transfer
+     * @param _protocolFee Protocol fee to deduct from `_value`
+     */
+    function protocolPayment(
+        address _from,
+        address _to,
+        uint256 _value,
+        uint256 _protocolFee
+    ) external override nonReentrant onlyOperator {
+        _protocolPayment(_from, _to, _value, _protocolFee, address(0), 0);
+    }
 
-        balances[_from] = balances[_from] - shares;
-        balances[_to] = balances[_to] + shares - feeShares;
+    /**
+     * @dev Pay `_value` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
+     * @param _from From address
+     * @param _to To address
+     * @param _value Amount of baseAsset value to transfer
+     */
+    function protocolPayment(
+        address _from,
+        address _to,
+        uint256 _value
+    ) external override nonReentrant onlyOperator {
+        _protocolPayment(_from, _to, _value, 0, address(0), 0);
+    }
 
-        feeBalance = feeBalance + feeShares; // add fee to total fees owed to protocol
+    function _protocolPayment(
+        address _from,
+        address _to,
+        uint256 _value,
+        uint256 _protocolFee,
+        address _network,
+        uint256 _networkFee
+    ) internal {
+        uint256 shares = _sharesForValue(_value);
 
-        emit Payment(_from, _to, _baseAssetAmount, _baseAssetFee, shares);
+        uint256 protocolFeeShares = 0;
+        if (_protocolFee > 0) {
+            protocolFeeShares = _sharesForValue(_protocolFee);
+        }
+
+        uint256 networkFeeShares = 0;
+        if (_networkFee > 0 && _network != address(0)) {
+            networkFeeShares = _sharesForValue(_networkFee);
+        }
+
+        _transfer(_from, _to, shares - protocolFeeShares - networkFeeShares); // payment - fees from consumer to provider
+        if (protocolFeeShares > 0) {
+            _transfer(_from, feeDistributor, protocolFeeShares); // fee from consumer to fee distributor
+        }
+        if (networkFeeShares > 0) {
+            _transfer(_from, _network, networkFeeShares); // network fee from consumer to network
+        }
+
+        emit Payment(_from, _to, _value, _protocolFee, shares);
     }
 
     function payment(
         address _to,
         uint256 _baseAssetAmount
     ) external override nonReentrant {
-        uint256 shares = _sharesForAmount(_baseAssetAmount);
-        require(balances[msg.sender] >= shares, "!balance");
 
+        uint256 shares = _sharesForValue(_baseAssetAmount);
         uint256 baseAssetFee = transferFeeFixed + (_baseAssetAmount * transferFeeRate / 10000);
-        uint256 feeShares = _sharesForAmount(baseAssetFee);
+        uint256 feeShares = _sharesForValue(baseAssetFee);
 
-        balances[msg.sender] = balances[msg.sender] - shares;
-        balances[_to] = balances[_to] + shares - feeShares;
-
-        feeBalance = feeBalance + feeShares; // add fee to total fees owed to protocol
+        _transfer(msg.sender, _to, shares - feeShares); // payment - fee from consumer to provider
+        _transfer(msg.sender, feeDistributor, feeShares); // fee from consumer to fee distributor
 
         emit Payment(msg.sender, _to, _baseAssetAmount, baseAssetFee, shares);
     }
@@ -178,12 +228,7 @@ ReentrancyGuardUpgradeable
         require(_asset == baseAsset || assets[_asset].allowed, "!invalid(_asset)");
         require(_assetAmount > 0, "!invalid(_assetAmount)");
 
-        // calculate shares before transferring new asset into vault
-        uint256 shares = _sharesForAmount(_assetAmount);
-
-        IERC20(_asset).safeTransferFrom(msg.sender, address(this), _assetAmount);
-
-        uint256 baseAssetAmount;
+        uint256 baseAssetAmount = _assetAmount;
         if (_asset != baseAsset) {
             Asset storage asset = assets[_asset];
 
@@ -191,12 +236,14 @@ ReentrancyGuardUpgradeable
             uint256 slippage = _assetAmount * asset.slippageBps / 10000;
 
             baseAssetAmount = _convertPrice(_asset, baseAsset, _assetAmount - slippage);
-        } else {
-            baseAssetAmount = _assetAmount;
         }
 
-        supply = supply + shares;
-        balances[_to] = balances[_to] + shares;
+        // calculate shares before transferring new asset into vault
+        uint256 shares = _sharesForValue(baseAssetAmount);
+
+        IERC20(_asset).safeTransferFrom(msg.sender, address(this), _assetAmount);
+
+        _mint(_to, shares);
 
         emit AssetDeposited(_to, _asset, _assetAmount, baseAssetAmount, shares);
     }
@@ -235,15 +282,12 @@ ReentrancyGuardUpgradeable
         require(assets[_asset].allowed, "!invalid(_asset)");
         require(_shares > 0, "!invalid(_sharesAmount)");
 
-        require(balances[msg.sender] >= _shares, "!balance");
-
         // calculate amount before supply adjustment
         uint256 baseAmount = _shareValue(_shares);
 
-        supply = supply - _shares;
-        balances[msg.sender] = balances[msg.sender] - _shares;
+        _burn(msg.sender, _shares);
 
-        uint256 assetAmount;
+        uint256 assetAmount = baseAmount;
         if (_asset != baseAsset) {
             Asset storage asset = assets[_asset];
 
@@ -252,8 +296,6 @@ ReentrancyGuardUpgradeable
             // subtract slippage bps from withdrawing amount
             uint256 slippage = assetAmount * asset.slippageBps / 10000;
             assetAmount = assetAmount - slippage;
-        } else {
-            assetAmount = baseAmount;
         }
 
         // transfer requested stablecoin to _recipient
@@ -262,29 +304,23 @@ ReentrancyGuardUpgradeable
         emit AssetWithdrawn(_recipient, _asset, assetAmount, baseAmount, _shares);
     }
 
-    function totalSupply() external override view returns(uint256) {
-        return supply;
-    }
-
-    function balanceOf(
-        address _address
-    ) external override view returns(uint256) {
-        return balances[_address];
-    }
-
     function currentValueOf(
         address _address
     ) external override view returns(uint256) {
-        return _shareValue(balances[_address]);
+        return _shareValue(balanceOf(_address));
+    }
+
+    function pricePerShare() external override view returns(uint256) {
+        return _shareValue(1);
     }
 
     /************************** SHARES FUNCTIONS **************************/
 
-    function _sharesForAmount(
+    function _sharesForValue(
         uint256 _amount
     ) internal view returns(uint256) {
         if (_totalValue() > 0) {
-            return _amount * supply / _totalValue();
+            return _amount * totalSupply() / _totalValue();
         } else {
             return _amount;
         }
@@ -293,12 +329,11 @@ ReentrancyGuardUpgradeable
     function _shareValue(
         uint256 _shares
     ) internal view returns(uint256) {
-        if (supply == 0) {
+        if (totalSupply() == 0) {
             return _shares;
         }
-        return _shares * _totalValue() / supply;
+        return _shares * _totalValue() / totalSupply();
     }
-
 
     function totalValue() external override view returns(uint256) {
         return _totalValue();
@@ -316,6 +351,7 @@ ReentrancyGuardUpgradeable
 
         return total;
     }
+
     function totalAssetBalance(
         address _asset
     ) external override view returns(uint256) {
@@ -324,7 +360,7 @@ ReentrancyGuardUpgradeable
     function _totalAssetBalance(
         address _asset
     ) internal view returns(uint256) {
-        return IERC20(_asset).balanceOf(address(this)) + ICaskVaultAdmin(vaultAdmin).assetBalanceManaged(_asset);
+        return IERC20(_asset).balanceOf(address(this)) + ICaskVaultManager(vaultManager).assetBalanceManaged(_asset);
     }
 
     function allocateToStrategy(
@@ -372,29 +408,6 @@ ReentrancyGuardUpgradeable
 
     function operatorCount() external view returns(uint256) {
         return operators.length;
-    }
-
-    /**
-    * @dev Withdraw an amount of accumulated share fees in the form of `baseAsset`
-     * @param _recipient Recipient who will receive the withdrawn assets
-     * @param _sharesAmount Amount of shares to withdraw
-     */
-    function withdrawFees(
-        address _recipient,
-        uint256 _sharesAmount
-    ) external onlyOwner {
-        require(_sharesAmount <= feeBalance, "!balance");
-
-        // calculate amount before supply adjustment
-        uint256 baseAmount = _shareValue(_sharesAmount);
-
-        supply = supply - _sharesAmount; // reduce supply
-        feeBalance = feeBalance - _sharesAmount; // reduce owed fees
-
-        // transfer fees in the form of baseAsset to _recipient
-        IERC20(baseAsset).safeTransfer(_recipient, baseAmount);
-
-        emit AssetWithdrawn(_recipient, baseAsset, baseAmount, baseAmount, _sharesAmount);
     }
 
     function setParameters(

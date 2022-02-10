@@ -27,7 +27,7 @@ async function vaultFixture() {
 
 
     // contracts
-    const vaultAdmin = await ethers.getContract("CaskVaultAdmin");
+    const vaultManager = await ethers.getContract("CaskVaultManager");
     const vault = await ethers.getContract("CaskVault");
 
     return {
@@ -43,7 +43,7 @@ async function vaultFixture() {
         providerB,
         providerC,
         //contracts
-        vaultAdmin,
+        vaultManager,
         vault,
     };
 }

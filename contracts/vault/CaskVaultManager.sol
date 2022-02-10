@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../interfaces/ICaskVault.sol";
 import "../interfaces/ICaskStrategy.sol";
-import "../interfaces/ICaskVaultAdmin.sol";
+import "../interfaces/ICaskVaultManager.sol";
 
 /**
 CaskVaultOperator is where:
@@ -26,8 +26,8 @@ CaskVaultOperator is where:
 
 */
 
-contract CaskVaultAdmin is
-ICaskVaultAdmin,
+contract CaskVaultManager is
+ICaskVaultManager,
 OwnableUpgradeable,
 PausableUpgradeable,
 ReentrancyGuardUpgradeable
