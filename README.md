@@ -18,17 +18,17 @@ yarn hardhat accounts
 
 ## Compile and start the local chain
 ```shell
-yarn local
+yarn hardhat node
 ```
 
 ## Fund the fixture addresses with Mock DAI/USDT/USDC
 ```shell
-yarn hardhat fund --network localhost
+yarn local fund
 ```
 
 ## Import the fixture addresses into you wallet
 ```shell
-yarn hardhat accounts --network localhost
+yarn local accounts
 ```
 
 Grab the private key (second column) for one/all of the `consumer` and/or `provider` addresses and import them into your wallet.
@@ -48,7 +48,7 @@ https://satochip.medium.com/metamask-how-to-add-custom-network-binance-smart-cha
 
 ## Output the addresses of the deployed contracts
 ```shell
-yarn hardhat debug --network localhost
+yarn local debug
 ```
 
 You'll need to update `cask-frontend/.env` and add in the Cask contract addresses in these variables...
