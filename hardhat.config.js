@@ -14,6 +14,7 @@ require('hardhat-contract-sizer');
 const { accounts } = require("./tasks/account");
 const { debug } = require("./tasks/debug");
 const { fund } = require("./tasks/fund");
+const { fixtures } = require("./tasks/fixtures");
 
 
 // dao networks
@@ -59,6 +60,8 @@ task("accounts", "Prints the list of accounts", async (taskArguments, hre) => {
 });
 
 task("fund", "Funds all accounts with USDC/USDT/DAI", fund);
+
+task("fixtures", "Setup fixtured provider plans and consumer subscriptions", fixtures);
 
 
 module.exports = {

@@ -49,15 +49,6 @@ ReentrancyGuardUpgradeable
         _;
     }
 
-    /************************** PARAMETERS **************************/
-
-    /** @dev fixed fee to charge recipient on direct transfer, in baseAsset decimal units. */
-    uint256 public transferFeeFixed;
-
-    /** @dev percentage to charge recipient on direct transfer, in bps. 50% = 5000. */
-    uint256 public transferFeeRate;
-
-
 
     /************************** STATE **************************/
 
@@ -101,10 +92,6 @@ ReentrancyGuardUpgradeable
         vaultManager = _vaultManager;
         baseAsset = _baseAsset;
         feeDistributor = _feeDistributor;
-
-        // parameter defaults
-        transferFeeFixed = 0;
-        transferFeeRate = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -408,21 +395,17 @@ ReentrancyGuardUpgradeable
     }
 
     function setParameters(
-        uint256 _transferFeeFixed,
-        uint256 _transferFeeRate
+        address _vaultManager,
+        address _feeDistributor,
+        address _baseAsset
     ) external onlyOwner {
-        transferFeeFixed = _transferFeeFixed;
-        transferFeeRate = _transferFeeRate;
+        vaultManager = _vaultManager;
+        feeDistributor = _feeDistributor;
+        baseAsset = _baseAsset;
     }
 
 
     /************************** ASSET FUNCTIONS **************************/
-
-    function setBaseAsset(
-        address _baseAsset
-    ) external onlyOwner {
-        baseAsset = _baseAsset;
-    }
 
     function getBaseAsset() external view override returns(address) {
         return baseAsset;
