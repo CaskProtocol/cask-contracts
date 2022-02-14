@@ -377,12 +377,16 @@ PausableUpgradeable
 
     function getConsumerSubscriptions(
         address _consumer,
-        uint256 limit,
-        uint256 offset
+        uint256 _limit,
+        uint256 _offset
     ) external override view returns (uint256[] memory) {
-        uint256[] memory subscriptionIds = new uint256[](limit);
-        for (uint256 i = 0; i < limit; i++) {
-            subscriptionIds[i] = consumerSubscriptions[_consumer][i+offset];
+        uint256 size = _limit;
+        if (size > consumerSubscriptions[_consumer].length) {
+            size = consumerSubscriptions[_consumer].length;
+        }
+        uint256[] memory subscriptionIds = new uint256[](size);
+        for (uint256 i = _offset; i < consumerSubscriptions[_consumer].length; i++) {
+            subscriptionIds[i] = consumerSubscriptions[_consumer][i];
         }
         return subscriptionIds;
     }
@@ -395,12 +399,16 @@ PausableUpgradeable
 
     function getProviderSubscriptions(
         address _provider,
-        uint256 limit,
-        uint256 offset
+        uint256 _limit,
+        uint256 _offset
     ) external override view returns (uint256[] memory) {
-        uint256[] memory subscriptionIds = new uint256[](limit);
-        for (uint256 i = 0; i < limit; i++) {
-            subscriptionIds[i] = providerSubscriptions[_provider][i+offset];
+        uint256 size = _limit;
+        if (size > providerSubscriptions[_provider].length) {
+            size = providerSubscriptions[_provider].length;
+        }
+        uint256[] memory subscriptionIds = new uint256[](size);
+        for (uint256 i = _offset; i < providerSubscriptions[_provider].length; i++) {
+            subscriptionIds[i] = providerSubscriptions[_provider][i];
         }
         return subscriptionIds;
     }
