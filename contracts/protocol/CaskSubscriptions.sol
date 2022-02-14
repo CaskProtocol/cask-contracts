@@ -218,6 +218,7 @@ PausableUpgradeable
         require(subscription.status != SubscriptionStatus.Paused &&
                 subscription.status != SubscriptionStatus.PastDue &&
                 subscription.status != SubscriptionStatus.Canceled &&
+                subscription.status != SubscriptionStatus.Trialing &&
                 subscription.status != SubscriptionStatus.PendingCancel, "!INVALID(status)");
 
         require(subscription.minTermAt == 0 || uint32(block.timestamp) >= subscription.minTermAt, "!MIN_TERM");
@@ -617,7 +618,8 @@ PausableUpgradeable
         bytes32 _ref,
         bytes32 _planData
     ) internal view returns(uint256) {
-        return uint256(keccak256(abi.encodePacked(msg.sender, _providerAddr, _planData, _ref, block.number)));
+        return uint256(keccak256(abi.encodePacked(msg.sender, _providerAddr,
+            _planData, _ref, block.number, block.timestamp)));
     }
 
     function _parsePlanData(
