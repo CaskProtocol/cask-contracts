@@ -11,7 +11,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import "../utils/BasicMetaTransaction.sol";
+import "@opengsn/contracts/src/BaseRelayRecipient.sol";
+
 
 import "../interfaces/ICaskVault.sol";
 import "../interfaces/ICaskVaultManager.sol";
@@ -31,7 +32,7 @@ CaskVault is where:
 
 contract CaskVault is
 ICaskVault,
-BasicMetaTransaction,
+BaseRelayRecipient,
 ERC20Upgradeable,
 OwnableUpgradeable,
 PausableUpgradeable,
@@ -42,7 +43,7 @@ ReentrancyGuardUpgradeable
     modifier onlyProtocol {
         bool isProtocol = false;
         for (uint256 i = 0; i < protocols.length; i++) {
-            if (msg.sender == protocols[i]) {
+            if (_msgSender() == protocols[i]) {
                 isProtocol = true;
                 break;
             }
@@ -97,6 +98,18 @@ ReentrancyGuardUpgradeable
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
+
+    string public override versionRecipient = "2.2.0";
+
+    function _msgSender() internal view override(ContextUpgradeable, BaseRelayRecipient)
+    returns (address sender) {
+        sender = BaseRelayRecipient._msgSender();
+    }
+
+    function _msgData() internal view override(ContextUpgradeable, BaseRelayRecipient)
+    returns (bytes memory) {
+        return BaseRelayRecipient._msgData();
+    }
 
 
     /**
@@ -169,12 +182,13 @@ ReentrancyGuardUpgradeable
             networkFeeShares = _sharesForValue(_networkFee);
         }
 
-        _transfer(_from, _to, shares - protocolFeeShares - networkFeeShares); // payment - fees from consumer to provider
+        _transfer(_from, _to, shares); // payment from consumer to provider
+
         if (protocolFeeShares > 0) {
-            _transfer(_from, feeDistributor, protocolFeeShares); // fee from consumer to fee distributor
+            _transfer(_to, feeDistributor, protocolFeeShares); // fee from provider to fee distributor
         }
         if (networkFeeShares > 0) {
-            _transfer(_from, _network, networkFeeShares); // network fee from consumer to network
+            _transfer(_to, _network, networkFeeShares); // network fee from provider to network
         }
 
         emit Payment(_from, _to, _value, _protocolFee, shares);
@@ -189,7 +203,7 @@ ReentrancyGuardUpgradeable
         address _asset,
         uint256 _assetAmount
     ) external override nonReentrant {
-        _depositTo(msg.sender, _asset, _assetAmount);
+        _depositTo(_msgSender(), _asset, _assetAmount);
     }
 
     /**
@@ -227,7 +241,7 @@ ReentrancyGuardUpgradeable
         // calculate shares before transferring new asset into vault
         uint256 shares = _sharesForValue(baseAssetAmount);
 
-        IERC20(_asset).safeTransferFrom(msg.sender, address(this), _assetAmount);
+        IERC20(_asset).safeTransferFrom(_msgSender(), address(this), _assetAmount);
 
         _mint(_to, shares);
 
@@ -243,7 +257,7 @@ ReentrancyGuardUpgradeable
         address _asset,
         uint256 _shares
     ) external override nonReentrant {
-        _withdrawTo(msg.sender, _asset, _shares);
+        _withdrawTo(_msgSender(), _asset, _shares);
     }
 
     /**
@@ -271,7 +285,7 @@ ReentrancyGuardUpgradeable
         // calculate amount before supply adjustment
         uint256 baseAmount = _shareValue(_shares);
 
-        _burn(msg.sender, _shares);
+        _burn(_msgSender(), _shares);
 
         uint256 assetAmount = baseAmount;
         if (_asset != baseAsset) {
@@ -396,14 +410,22 @@ ReentrancyGuardUpgradeable
         return protocols.length;
     }
 
-    function setParameters(
-        address _vaultManager,
-        address _feeDistributor,
-        address _baseAsset
+    function setFeeDistributor(
+        address _feeDistributor
+    ) external onlyOwner {
+        feeDistributor = _feeDistributor;
+    }
+
+    function setManager(
+        address _vaultManager
     ) external onlyOwner {
         vaultManager = _vaultManager;
-        feeDistributor = _feeDistributor;
-        baseAsset = _baseAsset;
+    }
+
+    function setTrustedForwarder(
+        address _forwarder
+    ) external onlyOwner {
+        _setTrustedForwarder(_forwarder);
     }
 
 

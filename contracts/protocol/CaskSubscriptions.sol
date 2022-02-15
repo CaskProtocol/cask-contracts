@@ -6,7 +6,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import "../utils/BasicMetaTransaction.sol";
+import "@opengsn/contracts/src/BaseRelayRecipient.sol";
+
 
 import "../interfaces/ICaskSubscriptionManager.sol";
 import "../interfaces/ICaskSubscriptions.sol";
@@ -14,7 +15,7 @@ import "../interfaces/ICaskSubscriptionPlans.sol";
 
 contract CaskSubscriptions is
 ICaskSubscriptions,
-BasicMetaTransaction,
+BaseRelayRecipient,
 ERC721Upgradeable,
 OwnableUpgradeable,
 PausableUpgradeable
@@ -46,19 +47,19 @@ PausableUpgradeable
 
 
     modifier onlyManager() {
-        require(msgSender() == address(subscriptionManager), "!AUTH");
+        require(_msgSender() == address(subscriptionManager), "!AUTH");
         _;
     }
 
     modifier onlySubscriber(uint256 _subscriptionId) {
-        require(msgSender() == ownerOf(_subscriptionId), "!AUTH");
+        require(_msgSender() == ownerOf(_subscriptionId), "!AUTH");
         _;
     }
 
     modifier onlySubscriberOrProvider(uint256 _subscriptionId) {
         require(
-            msgSender() == ownerOf(_subscriptionId) ||
-            msgSender() == subscriptions[_subscriptionId].provider,
+            _msgSender() == ownerOf(_subscriptionId) ||
+            _msgSender() == subscriptions[_subscriptionId].provider,
             "!AUTH"
         );
         _;
@@ -75,6 +76,18 @@ PausableUpgradeable
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
+
+    string public override versionRecipient = "2.2.0";
+
+    function _msgSender() internal view override(ContextUpgradeable, BaseRelayRecipient)
+    returns (address sender) {
+        sender = BaseRelayRecipient._msgSender();
+    }
+
+    function _msgData() internal view override(ContextUpgradeable, BaseRelayRecipient)
+    returns (bytes memory) {
+        return BaseRelayRecipient._msgData();
+    }
 
 
     function tokenURI(uint256 _subscriptionId) public view override returns (string memory) {
@@ -424,7 +437,7 @@ PausableUpgradeable
         require(subscriptionPlans.getPlanStatus(provider, planInfo.planId) ==
             ICaskSubscriptionPlans.PlanStatus.Enabled, "!NOT_ENABLED");
 
-        _safeMint(msgSender(), subscriptionId);
+        _safeMint(_msgSender(), subscriptionId);
 
         Subscription storage subscription = subscriptions[subscriptionId];
 
@@ -458,7 +471,7 @@ PausableUpgradeable
         emit SubscriptionCreated(ownerOf(subscriptionId), subscription.provider, subscriptionId,
             subscription.ref, subscription.planId, subscription.discountId);
 
-        consumerSubscriptions[msgSender()].push(subscriptionId);
+        consumerSubscriptions[_msgSender()].push(subscriptionId);
         providerSubscriptions[provider].push(subscriptionId);
         providerActiveSubscriptionCount[provider] += 1;
         planActiveSubscriptionCount[provider][planInfo.planId] += 1;
@@ -572,7 +585,7 @@ PausableUpgradeable
         bytes32 _ref,
         bytes32 _planData
     ) internal view returns(uint256) {
-        return uint256(keccak256(abi.encodePacked(msgSender(), _providerAddr,
+        return uint256(keccak256(abi.encodePacked(_msgSender(), _providerAddr,
             _planData, _ref, block.number, block.timestamp)));
     }
 
@@ -685,6 +698,12 @@ PausableUpgradeable
         address _subscriptionManager
     ) external onlyOwner {
         subscriptionManager = ICaskSubscriptionManager(_subscriptionManager);
+    }
+
+    function setTrustedForwarder(
+        address _forwarder
+    ) external onlyOwner {
+        _setTrustedForwarder(_forwarder);
     }
 
     function _verifyMerkleRoots(

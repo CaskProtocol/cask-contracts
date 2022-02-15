@@ -65,7 +65,7 @@ ReentrancyGuardUpgradeable
         __Pausable_init();
         __ReentrancyGuard_init();
 
-        strategist = msg.sender; // TODO: is msg.sender the ProxyAdmin??
+        strategist = msg.sender;
         strategyAllocationRate = _strategyAllocationRate;
         yieldFeeBps = _yieldFeeBps;
     }
