@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "./ICaskSubscriptionManager.sol";
 
 interface ICaskSubscriptions is IERC721Upgradeable {
 
@@ -13,6 +14,15 @@ interface ICaskSubscriptions is IERC721Upgradeable {
         Canceled,
         PendingCancel,
         PastDue
+    }
+
+    enum ManagerCommand {
+        None,
+        PlanChange,
+        Cancel,
+        PastDue,
+        Renew,
+        ClearDiscount
     }
 
     struct Subscription {
@@ -85,15 +95,7 @@ interface ICaskSubscriptions is IERC721Upgradeable {
 
     function cancelSubscription(uint256 _subscriptionId) external;
 
-    function managerPlanChange(uint256 _subscriptionId) external;
-
-    function managerCancelSubscription(uint256 _subscriptionId) external;
-
-    function managerPastDueSubscription(uint256 _subscriptionId) external;
-
-    function managerRenewSubscription(uint256 _subscriptionId) external;
-
-    function managerClearDiscount(uint256 _subscriptionId) external;
+    function managerCommand(uint256 _subscriptionId, ManagerCommand _command) external;
 
     function getSubscription(uint256 _subscriptionId) external view returns (Subscription memory);
 

@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+import "../utils/BasicMetaTransaction.sol";
 
 import "../interfaces/ICaskVault.sol";
 import "../interfaces/ICaskVaultManager.sol";
@@ -30,6 +31,7 @@ CaskVault is where:
 
 contract CaskVault is
 ICaskVault,
+BasicMetaTransaction,
 ERC20Upgradeable,
 OwnableUpgradeable,
 PausableUpgradeable,

@@ -6,6 +6,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 
+import "../utils/BasicMetaTransaction.sol";
+
 import "../interfaces/ICaskSubscriptionManager.sol";
 import "../interfaces/ICaskSubscriptionPlans.sol";
 import "../interfaces/ICaskSubscriptions.sol";
@@ -13,6 +15,7 @@ import "../interfaces/ICaskVault.sol";
 
 contract CaskSubscriptionManager is
 ICaskSubscriptionManager,
+BasicMetaTransaction,
 Initializable,
 OwnableUpgradeable,
 PausableUpgradeable,
@@ -41,7 +44,7 @@ KeeperCompatibleInterface
 
 
     modifier onlySubscriptions() {
-        require(msg.sender == address(subscriptions), "!AUTH");
+        require(msgSender() == address(subscriptions), "!AUTH");
         _;
     }
 
@@ -176,23 +179,6 @@ KeeperCompatibleInterface
         }
     }
 
-    function rebateGas(
-        uint256 _initialGasLeft,
-        uint256 _gasRefundLimit
-    ) external onlySubscriptions {
-        if (_gasRefundLimit == 0) {
-            return;
-        }
-
-        // assume a fixed 30000 wei for transaction overhead and stuff performed after this snapshot
-        uint256 weiRebate = (_initialGasLeft - gasleft() + 30000) * tx.gasprice;
-        if (weiRebate > _gasRefundLimit) {
-            weiRebate = _gasRefundLimit;
-        }
-
-        //        ICaskTreasury(caskTreasury).refundGas(msg.sender, weiRebate);
-    }
-
     function checkUpkeep(
         bytes calldata checkData
     ) external view override returns(bool upkeepNeeded, bytes memory performData) {
@@ -239,6 +225,9 @@ KeeperCompatibleInterface
         if (size > allSubscriptionCount) {
             size = allSubscriptionCount;
         }
+        if (_offset >= allSubscriptionCount) {
+            return (0,new uint256[](0));
+        }
 
         uint32 timestamp = uint32(block.timestamp);
 
@@ -246,13 +235,14 @@ KeeperCompatibleInterface
         uint256[] memory allSubscriptions = subscriptions.getAllSubscriptions();
 
         uint256 renewableCount = 0;
-        for (uint256 i = _offset; i < allSubscriptionCount; i++) {
-            ICaskSubscriptions.Subscription memory subscription = subscriptions.getSubscription(allSubscriptions[i]);
+        for (uint256 i = 0; i < size && i + _offset < allSubscriptionCount; i++) {
+            ICaskSubscriptions.Subscription memory subscription =
+                subscriptions.getSubscription(allSubscriptions[i+_offset]);
             if (subscription.renewAt <= timestamp &&
                 subscription.status != ICaskSubscriptions.SubscriptionStatus.Canceled &&
                 subscription.status != ICaskSubscriptions.SubscriptionStatus.Paused)
             {
-                renewables[renewableCount] = allSubscriptions[i];
+                renewables[renewableCount] = allSubscriptions[i+_offset];
                 renewableCount = renewableCount + 1;
                 if (renewableCount >= size) {
                     break;
@@ -299,13 +289,13 @@ KeeperCompatibleInterface
                 ICaskSubscriptionPlans.PlanStatus.EndOfLife &&
                 subscriptionPlans.getPlanEOL(subscription.provider, subscription.planId) <= timestamp))
         {
-            subscriptions.managerCancelSubscription(_subscriptionId);
+            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
             return;
         }
 
         // if a plan change is pending, switch to use new plan info
         if (subscriptions.getPendingPlanChange(_subscriptionId) > 0) {
-            subscriptions.managerPlanChange(_subscriptionId);
+            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PlanChange);
             subscription = subscriptions.getSubscription(_subscriptionId); // refresh
         }
 
@@ -327,10 +317,10 @@ KeeperCompatibleInterface
                 }
 
                 if (!stillValid) {
-                    subscriptions.managerClearDiscount(_subscriptionId);
+                    subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
                 }
             } catch Error(string memory) {
-                subscriptions.managerClearDiscount(_subscriptionId);
+                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
             }
         }
 
@@ -338,17 +328,17 @@ KeeperCompatibleInterface
         if (chargePrice > 0 && vault.currentValueOf(subscriptions.ownerOf(_subscriptionId)) < chargePrice) {
             // if have not been able to renew for 7 days, cancel subscription
             if (subscription.renewAt < timestamp - 7 days) {
-                subscriptions.managerCancelSubscription(_subscriptionId);
+                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
             } else if (subscription.status != ICaskSubscriptions.SubscriptionStatus.PastDue) {
-                subscriptions.managerPastDueSubscription(_subscriptionId);
+                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PastDue);
             }
 
         } else if (chargePrice > 0) {
             _processPayment(subscriptions.ownerOf(_subscriptionId), subscription.provider, _subscriptionId, chargePrice);
-            subscriptions.managerRenewSubscription(_subscriptionId);
+            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
 
         } else { // no charge, move along now
-            subscriptions.managerRenewSubscription(_subscriptionId);
+            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
         }
 
     }
