@@ -7,6 +7,4 @@ interface ICaskSubscriptionManager {
 
     function renewSubscription(uint256 _subscriptionId) external;
 
-    function rebateGas(uint256 _initialGasLeft, uint256 _gasRefundLimit) external;
-
 }

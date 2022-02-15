@@ -26,12 +26,6 @@ PausableUpgradeable
     /** @dev contract to manage subscription plan definitions. */
     ICaskSubscriptionPlans public subscriptionPlans;
 
-    /** @dev max gas refund for transactions, in wei */
-    uint256 public gasRefundLimitCreateSubscription;
-    uint256 public gasRefundLimitChangeSubscription;
-    uint256 public gasRefundLimitCancelSubscription;
-    uint256 public gasRefundLimitOther;
-
 
     /************************** STATE **************************/
 
@@ -75,12 +69,6 @@ PausableUpgradeable
         __ERC721_init("Cask Subscriptions","CASKSUBS");
 
         subscriptionPlans = ICaskSubscriptionPlans(_subscriptionPlans);
-
-        // parameter defaults
-        gasRefundLimitCreateSubscription = 0;
-        gasRefundLimitChangeSubscription = 0;
-        gasRefundLimitCancelSubscription = 0;
-        gasRefundLimitOther = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -90,10 +78,6 @@ PausableUpgradeable
         require(_exists(_subscriptionId), "ERC721Metadata: URI query for nonexistent token");
 
         Subscription memory subscription = subscriptions[_subscriptionId];
-
-        // TODO: do we want the token to point to provider CID or subscription CID?
-//        ICaskSubscriptionPlans.Provider memory profile = subscriptionPlans.getProviderProfile(subscription.provider);
-//        return string(abi.encodePacked("ipfs://", profile.cid, "/token"));
 
         return string(abi.encodePacked("ipfs://", subscription.cid));
     }
@@ -127,7 +111,6 @@ PausableUpgradeable
         bytes memory _networkSignature,
         string calldata _cid
     ) external override whenNotPaused {
-        uint256 initialGasLeft = gasleft();
         uint256 subscriptionId = _createSubscription(_planProof, _discountProof, _cancelAt,
             _providerSignature, _cid);
 
@@ -135,7 +118,6 @@ PausableUpgradeable
 
         Subscription storage subscription = subscriptions[subscriptionId];
         subscription.networkData = _networkData;
-        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitCreateSubscription);
     }
 
     function createSubscription(
@@ -145,9 +127,7 @@ PausableUpgradeable
         bytes memory _providerSignature,
         string calldata _cid
     ) external override whenNotPaused {
-        uint256 initialGasLeft = gasleft();
         _createSubscription(_planProof, _discountProof, _cancelAt, _providerSignature, _cid);
-        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitCreateSubscription);
     }
 
     function changeSubscriptionPlan(
@@ -157,31 +137,25 @@ PausableUpgradeable
         bytes memory _providerSignature,
         string calldata _cid
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
-        uint256 initialGasLeft = gasleft();
         _changeSubscriptionPlan(_subscriptionId, _planProof, _discountProof, _providerSignature, _cid);
-        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitChangeSubscription);
     }
 
     function changeSubscriptionCancelAt(
         uint256 _subscriptionId,
         uint32 _cancelAt
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
-        uint256 initialGasLeft = gasleft();
 
         Subscription storage subscription = subscriptions[_subscriptionId];
 
         require(subscription.minTermAt == 0 || _cancelAt >= subscription.minTermAt, "!MIN_TERM");
 
         subscription.cancelAt = _cancelAt;
-
-        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
     }
 
     function changeSubscriptionDiscount(
         uint256 _subscriptionId,
         bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
-        uint256 initialGasLeft = gasleft();
 
         Subscription storage subscription = subscriptions[_subscriptionId];
         require(subscription.discountId == 0, "!EXISTING_DISCOUNT");
@@ -202,16 +176,11 @@ PausableUpgradeable
 
         emit SubscriptionChangedDiscount(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
             subscription.ref, subscription.planId, subscription.discountData);
-
-        if (msg.sender == ownerOf(_subscriptionId)) {
-            subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
-        }
     }
 
     function pauseSubscription(
         uint256 _subscriptionId
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
-        uint256 initialGasLeft = gasleft();
 
         Subscription storage subscription = subscriptions[_subscriptionId];
 
@@ -232,16 +201,11 @@ PausableUpgradeable
 
         emit SubscriptionPaused(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
             subscription.ref, subscription.planId);
-
-        if (msg.sender == ownerOf(_subscriptionId)) {
-            subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
-        }
     }
 
     function resumeSubscription(
         uint256 _subscriptionId
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
-        uint256 initialGasLeft = gasleft();
 
         Subscription storage subscription = subscriptions[_subscriptionId];
         require(subscription.status == SubscriptionStatus.Paused, "!NOT_PAUSED");
@@ -262,14 +226,11 @@ PausableUpgradeable
 
         emit SubscriptionResumed(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
             subscription.ref, subscription.planId);
-
-        subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitOther);
     }
 
     function cancelSubscription(
         uint256 _subscriptionId
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
-        uint256 initialGasLeft = gasleft();
 
         Subscription storage subscription = subscriptions[_subscriptionId];
 
@@ -282,10 +243,6 @@ PausableUpgradeable
 
         emit SubscriptionPendingCancel(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
             subscription.ref, subscription.planId);
-
-        if (msg.sender == ownerOf(_subscriptionId)) {
-            subscriptionManager.rebateGas(initialGasLeft, gasRefundLimitCancelSubscription);
-        }
     }
 
     function managerPlanChange(
@@ -385,9 +342,12 @@ PausableUpgradeable
         if (size > consumerSubscriptions[_consumer].length) {
             size = consumerSubscriptions[_consumer].length;
         }
+        if (_offset >= consumerSubscriptions[_consumer].length) {
+            return new uint256[](0);
+        }
         uint256[] memory subscriptionIds = new uint256[](size);
-        for (uint256 i = _offset; i < consumerSubscriptions[_consumer].length; i++) {
-            subscriptionIds[i] = consumerSubscriptions[_consumer][i];
+        for (uint256 i = 0; i < size && i + _offset < consumerSubscriptions[_consumer].length; i++) {
+            subscriptionIds[i] = consumerSubscriptions[_consumer][i+_offset];
         }
         return subscriptionIds;
     }
@@ -407,9 +367,12 @@ PausableUpgradeable
         if (size > providerSubscriptions[_provider].length) {
             size = providerSubscriptions[_provider].length;
         }
+        if (_offset >= providerSubscriptions[_provider].length) {
+            return new uint256[](0);
+        }
         uint256[] memory subscriptionIds = new uint256[](size);
-        for (uint256 i = _offset; i < providerSubscriptions[_provider].length; i++) {
-            subscriptionIds[i] = providerSubscriptions[_provider][i];
+        for (uint256 i = 0; i < size && i + _offset < providerSubscriptions[_provider].length; i++) {
+            subscriptionIds[i] = providerSubscriptions[_provider][i+_offset];
         }
         return subscriptionIds;
     }
@@ -731,18 +694,6 @@ PausableUpgradeable
         address _subscriptionManager
     ) external onlyOwner {
         subscriptionManager = ICaskSubscriptionManager(_subscriptionManager);
-    }
-
-    function setParameters(
-        uint256 _gasRefundLimitCreateSubscription,
-        uint256 _gasRefundLimitChangeSubscription,
-        uint256 _gasRefundLimitCancelSubscription,
-        uint256 _gasRefundLimitOther
-    ) external onlyOwner {
-        gasRefundLimitCreateSubscription = _gasRefundLimitCreateSubscription;
-        gasRefundLimitChangeSubscription = _gasRefundLimitChangeSubscription;
-        gasRefundLimitCancelSubscription = _gasRefundLimitCancelSubscription;
-        gasRefundLimitOther = _gasRefundLimitOther;
     }
 
     function _verifyMerkleRoots(

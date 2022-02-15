@@ -176,23 +176,6 @@ KeeperCompatibleInterface
         }
     }
 
-    function rebateGas(
-        uint256 _initialGasLeft,
-        uint256 _gasRefundLimit
-    ) external onlySubscriptions {
-        if (_gasRefundLimit == 0) {
-            return;
-        }
-
-        // assume a fixed 30000 wei for transaction overhead and stuff performed after this snapshot
-        uint256 weiRebate = (_initialGasLeft - gasleft() + 30000) * tx.gasprice;
-        if (weiRebate > _gasRefundLimit) {
-            weiRebate = _gasRefundLimit;
-        }
-
-        //        ICaskTreasury(caskTreasury).refundGas(msg.sender, weiRebate);
-    }
-
     function checkUpkeep(
         bytes calldata checkData
     ) external view override returns(bool upkeepNeeded, bytes memory performData) {
@@ -239,6 +222,9 @@ KeeperCompatibleInterface
         if (size > allSubscriptionCount) {
             size = allSubscriptionCount;
         }
+        if (_offset >= allSubscriptionCount) {
+            return (0,new uint256[](0));
+        }
 
         uint32 timestamp = uint32(block.timestamp);
 
@@ -246,13 +232,14 @@ KeeperCompatibleInterface
         uint256[] memory allSubscriptions = subscriptions.getAllSubscriptions();
 
         uint256 renewableCount = 0;
-        for (uint256 i = _offset; i < allSubscriptionCount; i++) {
-            ICaskSubscriptions.Subscription memory subscription = subscriptions.getSubscription(allSubscriptions[i]);
+        for (uint256 i = 0; i < size && i + _offset < allSubscriptionCount; i++) {
+            ICaskSubscriptions.Subscription memory subscription =
+                subscriptions.getSubscription(allSubscriptions[i+_offset]);
             if (subscription.renewAt <= timestamp &&
                 subscription.status != ICaskSubscriptions.SubscriptionStatus.Canceled &&
                 subscription.status != ICaskSubscriptions.SubscriptionStatus.Paused)
             {
-                renewables[renewableCount] = allSubscriptions[i];
+                renewables[renewableCount] = allSubscriptions[i+_offset];
                 renewableCount = renewableCount + 1;
                 if (renewableCount >= size) {
                     break;
