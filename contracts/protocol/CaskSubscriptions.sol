@@ -6,12 +6,15 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "../utils/BasicMetaTransaction.sol";
+
 import "../interfaces/ICaskSubscriptionManager.sol";
 import "../interfaces/ICaskSubscriptions.sol";
 import "../interfaces/ICaskSubscriptionPlans.sol";
 
 contract CaskSubscriptions is
 ICaskSubscriptions,
+BasicMetaTransaction,
 ERC721Upgradeable,
 OwnableUpgradeable,
 PausableUpgradeable
@@ -43,19 +46,19 @@ PausableUpgradeable
 
 
     modifier onlyManager() {
-        require(msg.sender == address(subscriptionManager), "!AUTH");
+        require(msgSender() == address(subscriptionManager), "!AUTH");
         _;
     }
 
     modifier onlySubscriber(uint256 _subscriptionId) {
-        require(msg.sender == ownerOf(_subscriptionId), "!AUTH");
+        require(msgSender() == ownerOf(_subscriptionId), "!AUTH");
         _;
     }
 
     modifier onlySubscriberOrProvider(uint256 _subscriptionId) {
         require(
-            msg.sender == ownerOf(_subscriptionId) ||
-            msg.sender == subscriptions[_subscriptionId].provider,
+            msgSender() == ownerOf(_subscriptionId) ||
+            msgSender() == subscriptions[_subscriptionId].provider,
             "!AUTH"
         );
         _;
@@ -245,78 +248,66 @@ PausableUpgradeable
             subscription.ref, subscription.planId);
     }
 
-    function managerPlanChange(
-        uint256 _subscriptionId
+    function managerCommand(
+        uint256 _subscriptionId,
+        ManagerCommand _command
     ) external override onlyManager whenNotPaused {
-        bytes32 pendingPlanData = pendingPlanChanges[_subscriptionId];
-        require(pendingPlanData > 0, "!INVALID(pendingPlanData)");
 
         Subscription storage subscription = subscriptions[_subscriptionId];
-        PlanInfo memory newPlanInfo = _parsePlanData(pendingPlanData);
 
-        emit SubscriptionChangedPlan(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
-            subscription.ref, subscription.planId, newPlanInfo.planId, subscription.discountId);
+        if (_command == ManagerCommand.PlanChange) {
+            bytes32 pendingPlanData = pendingPlanChanges[_subscriptionId];
+            require(pendingPlanData > 0, "!INVALID(pendingPlanData)");
 
-        subscription.planId = newPlanInfo.planId;
-        subscription.planData = pendingPlanData;
+            PlanInfo memory newPlanInfo = _parsePlanData(pendingPlanData);
 
-        if (newPlanInfo.minPeriods > 0) {
-            subscription.minTermAt = uint32(block.timestamp + (newPlanInfo.period * newPlanInfo.minPeriods));
+            emit SubscriptionChangedPlan(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+                subscription.ref, subscription.planId, newPlanInfo.planId, subscription.discountId);
+
+            subscription.planId = newPlanInfo.planId;
+            subscription.planData = pendingPlanData;
+
+            if (newPlanInfo.minPeriods > 0) {
+                subscription.minTermAt = uint32(block.timestamp + (newPlanInfo.period * newPlanInfo.minPeriods));
+            }
+
+            delete pendingPlanChanges[_subscriptionId]; // free up memory
+
+        } else if (_command == ManagerCommand.Cancel) {
+            subscription.status = SubscriptionStatus.Canceled;
+
+            providerActiveSubscriptionCount[subscription.provider] -= 1;
+            planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
+
+            emit SubscriptionCanceled(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+                subscription.ref, subscription.planId);
+
+            _burn(_subscriptionId);
+
+        } else if (_command == ManagerCommand.PastDue) {
+            subscription.status = SubscriptionStatus.PastDue;
+
+            emit SubscriptionPastDue(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+                subscription.ref, subscription.planId);
+
+        } else if (_command == ManagerCommand.Renew) {
+            PlanInfo memory planInfo = _parsePlanData(subscription.planData);
+
+            if (subscription.status == SubscriptionStatus.Trialing) {
+                emit SubscriptionTrialEnded(ownerOf(_subscriptionId), subscription.provider,
+                    _subscriptionId, subscription.ref, subscription.planId);
+            }
+
+            subscription.status = SubscriptionStatus.Active; // just in case it was something else previously
+            subscription.renewAt = subscription.renewAt + planInfo.period;
+
+            emit SubscriptionRenewed(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+                subscription.ref, subscription.planId);
+
+        } else if (_command == ManagerCommand.ClearDiscount) {
+                    subscription.discountData = 0;
         }
 
-        delete pendingPlanChanges[_subscriptionId]; // free up memory
-    }
-
-    function managerCancelSubscription(
-        uint256 _subscriptionId
-    ) external override onlyManager whenNotPaused {
-        Subscription storage subscription = subscriptions[_subscriptionId];
-
-        subscription.status = SubscriptionStatus.Canceled;
-
-        providerActiveSubscriptionCount[subscription.provider] -= 1;
-        planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
-
-        emit SubscriptionCanceled(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
-            subscription.ref, subscription.planId);
-
-        _burn(_subscriptionId);
-    }
-
-    function managerPastDueSubscription(
-        uint256 _subscriptionId
-    ) external override onlyManager whenNotPaused {
-        Subscription storage subscription = subscriptions[_subscriptionId];
-
-        subscription.status = SubscriptionStatus.PastDue;
-
-        emit SubscriptionPastDue(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
-            subscription.ref, subscription.planId);
-    }
-
-    function managerRenewSubscription(
-        uint256 _subscriptionId
-    ) external override onlyManager whenNotPaused {
-        Subscription storage subscription = subscriptions[_subscriptionId];
-        PlanInfo memory planInfo = _parsePlanData(subscription.planData);
-
-        if (subscription.status == SubscriptionStatus.Trialing) {
-            emit SubscriptionTrialEnded(ownerOf(_subscriptionId), subscription.provider,
-                _subscriptionId, subscription.ref, subscription.planId);
-        }
-
-        subscription.status = SubscriptionStatus.Active; // just in case it was something else previously
-        subscription.renewAt = subscription.renewAt + planInfo.period;
-
-        emit SubscriptionRenewed(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
-            subscription.ref, subscription.planId);
-    }
-
-    function managerClearDiscount(
-        uint256 _subscriptionId
-    ) external override onlyManager whenNotPaused {
-        Subscription storage subscription = subscriptions[_subscriptionId];
-        subscription.discountData = 0;
     }
 
     function getAllSubscriptionsCount() external view returns (uint256) {
@@ -433,7 +424,7 @@ PausableUpgradeable
         require(subscriptionPlans.getPlanStatus(provider, planInfo.planId) ==
             ICaskSubscriptionPlans.PlanStatus.Enabled, "!NOT_ENABLED");
 
-        _safeMint(msg.sender, subscriptionId);
+        _safeMint(msgSender(), subscriptionId);
 
         Subscription storage subscription = subscriptions[subscriptionId];
 
@@ -467,7 +458,7 @@ PausableUpgradeable
         emit SubscriptionCreated(ownerOf(subscriptionId), subscription.provider, subscriptionId,
             subscription.ref, subscription.planId, subscription.discountId);
 
-        consumerSubscriptions[msg.sender].push(subscriptionId);
+        consumerSubscriptions[msgSender()].push(subscriptionId);
         providerSubscriptions[provider].push(subscriptionId);
         providerActiveSubscriptionCount[provider] += 1;
         planActiveSubscriptionCount[provider][planInfo.planId] += 1;
@@ -581,7 +572,7 @@ PausableUpgradeable
         bytes32 _ref,
         bytes32 _planData
     ) internal view returns(uint256) {
-        return uint256(keccak256(abi.encodePacked(msg.sender, _providerAddr,
+        return uint256(keccak256(abi.encodePacked(msgSender(), _providerAddr,
             _planData, _ref, block.number, block.timestamp)));
     }
 

@@ -6,6 +6,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 
+import "../utils/BasicMetaTransaction.sol";
+
 import "../interfaces/ICaskSubscriptionManager.sol";
 import "../interfaces/ICaskSubscriptionPlans.sol";
 import "../interfaces/ICaskSubscriptions.sol";
@@ -13,6 +15,7 @@ import "../interfaces/ICaskVault.sol";
 
 contract CaskSubscriptionManager is
 ICaskSubscriptionManager,
+BasicMetaTransaction,
 Initializable,
 OwnableUpgradeable,
 PausableUpgradeable,
@@ -41,7 +44,7 @@ KeeperCompatibleInterface
 
 
     modifier onlySubscriptions() {
-        require(msg.sender == address(subscriptions), "!AUTH");
+        require(msgSender() == address(subscriptions), "!AUTH");
         _;
     }
 
@@ -286,13 +289,13 @@ KeeperCompatibleInterface
                 ICaskSubscriptionPlans.PlanStatus.EndOfLife &&
                 subscriptionPlans.getPlanEOL(subscription.provider, subscription.planId) <= timestamp))
         {
-            subscriptions.managerCancelSubscription(_subscriptionId);
+            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
             return;
         }
 
         // if a plan change is pending, switch to use new plan info
         if (subscriptions.getPendingPlanChange(_subscriptionId) > 0) {
-            subscriptions.managerPlanChange(_subscriptionId);
+            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PlanChange);
             subscription = subscriptions.getSubscription(_subscriptionId); // refresh
         }
 
@@ -314,10 +317,10 @@ KeeperCompatibleInterface
                 }
 
                 if (!stillValid) {
-                    subscriptions.managerClearDiscount(_subscriptionId);
+                    subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
                 }
             } catch Error(string memory) {
-                subscriptions.managerClearDiscount(_subscriptionId);
+                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
             }
         }
 
@@ -325,17 +328,17 @@ KeeperCompatibleInterface
         if (chargePrice > 0 && vault.currentValueOf(subscriptions.ownerOf(_subscriptionId)) < chargePrice) {
             // if have not been able to renew for 7 days, cancel subscription
             if (subscription.renewAt < timestamp - 7 days) {
-                subscriptions.managerCancelSubscription(_subscriptionId);
+                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
             } else if (subscription.status != ICaskSubscriptions.SubscriptionStatus.PastDue) {
-                subscriptions.managerPastDueSubscription(_subscriptionId);
+                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PastDue);
             }
 
         } else if (chargePrice > 0) {
             _processPayment(subscriptions.ownerOf(_subscriptionId), subscription.provider, _subscriptionId, chargePrice);
-            subscriptions.managerRenewSubscription(_subscriptionId);
+            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
 
         } else { // no charge, move along now
-            subscriptions.managerRenewSubscription(_subscriptionId);
+            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
         }
 
     }

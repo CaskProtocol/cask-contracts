@@ -6,10 +6,13 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
+import "../utils/BasicMetaTransaction.sol";
+
 import "../interfaces/ICaskSubscriptionPlans.sol";
 
 contract CaskSubscriptionPlans is
 ICaskSubscriptionPlans,
+BasicMetaTransaction,
 Initializable,
 OwnableUpgradeable,
 PausableUpgradeable
@@ -29,7 +32,7 @@ PausableUpgradeable
     mapping(address => mapping(uint32 => mapping(bytes32 => uint256))) internal discountUses;
 
     modifier onlyManager() {
-        require(msg.sender == subscriptionManager, "!AUTH");
+        require(msgSender() == subscriptionManager, "!AUTH");
         _;
     }
 
@@ -45,7 +48,7 @@ PausableUpgradeable
         address _paymentAddress,
         string calldata _cid
     ) external override {
-        Provider storage profile = providerProfiles[msg.sender];
+        Provider storage profile = providerProfiles[msgSender()];
         profile.paymentAddress = _paymentAddress;
         profile.cid = _cid;
     }
@@ -126,31 +129,31 @@ PausableUpgradeable
     function disablePlan(
         uint32 _planId
     ) external override {
-        require(planStatus[msg.sender][_planId] == PlanStatus.Enabled, "!NOT_ENABLED");
+        require(planStatus[msgSender()][_planId] == PlanStatus.Enabled, "!NOT_ENABLED");
 
-        planStatus[msg.sender][_planId] = PlanStatus.Disabled;
+        planStatus[msgSender()][_planId] = PlanStatus.Disabled;
 
-        emit PlanDisabled(msg.sender, _planId);
+        emit PlanDisabled(msgSender(), _planId);
     }
 
     function enablePlan(
         uint32 _planId
     ) external override {
-        require(planStatus[msg.sender][_planId] == PlanStatus.Disabled, "!NOT_DISABLED");
+        require(planStatus[msgSender()][_planId] == PlanStatus.Disabled, "!NOT_DISABLED");
 
-        planStatus[msg.sender][_planId] = PlanStatus.Enabled;
+        planStatus[msgSender()][_planId] = PlanStatus.Enabled;
 
-        emit PlanEnabled(msg.sender, _planId);
+        emit PlanEnabled(msgSender(), _planId);
     }
 
     function killPlan(
         uint32 _planId,
         uint32 _eolAt
     ) external override {
-        planStatus[msg.sender][_planId] = PlanStatus.EndOfLife;
-        planEol[msg.sender][_planId] = _eolAt;
+        planStatus[msgSender()][_planId] = PlanStatus.EndOfLife;
+        planEol[msgSender()][_planId] = _eolAt;
 
-        emit PlanEOL(msg.sender, _planId, _eolAt);
+        emit PlanEOL(msgSender(), _planId, _eolAt);
     }
 
     /************************** ADMIN FUNCTIONS **************************/
