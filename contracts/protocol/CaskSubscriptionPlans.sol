@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-import "../utils/BasicMetaTransaction.sol";
+import "@opengsn/contracts/src/BaseRelayRecipient.sol";
+
 
 import "../interfaces/ICaskSubscriptionPlans.sol";
 
 contract CaskSubscriptionPlans is
 ICaskSubscriptionPlans,
-BasicMetaTransaction,
-Initializable,
+BaseRelayRecipient,
 OwnableUpgradeable,
 PausableUpgradeable
 {
@@ -32,7 +31,7 @@ PausableUpgradeable
     mapping(address => mapping(uint32 => mapping(bytes32 => uint256))) internal discountUses;
 
     modifier onlyManager() {
-        require(msgSender() == subscriptionManager, "!AUTH");
+        require(_msgSender() == subscriptionManager, "!AUTH");
         _;
     }
 
@@ -43,12 +42,24 @@ PausableUpgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
+    string public override versionRecipient = "2.2.0";
+
+    function _msgSender() internal view override(ContextUpgradeable, BaseRelayRecipient)
+    returns (address sender) {
+        sender = BaseRelayRecipient._msgSender();
+    }
+
+    function _msgData() internal view override(ContextUpgradeable, BaseRelayRecipient)
+    returns (bytes memory) {
+        return BaseRelayRecipient._msgData();
+    }
+
 
     function setProviderProfile(
         address _paymentAddress,
         string calldata _cid
     ) external override {
-        Provider storage profile = providerProfiles[msgSender()];
+        Provider storage profile = providerProfiles[_msgSender()];
         profile.paymentAddress = _paymentAddress;
         profile.cid = _cid;
     }
@@ -129,31 +140,31 @@ PausableUpgradeable
     function disablePlan(
         uint32 _planId
     ) external override {
-        require(planStatus[msgSender()][_planId] == PlanStatus.Enabled, "!NOT_ENABLED");
+        require(planStatus[_msgSender()][_planId] == PlanStatus.Enabled, "!NOT_ENABLED");
 
-        planStatus[msgSender()][_planId] = PlanStatus.Disabled;
+        planStatus[_msgSender()][_planId] = PlanStatus.Disabled;
 
-        emit PlanDisabled(msgSender(), _planId);
+        emit PlanDisabled(_msgSender(), _planId);
     }
 
     function enablePlan(
         uint32 _planId
     ) external override {
-        require(planStatus[msgSender()][_planId] == PlanStatus.Disabled, "!NOT_DISABLED");
+        require(planStatus[_msgSender()][_planId] == PlanStatus.Disabled, "!NOT_DISABLED");
 
-        planStatus[msgSender()][_planId] = PlanStatus.Enabled;
+        planStatus[_msgSender()][_planId] = PlanStatus.Enabled;
 
-        emit PlanEnabled(msgSender(), _planId);
+        emit PlanEnabled(_msgSender(), _planId);
     }
 
     function killPlan(
         uint32 _planId,
         uint32 _eolAt
     ) external override {
-        planStatus[msgSender()][_planId] = PlanStatus.EndOfLife;
-        planEol[msgSender()][_planId] = _eolAt;
+        planStatus[_msgSender()][_planId] = PlanStatus.EndOfLife;
+        planEol[_msgSender()][_planId] = _eolAt;
 
-        emit PlanEOL(msgSender(), _planId, _eolAt);
+        emit PlanEOL(_msgSender(), _planId, _eolAt);
     }
 
     /************************** ADMIN FUNCTIONS **************************/
@@ -172,6 +183,11 @@ PausableUpgradeable
         subscriptionManager = _subscriptionManager;
     }
 
+    function setTrustedForwarder(
+        address _forwarder
+    ) external onlyOwner {
+        _setTrustedForwarder(_forwarder);
+    }
 
 
     function _parseDiscountData(

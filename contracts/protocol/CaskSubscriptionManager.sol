@@ -6,8 +6,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 
-import "../utils/BasicMetaTransaction.sol";
-
 import "../interfaces/ICaskSubscriptionManager.sol";
 import "../interfaces/ICaskSubscriptionPlans.sol";
 import "../interfaces/ICaskSubscriptions.sol";
@@ -15,7 +13,6 @@ import "../interfaces/ICaskVault.sol";
 
 contract CaskSubscriptionManager is
 ICaskSubscriptionManager,
-BasicMetaTransaction,
 Initializable,
 OwnableUpgradeable,
 PausableUpgradeable,
@@ -44,7 +41,7 @@ KeeperCompatibleInterface
 
 
     modifier onlySubscriptions() {
-        require(msgSender() == address(subscriptions), "!AUTH");
+        require(_msgSender() == address(subscriptions), "!AUTH");
         _;
     }
 
