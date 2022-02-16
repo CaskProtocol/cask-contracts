@@ -240,7 +240,7 @@ KeeperCompatibleInterface
                 subscription.status != ICaskSubscriptions.SubscriptionStatus.Paused)
             {
                 renewables[renewableCount] = allSubscriptions[i+_offset];
-                renewableCount = renewableCount + 1;
+                renewableCount += 1;
                 if (renewableCount >= size) {
                     break;
                 }
