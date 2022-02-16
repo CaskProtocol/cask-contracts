@@ -94,7 +94,7 @@ const subscriptionPerformUpkeep = async(performData) => {
     return subscriptionManager.performUpkeep(performData);
 };
 
-const runSubscriptionKeeper = async(limit= 10, offset= 0) => {
+const runSubscriptionKeeper = async(limit= 4, offset= 0) => {
     const abiCoder = new ethers.utils.AbiCoder();
     const checkData = abiCoder.encode(['uint256','uint256'], [limit, offset]);
     const checkUpkeep = await subscriptionCheckUpkeep(checkData);
