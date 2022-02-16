@@ -441,22 +441,27 @@ PausableUpgradeable
 
         Subscription storage subscription = subscriptions[subscriptionId];
 
+        uint32 timestamp = uint32(block.timestamp);
+
         subscription.provider = provider;
         subscription.planId = planInfo.planId;
         subscription.ref = _planProof[1];
         subscription.planData = _planProof[2];
         subscription.cancelAt = _cancelAt;
         subscription.cid = _cid;
-        subscription.createdAt = uint32(block.timestamp);
+        subscription.createdAt = timestamp;
 
         if (planInfo.minPeriods > 0) {
-            subscription.minTermAt = uint32(block.timestamp + (planInfo.period * planInfo.minPeriods));
+            subscription.minTermAt = timestamp + (planInfo.period * planInfo.minPeriods);
         }
 
+        // if no trial period, charge now. If trial period, charge will happen after trial is over
         if (planInfo.freeTrial > 0) {
-            // if no trial period, charge now. If trial period, charge will happen after trial is over
             subscription.status = SubscriptionStatus.Trialing;
-            subscription.renewAt = uint32(block.timestamp) + planInfo.freeTrial;
+            subscription.renewAt = timestamp + planInfo.freeTrial;
+        } else {
+            subscription.status = SubscriptionStatus.Active;
+            subscription.renewAt = timestamp;
         }
 
         (
@@ -464,7 +469,7 @@ PausableUpgradeable
         subscription.discountData
         ) = _verifyDiscountProof(subscription.provider, planInfo.planId, _discountProof);
 
-        if (subscription.renewAt <= uint32(block.timestamp)) {
+        if (subscription.renewAt <= timestamp) {
             subscriptionManager.renewSubscription(subscriptionId);
         }
 
