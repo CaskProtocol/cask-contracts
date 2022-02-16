@@ -123,6 +123,14 @@ module.exports = {
       timeout: 300000,
       gas: 2100000, gasPrice: 8000000000,
     },
+    staging: {
+      url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.MUMBAI_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+      gas: 2100000, gasPrice: 8000000000,
+    },
   },
   namedAccounts: {
     deployerAddr: {
@@ -133,6 +141,7 @@ module.exports = {
       rinkeby: RINKEBY_DEPLOYER,
       polygon: POLYGON_DEPLOYER,
       mumbai: MUMBAI_DEPLOYER,
+      staging: MUMBAI_DEPLOYER,
     },
     governorAddr: {
       default: 1,
@@ -143,6 +152,7 @@ module.exports = {
       rinkeby: RINKEBY_GOVERNOR,
       polygon: POLYGON_GOVERNOR,
       mumbai: MUMBAI_GOVERNOR,
+      staging: MUMBAI_GOVERNOR,
     },
     strategistAddr: {
       default: 2,
@@ -150,6 +160,7 @@ module.exports = {
       hardhat: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
       polygon: POLYGON_STRATEGIST,
       mumbai: MUMBAI_STRATEGIST,
+      staging: MUMBAI_STRATEGIST,
     },
     consumerA: {
       default: 4
@@ -174,6 +185,7 @@ module.exports = {
       localhost: process.env.FORK === "true" ? MUMBAI_FAUCET_ADMIN : 10,
       hardhat: process.env.FORK === "true" ? MUMBAI_FAUCET_ADMIN : 10,
       mumbai: MUMBAI_FAUCET_ADMIN,
+      staging: MUMBAI_FAUCET_ADMIN,
     },
   },
   etherscan: {

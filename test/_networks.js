@@ -8,7 +8,7 @@ const isKovan = hre.network.name === "kovan";
 const isMainnet = hre.network.name === "mainnet";
 
 const isPolygon = hre.network.name === "polygon";
-const isMumbai = hre.network.name === "mumbai";
+const isMumbai = hre.network.name === "mumbai" || hre.network.name === "staging";
 
 const isTest = process.env.IS_TEST === "true";
 
