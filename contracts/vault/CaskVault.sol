@@ -48,7 +48,7 @@ ReentrancyGuardUpgradeable
                 break;
             }
         }
-        require(isProtocol, "!auth");
+        require(isProtocol, "!AUTH");
         _;
     }
 
