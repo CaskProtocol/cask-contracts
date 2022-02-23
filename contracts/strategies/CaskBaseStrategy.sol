@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -11,36 +11,30 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 
-abstract contract CaskBaseStrategy is Initializable, AccessControlEnumerableUpgradeable, PausableUpgradeable {
+abstract contract CaskBaseStrategy is
+Initializable,
+OwnableUpgradeable,
+PausableUpgradeable
+{
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using Address for address;
 
-
-    // (un)pause contract, ...
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-
-    // deposit/withdraw funds,...
-    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
-
-    // add/remove strategies, set strategy settings, ...
-    bytes32 public constant STRATEGIST_ROLE = keccak256("STRATEGIST_ROLE");
+    address public insuranceManager;
 
 
-    function initialize(address _operator, address _strategist) public initializer {
-        _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
-        _setRoleAdmin(OPERATOR_ROLE, ADMIN_ROLE);
-        _setRoleAdmin(STRATEGIST_ROLE, ADMIN_ROLE);
-        _setupRole(ADMIN_ROLE, msg.sender);
-        _setupRole(OPERATOR_ROLE, _operator);
-        _setupRole(STRATEGIST_ROLE, _strategist);
+    function initialize(address _insuranceManager) public initializer {
+        __Ownable_init();
+        __Pausable_init();
+
+        insuranceManager = _insuranceManager;
     }
 
-    function pause() external onlyRole(ADMIN_ROLE) {
+    function pause() external {
         _pause();
     }
 
-    function unpause() external onlyRole(ADMIN_ROLE) {
+    function unpause() external {
         _unpause();
     }
 

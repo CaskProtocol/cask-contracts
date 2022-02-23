@@ -39,7 +39,7 @@ describe("CaskSubscriptions Change", function () {
         // deposit to vault
         await consumerAVault.deposit(networkAddresses.DAI, daiUnits('150'));
 
-        let subscriptionInfo;
+        let result;
 
         const ref = ethers.utils.id("user1");
 
@@ -70,9 +70,9 @@ describe("CaskSubscriptions Change", function () {
 
         // normal renewal pre-upgrade
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('130'));
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
-        expect(subscriptionInfo.planId).to.equal(plan.planId);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.planId).to.equal(plan.planId);
 
         const newPlan = plans.find((p) => p.planId === 201);
         const newPlansProof = cask.utils.generatePlanProof(newPlan.provider, 0, newPlan.planData, plansRoot,
@@ -94,9 +94,9 @@ describe("CaskSubscriptions Change", function () {
 
         // upgrade used some funds and new plan is 20, so should have less than 110
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.lt(daiUnits('110'));
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
-        expect(subscriptionInfo.planId).to.equal(newPlan.planId);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.planId).to.equal(newPlan.planId);
 
     });
 

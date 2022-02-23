@@ -40,7 +40,7 @@ describe("CaskSubscriptions Pause", function () {
         // deposit to vault
         await consumerAVault.deposit(networkAddresses.DAI, daiUnits('30'));
 
-        let subscriptionInfo;
+        let result;
 
         const ref = ethers.utils.id("user1");
 
@@ -64,8 +64,8 @@ describe("CaskSubscriptions Pause", function () {
 
         await advanceTimeRunSubscriptionKeeper(2, month);
 
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
 
         await expect(consumerASubscriptions.pauseSubscription(subscriptionId)).to.be.revertedWith("!NOT_PAUSABLE");
 
@@ -91,7 +91,7 @@ describe("CaskSubscriptions Pause", function () {
         // deposit to vault
         await consumerAVault.deposit(networkAddresses.DAI, daiUnits('150'));
 
-        let subscriptionInfo;
+        let result;
 
         const ref = ethers.utils.id("user1");
 
@@ -119,47 +119,47 @@ describe("CaskSubscriptions Pause", function () {
         await expect(consumerASubscriptions.pauseSubscription(subscriptionId)).to.be.revertedWith("!MIN_TERM");
         await expect(consumerASubscriptions.cancelSubscription(subscriptionId)).to.be.revertedWith("!MIN_TERM");
 
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
 
         await advanceTimeRunSubscriptionKeeper(12, month);
 
         // confirm current state after 13 months
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
 
         // pause and confirm now that min term has elapsed
         expect(await consumerASubscriptions.pauseSubscription(subscriptionId))
             .to.emit(consumerASubscriptions, "SubscriptionPaused");
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Paused);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Paused);
 
         await advanceTimeRunSubscriptionKeeper(2, month);
 
         // resume subscription - confirm no payment while paused
         expect(await consumerASubscriptions.resumeSubscription(subscriptionId))
             .to.emit(consumerASubscriptions, "SubscriptionResumed");
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
 
         await advanceTimeRunSubscriptionKeeper(1, month);
 
         // confirm new payment after resume
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
 
         // cancel and confirm will cancel at next renewal
         expect(await consumerASubscriptions.cancelSubscription(subscriptionId))
             .to.emit(consumerASubscriptions, "SubscriptionPendingCancel");
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.PendingCancel);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.PendingCancel);
 
         expect (await advanceTimeRunSubscriptionKeeper(1, month))
             .to.emit(consumerASubscriptions, "SubscriptionCanceled");
 
         // confirm canceled
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Canceled);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Canceled);
 
     });
 
