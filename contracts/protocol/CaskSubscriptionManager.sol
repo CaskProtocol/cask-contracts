@@ -134,7 +134,7 @@ KeeperCompatibleInterface
         uint256 stakedBalance = 0;
         uint256 paymentFeeRateAdjusted = paymentFeeRateMax;
 
-        ICaskSubscriptions.Subscription memory subscription = subscriptions.getSubscription(_subscriptionId);
+        (ICaskSubscriptions.Subscription memory subscription,) = subscriptions.getSubscription(_subscriptionId);
         ICaskSubscriptions.PlanInfo memory planData = _parsePlanData(subscription.planData);
 
         if (stakedBalance > 0) {
@@ -233,7 +233,7 @@ KeeperCompatibleInterface
 
         uint256 renewableCount = 0;
         for (uint256 i = 0; i < size && i + _offset < allSubscriptionCount; i++) {
-            ICaskSubscriptions.Subscription memory subscription =
+            (ICaskSubscriptions.Subscription memory subscription,) =
                 subscriptions.getSubscription(allSubscriptions[i+_offset]);
             if (subscription.renewAt <= timestamp &&
                 subscription.status != ICaskSubscriptions.SubscriptionStatus.Canceled &&
@@ -269,7 +269,7 @@ KeeperCompatibleInterface
     function _renewSubscription(
         uint256 _subscriptionId
     ) internal {
-        ICaskSubscriptions.Subscription memory subscription = subscriptions.getSubscription(_subscriptionId);
+        (ICaskSubscriptions.Subscription memory subscription,) = subscriptions.getSubscription(_subscriptionId);
 
         uint32 timestamp = uint32(block.timestamp);
 
@@ -293,7 +293,7 @@ KeeperCompatibleInterface
         // if a plan change is pending, switch to use new plan info
         if (subscriptions.getPendingPlanChange(_subscriptionId) > 0) {
             subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PlanChange);
-            subscription = subscriptions.getSubscription(_subscriptionId); // refresh
+            (subscription,) = subscriptions.getSubscription(_subscriptionId); // refresh
         }
 
         ICaskSubscriptions.PlanInfo memory planInfo = _parsePlanData(subscription.planData);

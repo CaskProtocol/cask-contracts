@@ -42,7 +42,7 @@ describe("CaskSubscriptions Discount", function () {
         const initialConsumerBalance = await consumerAVault.currentValueOf(consumerA.address);
         expect(initialConsumerBalance).to.equal(daiUnits('100'));
 
-        let subscriptionInfo;
+        let result;
 
         const ref = ethers.utils.id("user1");
 
@@ -78,8 +78,8 @@ describe("CaskSubscriptions Discount", function () {
 
         // confirm discounted charge after 7 day trial ended - 50% off 10/month == 5; 100 - 5 == 95
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('95'));
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.discountId).to.not.equal(ethers.utils.hexZeroPad(0, 32));
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.discountId).to.not.equal(ethers.utils.hexZeroPad(0, 32));
 
 
     });

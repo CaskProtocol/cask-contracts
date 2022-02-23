@@ -99,7 +99,7 @@ ReentrancyGuardUpgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    string public override versionRecipient = "2.2.0";
+    function versionRecipient() public pure override returns(string memory) { return "2.2.0"; }
 
     function _msgSender() internal view override(ContextUpgradeable, BaseRelayRecipient)
     returns (address sender) {
