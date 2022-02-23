@@ -97,7 +97,8 @@ interface ICaskSubscriptions is IERC721Upgradeable {
 
     function managerCommand(uint256 _subscriptionId, ManagerCommand _command) external;
 
-    function getSubscription(uint256 _subscriptionId) external view returns (Subscription memory);
+    function getSubscription(uint256 _subscriptionId) external view returns
+        (Subscription memory subscription, address currentOwner);
 
     function getConsumerSubscriptions(address _consumer, uint256 limit,
         uint256 offset) external view returns (uint256[] memory);

@@ -42,7 +42,7 @@ PausableUpgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function versionRecipient() public view override returns(string memory) { return "2.2.0"; }
+    function versionRecipient() public pure override returns(string memory) { return "2.2.0"; }
 
     function _msgSender() internal view override(ContextUpgradeable, BaseRelayRecipient)
     returns (address sender) {

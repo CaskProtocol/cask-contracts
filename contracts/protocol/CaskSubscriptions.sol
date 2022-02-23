@@ -77,7 +77,7 @@ PausableUpgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function versionRecipient() public view override returns(string memory) { return "2.2.0"; }
+    function versionRecipient() public pure override returns(string memory) { return "2.2.0"; }
 
     function _msgSender() internal view override(ContextUpgradeable, BaseRelayRecipient)
     returns (address sender) {
@@ -333,8 +333,13 @@ PausableUpgradeable
 
     function getSubscription(
         uint256 _subscriptionId
-    ) external override view returns (Subscription memory) {
-        return subscriptions[_subscriptionId];
+    ) external override view returns (Subscription memory subscription, address currentOwner) {
+        subscription = subscriptions[_subscriptionId];
+        if (_exists(_subscriptionId)) {
+            currentOwner = ownerOf(_subscriptionId);
+        } else {
+            currentOwner = address(0);
+        }
     }
 
     function getConsumerSubscriptions(

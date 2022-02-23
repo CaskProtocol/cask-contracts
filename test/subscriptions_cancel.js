@@ -40,7 +40,7 @@ describe("CaskSubscriptions Cancel", function () {
         // deposit to vault
         await consumerAVault.deposit(networkAddresses.DAI, daiUnits('20'));
 
-        let subscriptionInfo;
+        let result;
 
         const ref = ethers.utils.id("user1");
 
@@ -65,8 +65,8 @@ describe("CaskSubscriptions Cancel", function () {
         // confirm conversion to paid after trial
         expect(await advanceTimeRunSubscriptionKeeper(1, 8 * day))
             .to.emit(consumerASubscriptions, "SubscriptionTrialEnded");
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('10'));
 
         // funds just enough for one renewal
@@ -74,15 +74,15 @@ describe("CaskSubscriptions Cancel", function () {
             .to.emit(consumerASubscriptions, "SubscriptionRenewed");
 
         // confirm subscription still active but out of funds
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal('0');
 
         // unable to renew due to out of funds, confirm past due
         expect (await advanceTimeRunSubscriptionKeeper(1, month))
             .to.emit(consumerASubscriptions, "SubscriptionPastDue");
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.PastDue);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.PastDue);
 
         // deposit one more months worth
         await consumerAVault.deposit(networkAddresses.DAI, daiUnits('10'));
@@ -91,21 +91,21 @@ describe("CaskSubscriptions Cancel", function () {
         expect (await advanceTimeRunSubscriptionKeeper(1, hour))
             .to.emit(consumerASubscriptions, "SubscriptionRenewed");
 
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Active);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal('0');
 
         // a month later, since funds are depleted again, confirm past due
         expect (await advanceTimeRunSubscriptionKeeper(1, month))
             .to.emit(consumerASubscriptions, "SubscriptionPastDue");
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.PastDue);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.PastDue);
 
         // past due window passes, subscription cancels
         expect (await advanceTimeRunSubscriptionKeeper(1, 8 * day))
             .to.emit(consumerASubscriptions, "SubscriptionCanceled");
-        subscriptionInfo = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(subscriptionInfo.status).to.equal(SubscriptionStatus.Canceled);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Canceled);
 
     });
 
