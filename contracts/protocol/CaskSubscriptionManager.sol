@@ -69,16 +69,17 @@ KeeperCompatibleInterface
     function _parsePlanData(
         bytes32 _planData
     ) internal pure returns(ICaskSubscriptions.PlanInfo memory) {
-        bytes2 options = bytes2(_planData << 240);
+        bytes1 options = bytes1(_planData << 248);
         return ICaskSubscriptions.PlanInfo({
-            price: uint256(_planData >> 160),
-            planId: uint32(bytes4(_planData << 96)),
-            period: uint32(bytes4(_planData << 128)),
-            freeTrial: uint32(bytes4(_planData << 160)),
-            maxActive: uint32(bytes4(_planData << 192)),
-            minPeriods: uint16(bytes2(_planData << 224)),
-            canPause: options & 0x0001 == 0x0001,
-            canTransfer: options & 0x0002 == 0x0002
+        price: uint256(_planData >> 160),
+        planId: uint32(bytes4(_planData << 96)),
+        period: uint32(bytes4(_planData << 128)),
+        freeTrial: uint32(bytes4(_planData << 160)),
+        maxActive: uint32(bytes4(_planData << 192)),
+        minPeriods: uint16(bytes2(_planData << 224)),
+        gracePeriod: uint8(bytes1(_planData << 240)),
+        canPause: options & 0x01 == 0x01,
+        canTransfer: options & 0x02 == 0x02
         });
     }
 
@@ -105,7 +106,7 @@ KeeperCompatibleInterface
             value: uint256(_discountData >> 160),
             validAfter: uint32(bytes4(_discountData << 96)),
             expiresAt: uint32(bytes4(_discountData << 128)),
-            maxUses: uint32(bytes4(_discountData << 160)),
+            maxRedemptions: uint32(bytes4(_discountData << 160)),
             planId: uint32(bytes4(_discountData << 192)),
             applyPeriods: uint16(bytes2(_discountData << 224)),
             isFixed: options & 0x0001 == 0x0001
@@ -303,28 +304,23 @@ KeeperCompatibleInterface
         if (subscription.discountId > 0) {
             ICaskSubscriptionPlans.Discount memory discountInfo = _parseDiscountData(subscription.discountData);
 
-            try subscriptionPlans.consumeDiscount(subscription.provider, discountInfo.planId, planInfo.period,
-                subscription.createdAt, subscription.discountId,
-                subscription.discountData) returns (bool stillValid)
+            if(discountInfo.applyPeriods == 0 || subscription.createdAt +
+                (planInfo.period * discountInfo.applyPeriods) < timestamp)
             {
                 if (discountInfo.isFixed) {
                     chargePrice = chargePrice - discountInfo.value;
                 } else {
                     chargePrice = chargePrice - (chargePrice * discountInfo.value / 10000);
                 }
-
-                if (!stillValid) {
-                    subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
-                }
-            } catch Error(string memory) {
+            } else {
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
             }
         }
 
         // consumer does not have enough balance to cover payment
         if (chargePrice > 0 && vault.currentValueOf(subscriptions.ownerOf(_subscriptionId)) < chargePrice) {
-            // if have not been able to renew for 7 days, cancel subscription
-            if (subscription.renewAt < timestamp - 7 days) {
+            // if have not been able to renew for up to `gracePeriod` days, cancel subscription
+            if (subscription.renewAt < timestamp - (planInfo.gracePeriod * 1 days)) {
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
             } else if (subscription.status != ICaskSubscriptions.SubscriptionStatus.PastDue) {
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PastDue);

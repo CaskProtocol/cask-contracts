@@ -28,7 +28,7 @@ PausableUpgradeable
     mapping(address => mapping(uint32 => uint32)) internal planEol;
 
     /** @dev Maps for discounts. */
-    mapping(address => mapping(uint32 => mapping(bytes32 => uint256))) internal discountUses;
+    mapping(address => mapping(uint32 => mapping(bytes32 => uint256))) internal discountRedemptions;
 
     modifier onlyManager() {
         require(_msgSender() == subscriptionManager, "!AUTH");
@@ -78,49 +78,28 @@ PausableUpgradeable
         return MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_planData)));
     }
 
-    function verifyDiscount(
+    function verifyAndConsumeDiscount(
         address _provider,
         uint32 _planId,
         bytes32 _discountId,
         bytes32 _discountData,
         bytes32 _merkleRoot,
         bytes32[] calldata _merkleProof
-    ) external override view returns(bool) {
-        if (MerkleProof.verify(_merkleProof, _merkleRoot,
-            keccak256(abi.encode(_discountId, _discountData))))
-        {
+    ) external override returns(bool) {
+        if (MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_discountId, _discountData)))) {
             Discount memory discountInfo = _parseDiscountData(_discountData);
             require(discountInfo.planId == 0 || discountInfo.planId == _planId, "!INVALID(planId)");
 
-            return ( (discountInfo.maxUses == 0 ||
-                     discountUses[_provider][discountInfo.planId][_discountId] < discountInfo.maxUses) &&
+            if ( (discountInfo.maxRedemptions == 0 ||
+                     discountRedemptions[_provider][discountInfo.planId][_discountId] < discountInfo.maxRedemptions) &&
                      (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
-                     (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp)) );
+                     (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp)) )
+            {
+                discountRedemptions[_provider][_planId][_discountId] += 1;
+                return true;
+            }
         }
-
         return false;
-    }
-
-    function consumeDiscount(
-        address _provider,
-        uint32 _planId,
-        uint32 _planPeriod,
-        uint32 _subscriptionCreatedAt,
-        bytes32 _discountId,
-        bytes32 _discountData
-    ) external override onlyManager returns(bool) {
-        Discount memory discountInfo = _parseDiscountData(_discountData);
-
-        require(discountInfo.maxUses == 0 ||
-            discountUses[_provider][_planId][_discountId] < discountInfo.maxUses, "!DISCOUNT_MAX_USES");
-        require(discountInfo.validAfter == 0 ||
-            discountInfo.validAfter >= uint32(block.timestamp), "!DISCOUNT_NOT_VALID_YET");
-        require(discountInfo.applyPeriods == 0 || _subscriptionCreatedAt +
-                    (_planPeriod * discountInfo.applyPeriods) < uint32(block.timestamp), "!DISCOUNT_EXHAUSTED");
-
-        discountUses[_provider][_planId][_discountId] += 1;
-
-        return discountInfo.maxUses == 0 || discountUses[_provider][_planId][_discountId] < discountInfo.maxUses;
     }
 
     function getPlanStatus(
@@ -198,7 +177,7 @@ PausableUpgradeable
             value: uint256(_discountData >> 160),
             validAfter: uint32(bytes4(_discountData << 96)),
             expiresAt: uint32(bytes4(_discountData << 128)),
-            maxUses: uint32(bytes4(_discountData << 160)),
+            maxRedemptions: uint32(bytes4(_discountData << 160)),
             planId: uint32(bytes4(_discountData << 192)),
             applyPeriods: uint16(bytes2(_discountData << 224)),
             isFixed: options & 0x0001 == 0x0001

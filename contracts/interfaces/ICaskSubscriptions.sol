@@ -48,6 +48,7 @@ interface ICaskSubscriptions is IERC721Upgradeable {
         uint32 freeTrial;
         uint32 maxActive;
         uint16 minPeriods;
+        uint8 gracePeriod;
         bool canPause;
         bool canTransfer;
     }
