@@ -572,10 +572,10 @@ PausableUpgradeable
         address _provider,
         uint32 _planId,
         bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
-    ) internal view returns(bytes32, bytes32) {
+    ) internal returns(bytes32, bytes32) {
         if (_discountProof.length > 3 && _discountProof[0] > 0) {
             bytes32 discountId = keccak256(abi.encode(_discountProof[0]));
-            if (subscriptionPlans.verifyDiscount(_provider, _planId, discountId,
+            if (subscriptionPlans.verifyAndConsumeDiscount(_provider, _planId, discountId,
                 _discountProof[1], _discountProof[2], _discountProof[3:]))
             {
                 return (discountId, _discountProof[1]);
@@ -602,7 +602,7 @@ PausableUpgradeable
     function _parsePlanData(
         bytes32 _planData
     ) internal pure returns(PlanInfo memory) {
-        bytes2 options = bytes2(_planData << 240);
+        bytes1 options = bytes1(_planData << 248);
         return PlanInfo({
             price: uint256(_planData >> 160),
             planId: uint32(bytes4(_planData << 96)),
@@ -610,8 +610,9 @@ PausableUpgradeable
             freeTrial: uint32(bytes4(_planData << 160)),
             maxActive: uint32(bytes4(_planData << 192)),
             minPeriods: uint16(bytes2(_planData << 224)),
-            canPause: options & 0x0001 == 0x0001,
-            canTransfer: options & 0x0002 == 0x0002
+            gracePeriod: uint8(bytes1(_planData << 240)),
+            canPause: options & 0x01 == 0x01,
+            canTransfer: options & 0x02 == 0x02
         });
     }
 

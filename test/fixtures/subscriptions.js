@@ -38,6 +38,7 @@ async function onePlanFixture() {
             7 * day, // freeTrial
             0, // maxActive
             0, // minPeriods
+            7, // gracePeriod
             true, // canPause
             true) // canTransfer
     });
@@ -63,6 +64,7 @@ async function twoPlanFixture() {
             7 * day, // freeTrial
             0, // maxActive
             0, // minPeriods
+            7, // gracePeriod
             true, // canPause
             true) // canTransfer
     });
@@ -77,6 +79,7 @@ async function twoPlanFixture() {
             7 * day, // freeTrial
             0, // maxActive
             0, // minPeriods
+            7, // gracePeriod
             true, // canPause
             true) // canTransfer
     });
@@ -102,6 +105,7 @@ async function unpausablePlanFixture() {
             7 * day, // freeTrial
             0, // maxActive
             0, // minPeriods
+            7, // gracePeriod
             false, // canPause
             true) // canTransfer
     });
@@ -127,6 +131,7 @@ async function minTermPlanFixture() {
             7 * day, // freeTrial
             0, // maxActive
             12, // minPeriods
+            7, // gracePeriod
             true, // canPause
             true) // canTransfer
     });
@@ -152,6 +157,7 @@ async function onePlanWithDiscountsFixture() {
             7 * day, // freeTrial
             0, // maxActive
             0, // minPeriods
+            7, // gracePeriod
             false, // canPause
             true) // canTransfer
     });
@@ -163,7 +169,7 @@ async function onePlanWithDiscountsFixture() {
             5000, // value
             0,  // validAfter
             0, // expiresAt
-            0, // maxUses
+            0, // maxRedemptions
             501, // planId
             0, // applyPeriods
             false) // isFixed
@@ -175,7 +181,7 @@ async function onePlanWithDiscountsFixture() {
             1000, // value
             0,  // validAfter
             0, // expiresAt
-            0, // maxUses
+            0, // maxRedemptions
             501, // planId
             0, // applyPeriods
             false) // isFixed

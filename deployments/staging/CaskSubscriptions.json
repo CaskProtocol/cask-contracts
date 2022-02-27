@@ -1145,8 +1145,13 @@
             }
           ],
           "internalType": "struct ICaskSubscriptions.Subscription",
-          "name": "",
+          "name": "subscription",
           "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "currentOwner",
+          "type": "address"
         }
       ],
       "stateMutability": "view",
@@ -1562,7 +1567,7 @@
           "type": "string"
         }
       ],
-      "stateMutability": "view",
+      "stateMutability": "pure",
       "type": "function"
     },
     {
