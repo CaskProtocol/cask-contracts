@@ -1,5 +1,9 @@
 
-const { isProtocolChain } = require("../test/_networks");
+const {
+    isProtocolChain,
+    isDevnet,
+} = require("../test/_networks");
+
 const {
     withConfirmation,
     log,
@@ -31,6 +35,6 @@ const main = async (hre) => {
 
 main.id = "006_protocol_treasury";
 main.tags = ["protocol"];
-main.skip = () => !isProtocolChain;
+main.skip = () => !isProtocolChain || isDevnet;
 
 module.exports = main;
