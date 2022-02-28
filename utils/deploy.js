@@ -13,7 +13,7 @@ const {
 const { getTxOpts } = require("../utils/tx.js");
 
 // Wait for 3 blocks confirmation on Mainnet/Testnets.
-const NUM_CONFIRMATIONS = isMainnet || isTestnet ? 3 : 0;
+const NUM_CONFIRMATIONS = isMainnet || isTestnet ? 2 : 0;
 
 function log(msg, deployResult = null) {
     if (isRealChain || process.env.VERBOSE) {
@@ -37,7 +37,6 @@ const deployWithConfirmation = async (
     args,
     contract
 ) => {
-
     const { deploy } = deployments;
     const { deployerAddr } = await getNamedAccounts();
     if (!args) args = null;
@@ -51,8 +50,6 @@ const deployWithConfirmation = async (
             ...(await getTxOpts()),
         })
     );
-
-
     log(`Deployed ${contractName}`, result);
     return result;
 };
@@ -62,7 +59,6 @@ const deployProxyWithConfirmation = async (
     args,
     contract
 ) => {
-
     const { deploy } = deployments;
     const { deployerAddr, governorAddr } = await getNamedAccounts();
     if (!args) args = null;
@@ -77,9 +73,32 @@ const deployProxyWithConfirmation = async (
             ...(await getTxOpts()),
         })
     );
-
-
     log(`Deployed proxy enabled ${contractName}`, result);
+    return result;
+};
+
+const upgradeProxyWithConfirmation = async (
+    contractName,
+    args,
+    contract
+) => {
+    const { deploy, catchUnknownSigner } = deployments;
+    const { deployerAddr, governorAddr } = await getNamedAccounts();
+    if (!args) args = null;
+    if (!contract) contract = contractName;
+    const result = await catchUnknownSigner(
+        withConfirmation(
+            deploy(contractName, {
+                from: deployerAddr,
+                proxy: { owner: governorAddr, proxyContract: "OpenZeppelinTransparentProxy" },
+                args,
+                contract,
+                fieldsToCompare: null,
+                ...(await getTxOpts()),
+            })
+        )
+    );
+    log(`Upgraded proxy enabled ${contractName}`, result);
     return result;
 };
 
@@ -98,5 +117,6 @@ module.exports = {
     sleep,
     deployWithConfirmation,
     deployProxyWithConfirmation,
+    upgradeProxyWithConfirmation,
     withConfirmation,
 };

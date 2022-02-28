@@ -5,8 +5,7 @@ const {
 
 const {
     log,
-    deployWithConfirmation,
-    deployProxyWithConfirmation,
+    upgradeProxyWithConfirmation,
 } = require("../utils/deploy");
 
 /**
@@ -18,31 +17,13 @@ const {
  */
 
 const deployProtocolUpgrade = async () => {
-    await upgradeContract('CaskVaultManager');
-    await upgradeContract('CaskVault');
-    await upgradeContract('CaskSubscriptionPlans');
-    await upgradeContract('CaskSubscriptions');
-    await upgradeContract('CaskSubscriptionManager');
-}
 
-const upgradeContract = async (contract) => {
+    await upgradeProxyWithConfirmation('CaskVaultManager');
+    await upgradeProxyWithConfirmation('CaskVault');
+    await upgradeProxyWithConfirmation('CaskSubscriptionPlans');
+    await upgradeProxyWithConfirmation('CaskSubscriptions');
+    await upgradeProxyWithConfirmation('CaskSubscriptionManager');
 
-    let current;
-    try {
-        current = await deployments.get(`${contract}_Implementation`);
-        await deployWithConfirmation(`${contract}_Implementation`, [], contract);
-    } catch (error) {
-        log(`No current deployment found for ${contract}_Implementation, deploying fully proxy contracts`);
-        await deployProxyWithConfirmation(contract);
-    }
-
-    const newContract = await ethers.getContract(`${contract}_Implementation`);
-    if (current && current.address !== newContract.address) {
-        const proxy = await ethers.getContract(contract);
-        log(`Contract ${contract} at proxy ${proxy.address} is currently pointed to ${current.address}`);
-        log(`   New implementation ready at ${newContract.address}`);
-        log(`   Execute as governor: proxyAdmin.connect(governor).upgrade('${proxy.address}', '${newContract.address}');`);
-    }
 }
 
 const main = async (hre) => {
