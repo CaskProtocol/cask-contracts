@@ -39,10 +39,10 @@ async function fixtures(taskArguments, hre) {
     const discounts = [];
 
     plans.push(_createProviderPlan(providerA, 100, daiUnits('10'), month,
-        7 * day, 0, 0, true, true));
+        7 * day, 0, 0, 7, true, true));
 
     plans.push(_createProviderPlan(providerA, 101, daiUnits('20'), month,
-        7 * day, 0, 0, true, true));
+        7 * day, 0, 0, 7, true, true));
 
     discounts.push(_createProviderDiscount(providerA, 'CODE10', 1000, 0,
         0, 0, 0, 0, false));
@@ -87,7 +87,7 @@ async function fixtures(taskArguments, hre) {
 }
 
 function _createProviderPlan(provider, planId, price, period, freeTrial, maxActive,
-                                   minPeriods, canPause, canTransfer)
+                                   minPeriods, gracePeriod, canPause, canTransfer)
 {
     return {
         provider: provider.address,
@@ -99,6 +99,7 @@ function _createProviderPlan(provider, planId, price, period, freeTrial, maxActi
             freeTrial,
             maxActive,
             minPeriods,
+            gracePeriod,
             canPause,
             canTransfer)
     }
