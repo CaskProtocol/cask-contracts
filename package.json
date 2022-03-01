@@ -43,7 +43,7 @@
     "merkletreejs": "^0.2.27"
   },
   "dependencies": {
-    "@caskprotocol/sdk": "^1.0.0",
+    "@caskprotocol/sdk": "^1.0.2",
     "@opengsn/contracts": "^2.2.6",
     "dotenv": "^10.0.0",
     "yarn": "^1.22.17"
