@@ -21,21 +21,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-      name: Checkout cask-contracts
-      with:
-        path: 'p-cask-contracts'
-    - name: Checkout cask-web-sdk
-      uses: actions/checkout@v2
-      with:
-        repository: CaskProtocol/p-cask-web-sdk
-        token: ${{ secrets.GH_PAT }}
-        path: 'p-cask-web-sdk'
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'yarn'
-        cache-dependency-path: p-cask-contracts/yarn.lock
-    - run: cd p-cask-web-sdk && yarn install
-    - run: cd p-cask-contracts && yarn install
-    - run: cd p-cask-contracts && yarn run test
+    - run: NPM_TOKEN=${{secrets.NPM_TOKEN}} yarn install
+    - run: yarn run test
