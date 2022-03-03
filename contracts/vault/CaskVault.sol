@@ -194,6 +194,32 @@ ReentrancyGuardUpgradeable
         emit Payment(_from, _to, _value, _protocolFee, shares);
     }
 
+    function transferValue(
+        address _recipient,
+        uint256 _value
+    ) external override returns (bool) {
+        _transfer(_msgSender(), _recipient, _sharesForValue(_value));
+        emit TransferValue(_msgSender(), _recipient, _value);
+        return true;
+    }
+
+    function transferValueFrom(
+        address _sender,
+        address _recipient,
+        uint256 _value
+    ) external override returns (bool) {
+        uint256 amount = _sharesForValue(_value);
+        _transfer(_sender, _recipient, amount);
+
+        uint256 currentAllowance = allowance(_sender, _msgSender());
+        require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
+        unchecked {
+            _approve(_sender, _msgSender(), currentAllowance - amount);
+        }
+        emit TransferValue(_sender, _recipient, _value);
+        return true;
+    }
+
     /**
      * @dev Deposit an amount of `_asset` into the vault and credit the equal value of `baseAsset`
      * @param _asset Address of incoming asset

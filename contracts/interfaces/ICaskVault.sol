@@ -88,6 +88,27 @@ interface ICaskVault is IERC20MetadataUpgradeable {
         uint256 _value
     ) external;
 
+    /**
+     * @dev Transfer the equivalent vault shares of base asset `value` to `_recipient`
+     * @param _recipient To address
+     * @param _value Amount of baseAsset value to transfer
+     */
+    function transferValue(
+        address _recipient,
+        uint256 _value
+    ) external returns (bool);
+
+    /**
+     * @dev Transfer the equivalent vault shares of base asset `value` from `_sender` to `_recipient`
+     * @param _sender From address
+     * @param _recipient To address
+     * @param _value Amount of baseAsset value to transfer
+     */
+    function transferValueFrom(
+        address _sender,
+        address _recipient,
+        uint256 _value
+    ) external returns (bool);
 
     /**
      * @dev Deposit `_assetAmount` of `_asset` into the vault and credit the equivalent value of `baseAsset`
@@ -162,6 +183,9 @@ interface ICaskVault is IERC20MetadataUpgradeable {
 
 
     /************************** EVENTS **************************/
+
+    /** @dev Emitted when `sender` transfers `baseAssetValue` (denominated in vault baseAsset) to `recipient` */
+    event TransferValue(address indexed from, address indexed to, uint256 baseAssetValue);
 
     /** @dev Emitted when an amount of `baseAsset` is paid from `from` to `to` within the vault */
     event Payment(address indexed from, address indexed to, uint256 baseAssetAmount, uint256 baseAssetFee,
