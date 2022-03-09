@@ -79,7 +79,7 @@ ReentrancyGuardUpgradeable
         __Ownable_init();
         __Pausable_init();
         __ReentrancyGuard_init();
-        __ERC20_init("Cask Vault Shares","vCASK");
+        __ERC20_init("Cask Vault Tokens","MASH");
 
         require(IERC20Metadata(_baseAsset).decimals() > 0, "!INVALID(baseAsset)");
         require(AggregatorV3Interface(_baseAssetPriceFeed).decimals() > 0, "!INVALID(baseAssetPriceFeed)");
@@ -197,7 +197,7 @@ ReentrancyGuardUpgradeable
     function transferValue(
         address _recipient,
         uint256 _value
-    ) external override returns (bool) {
+    ) external override nonReentrant returns (bool) {
         _transfer(_msgSender(), _recipient, _sharesForValue(_value));
         emit TransferValue(_msgSender(), _recipient, _value);
         return true;
@@ -207,7 +207,7 @@ ReentrancyGuardUpgradeable
         address _sender,
         address _recipient,
         uint256 _value
-    ) external override returns (bool) {
+    ) external override nonReentrant returns (bool) {
         uint256 amount = _sharesForValue(_value);
         _transfer(_sender, _recipient, amount);
 
