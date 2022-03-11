@@ -38,13 +38,13 @@ async function fixtures(taskArguments, hre) {
     const plans = [];
     const discounts = [];
 
-    plans.push(_createProviderPlan(providerA, 100, daiUnits('10'), month,
+    plans.push(_createProviderPlan(100, daiUnits('10'), month,
         7 * day, 0, 0, 7, true, true));
 
-    plans.push(_createProviderPlan(providerA, 101, daiUnits('20'), month,
+    plans.push(_createProviderPlan(101, daiUnits('20'), month,
         7 * day, 0, 0, 7, true, true));
 
-    discounts.push(_createProviderDiscount(providerA, 'CODE10', 1000, 0,
+    discounts.push(_createProviderDiscount('CODE10', 1000, 0,
         0, 0, 0, 0, false));
 
     const plansRoot = cask.utils.plansMerkleRoot(plans);
@@ -53,22 +53,50 @@ async function fixtures(taskArguments, hre) {
     const signedRoots = await cask.utils.signMerkleRoots(providerA, plansRoot, discountsRoot);
     console.log(`Generated signature for providerA configuration: ${signedRoots}`);
 
-    // save provider profile to chain
-    await caskSubscriptionPlans.connect(providerA).setProviderProfile(
-        providerA.address,
-        hre.ethers.utils.id("bogus_cid")
-    );
+    const profileData = {
+        plans: cask.utils.plansMap(plans),
+        discounts: cask.utils.discountsMap(discounts),
+        planMerkleRoot: plansRoot,
+        discountMerkleRoot: discountsRoot,
+        signedRoots: signedRoots,
+        metadata: {
+            name: "Acme Services",
+            iconUrl: "https://pbs.twimg.com/profile_images/652147288966479872/co4SZ_a2_400x400.jpg",
+            websiteUrl: "https://www.example.com",
+            supportUrl: "",
+        }
+    }
 
+    let providerCid = "";
+    if (process.env.PINATA_API_KEY) {
+        const ipfs = new cask.ipfs.IPFS(process.env.PINATA_API_KEY, process.env.PINATA_API_SECRET);
+        providerCid = await ipfs.save(profileData);
+    }
+    // save provider profile to chain
+    await caskSubscriptionPlans.connect(providerA).setProviderProfile(providerA.address, providerCid);
 
 
     // create consumer A subscription to provider A plan 100
 
-    const ref = ethers.utils.id("user1");
-
     const plan = plans.find((p) => p.planId === 100);
-    const plansProof = cask.utils.generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
-        cask.utils.plansMerkleProof(plans, plan));
-    const discountProof = cask.utils.generateDiscountProof(0, 0, discountsRoot)
+    const plansProof = cask.utils.generatePlanProof(
+        providerA.address,
+        cask.utils.stringToRef('12345'),
+        plan.planData,
+        plansRoot,
+        cask.utils.plansMerkleProof(plans, plan)
+    );
+    const discountProof = cask.utils.generateDiscountProof(
+        0,
+        0,
+        discountsRoot
+    );
+
+    let subscriptionCid = "";
+    if (process.env.PINATA_API_KEY) {
+        const ipfs = new cask.ipfs.IPFS(process.env.PINATA_API_KEY, process.env.PINATA_API_SECRET);
+        subscriptionCid = await ipfs.save({image: profileData.metadata.iconUrl});
+    }
 
     // create subscription
     const tx = await caskSubscriptions.connect(consumerA).createSubscription(
@@ -76,7 +104,7 @@ async function fixtures(taskArguments, hre) {
         discountProof, // discountProof
         0, // cancelAt
         signedRoots, // providerSignature
-        "" // cid
+        subscriptionCid // cid
     );
 
     const events = (await tx.wait()).events || [];
@@ -86,11 +114,11 @@ async function fixtures(taskArguments, hre) {
 
 }
 
-function _createProviderPlan(provider, planId, price, period, freeTrial, maxActive,
+function _createProviderPlan(planId, price, period, freeTrial, maxActive,
                                    minPeriods, gracePeriod, canPause, canTransfer)
 {
     return {
-        provider: provider.address,
+        name: 'Acme Plan ' + planId,
         planId: planId,
         planData: cask.utils.encodePlanData(
             planId,
@@ -105,11 +133,10 @@ function _createProviderPlan(provider, planId, price, period, freeTrial, maxActi
     }
 }
 
-function _createProviderDiscount(provider, discountCode, value, validAfter, expiresAt,
+function _createProviderDiscount(discountCode, value, validAfter, expiresAt,
                                  maxUses, planId, applyPeriods, isFixed)
 {
     return {
-        provider: provider.address,
         discountId: cask.utils.generateDiscountId(discountCode),
         discountData: cask.utils.encodeDiscountData(
             value,
