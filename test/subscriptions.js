@@ -101,7 +101,7 @@ describe("CaskSubscriptions General", function () {
     result = await consumerASubscriptions.getSubscription(subscriptionId);
 
     // cancel
-    expect(await consumerASubscriptions.cancelSubscription(subscriptionId))
+    expect(await consumerASubscriptions.cancelSubscription(subscriptionId, result.subscription.renewAt))
         .to.emit(consumerASubscriptions, "SubscriptionPendingCancel");
 
     expect(await advanceTimeRunSubscriptionKeeper(1, month + day))

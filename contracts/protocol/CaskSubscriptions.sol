@@ -33,7 +33,7 @@ PausableUpgradeable
 
     /************************** STATE **************************/
 
-    uint256[] private allSubscriptions;
+    uint256[] private activeSubscriptions;
 
     /** @dev Maps for consumer to list of subscriptions. */
     mapping(address => uint256[]) private consumerSubscriptions; // consumer => subscriptionId[]
@@ -45,6 +45,7 @@ PausableUpgradeable
     mapping(address => uint256) private providerActiveSubscriptionCount; // provider => count
     mapping(address => mapping(uint32 => uint256)) private planActiveSubscriptionCount; // provider => planId => count
 
+    mapping(uint256 => uint256) private idxMap; // subscriptionId => activeSubscriptions index
 
     modifier onlyManager() {
         require(_msgSender() == address(subscriptionManager), "!AUTH");
@@ -156,18 +157,6 @@ PausableUpgradeable
         _changeSubscriptionPlan(_subscriptionId, _planProof, _discountProof, _providerSignature, _cid);
     }
 
-    function changeSubscriptionCancelAt(
-        uint256 _subscriptionId,
-        uint32 _cancelAt
-    ) external override onlySubscriber(_subscriptionId) whenNotPaused {
-
-        Subscription storage subscription = subscriptions[_subscriptionId];
-
-        require(subscription.minTermAt == 0 || _cancelAt >= subscription.minTermAt, "!MIN_TERM");
-
-        subscription.cancelAt = _cancelAt;
-    }
-
     function changeSubscriptionDiscount(
         uint256 _subscriptionId,
         bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
@@ -203,8 +192,7 @@ PausableUpgradeable
         require(subscription.status != SubscriptionStatus.Paused &&
                 subscription.status != SubscriptionStatus.PastDue &&
                 subscription.status != SubscriptionStatus.Canceled &&
-                subscription.status != SubscriptionStatus.Trialing &&
-                subscription.status != SubscriptionStatus.PendingCancel, "!INVALID(status)");
+                subscription.status != SubscriptionStatus.Trialing, "!INVALID(status)");
 
         require(subscription.minTermAt == 0 || uint32(block.timestamp) >= subscription.minTermAt, "!MIN_TERM");
 
@@ -245,20 +233,31 @@ PausableUpgradeable
     }
 
     function cancelSubscription(
-        uint256 _subscriptionId
+        uint256 _subscriptionId,
+        uint32 _cancelAt
     ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
 
         Subscription storage subscription = subscriptions[_subscriptionId];
 
-        require(subscription.status != SubscriptionStatus.PendingCancel &&
-                subscription.status != SubscriptionStatus.Canceled, "!INVALID(status)");
+        require(subscription.status != SubscriptionStatus.Canceled, "!INVALID(status)");
 
-        require(subscription.minTermAt == 0 || uint32(block.timestamp) >= subscription.minTermAt, "!MIN_TERM");
+        uint32 timestamp = uint32(block.timestamp);
 
-        subscription.status = SubscriptionStatus.PendingCancel;
+        if(_cancelAt == 0) {
+            require(_msgSender() == ownerOf(_subscriptionId), "!AUTH"); // clearing cancel only allowed by subscriber
+            subscription.cancelAt = _cancelAt;
+        } else if(_cancelAt <= timestamp) {
+            require(subscription.minTermAt == 0 || timestamp >= subscription.minTermAt, "!MIN_TERM");
+            subscription.status = SubscriptionStatus.Canceled; // prevent anymore changes
+            subscription.renewAt = timestamp; // cause keeper to process cancel at next run
+            subscription.cancelAt = timestamp;
+        } else {
+            require(subscription.minTermAt == 0 || _cancelAt >= subscription.minTermAt, "!MIN_TERM");
+            subscription.cancelAt = _cancelAt;
+        }
 
         emit SubscriptionPendingCancel(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
-            subscription.ref, subscription.planId);
+            subscription.ref, subscription.planId, _cancelAt);
     }
 
     function managerCommand(
@@ -295,6 +294,13 @@ PausableUpgradeable
             emit SubscriptionCanceled(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
                 subscription.ref, subscription.planId);
 
+            // remove canceled subscription from activeSubscriptions by moving last subscription into
+            // the place the canceled subscription occupied
+            activeSubscriptions[idxMap[_subscriptionId]] = activeSubscriptions[activeSubscriptions.length-1];
+            idxMap[activeSubscriptions[idxMap[_subscriptionId]]] = idxMap[_subscriptionId];
+            activeSubscriptions.pop();
+            delete idxMap[_subscriptionId];
+
             _burn(_subscriptionId);
 
         } else if (_command == ManagerCommand.PastDue) {
@@ -323,12 +329,12 @@ PausableUpgradeable
 
     }
 
-    function getAllSubscriptionsCount() external view returns (uint256) {
-        return allSubscriptions.length;
+    function getActiveSubscriptionsCount() external view returns (uint256) {
+        return activeSubscriptions.length;
     }
 
-    function getAllSubscriptions() external override view returns (uint256[] memory) {
-        return allSubscriptions;
+    function getActiveSubscriptions() external override view returns (uint256[] memory) {
+        return activeSubscriptions;
     }
 
     function getSubscription(
@@ -485,7 +491,8 @@ PausableUpgradeable
         providerSubscriptions[provider].push(subscriptionId);
         providerActiveSubscriptionCount[provider] += 1;
         planActiveSubscriptionCount[provider][planInfo.planId] += 1;
-        allSubscriptions.push(subscriptionId);
+        idxMap[subscriptionId] = activeSubscriptions.length;
+        activeSubscriptions.push(subscriptionId);
 
         return subscriptionId;
     }

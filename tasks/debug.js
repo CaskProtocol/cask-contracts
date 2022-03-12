@@ -124,10 +124,10 @@ async function _debug_protocol(taskArguments, hre) {
     console.log(`CaskVaultManager vault:                         ${await vaultManager.vault()}`);
     console.log(`CaskVault vaultManager:                         ${await vault.vaultManager()}`);
     console.log(`CaskVault baseAsset:                            ${await vault.getBaseAsset()}`);
-    const operatorCount = await vault.operatorCount();
-    console.log(`CaskVault operatorCount:                        ${operatorCount}`);
-    for (let i = 0; i < operatorCount; i++) {
-        console.log(`   operator ${i}:                                  ${await vault.operators(i)}`);
+    const protocolCount = await vault.protocolCount();
+    console.log(`CaskVault protocolCount:                        ${protocolCount}`);
+    for (let i = 0; i < protocolCount; i++) {
+        console.log(`   protocol ${i}:                                  ${await vault.protocols(i)}`);
     }
 
     console.log(`paused:                                         ${await vault.paused()}`);
@@ -171,7 +171,6 @@ async function _debug_protocol(taskArguments, hre) {
  */
 async function debug(taskArguments, hre) {
 
-
     const isFork = process.env.FORK === "true";
     const isLocalhost = !isFork && hre.network.name === "localhost";
     const isMemnet = hre.network.name === "hardhat";
@@ -179,22 +178,27 @@ async function debug(taskArguments, hre) {
     const isKovan = hre.network.name === "kovan";
     const isMainnet = hre.network.name === "mainnet";
 
-    const isPolygon = hre.network.name === "polygon";
-    const isMumbai = hre.network.name === "mumbai";
+    const isProduction =
+        hre.network.name === "production_polygon" ||
+        hre.network.name === "production_fantom" ||
+        hre.network.name === "production_avax";
+    const isTestnet =
+        hre.network.name === "testnet_mumbai" ||
+        hre.network.name === "testnet_fantom" ||
+        hre.network.name === "testnet_avax";
+
+    const isInternal = hre.network.name === "internal_mumbai"
 
     const isTest = process.env.IS_TEST === "true";
 
     const isDevnet = isLocalhost || isMemnet;
-    const isTestnet = isKovan || isMumbai;
-    const isProdnet = isMainnet || isPolygon;
     const isRealChain = !isLocalhost && !isMemnet;
     const isDaoChain = isMemnet || isFork || isLocalhost || isMainnet || isKovan;
-    const isProtocolChain = isMemnet || isFork || isLocalhost || isPolygon || isMumbai;
+    const isProtocolChain = isMemnet || isFork || isLocalhost || isProduction || isTestnet || isInternal;
 
-
-    await _debug_core(taskArguments, hre);
 
     if (isDaoChain) {
+        await _debug_core(taskArguments, hre);
         await _debug_dao(taskArguments, hre);
     }
 

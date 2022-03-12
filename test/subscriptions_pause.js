@@ -5,6 +5,7 @@ const {
     daiUnits,
     day,
     month,
+    now,
 } = require("../utils/units");
 
 const {
@@ -117,7 +118,7 @@ describe("CaskSubscriptions Pause", function () {
 
         // confirm pause and cancel before min term fail
         await expect(consumerASubscriptions.pauseSubscription(subscriptionId)).to.be.revertedWith("!MIN_TERM");
-        await expect(consumerASubscriptions.cancelSubscription(subscriptionId)).to.be.revertedWith("!MIN_TERM");
+        await expect(consumerASubscriptions.cancelSubscription(subscriptionId, now)).to.be.revertedWith("!MIN_TERM");
 
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
@@ -148,11 +149,11 @@ describe("CaskSubscriptions Pause", function () {
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
 
-        // cancel and confirm will cancel at next renewal
-        expect(await consumerASubscriptions.cancelSubscription(subscriptionId))
+        // cancel immediately and confirm will cancel at next renewal
+        expect(await consumerASubscriptions.cancelSubscription(subscriptionId, 1))
             .to.emit(consumerASubscriptions, "SubscriptionPendingCancel");
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.PendingCancel);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Canceled);
 
         expect (await advanceTimeRunSubscriptionKeeper(1, month))
             .to.emit(consumerASubscriptions, "SubscriptionCanceled");

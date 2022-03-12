@@ -12,7 +12,6 @@ interface ICaskSubscriptions is IERC721Upgradeable {
         Active,
         Paused,
         Canceled,
-        PendingCancel,
         PastDue
     }
 
@@ -86,15 +85,13 @@ interface ICaskSubscriptions is IERC721Upgradeable {
         string calldata _cid
     ) external;
 
-    function changeSubscriptionCancelAt(uint256 _subscriptionId, uint32 _cancelAt) external;
-
     function changeSubscriptionDiscount(uint256 _subscriptionId, bytes32[] calldata _discountProof) external;
 
     function pauseSubscription(uint256 _subscriptionId) external;
 
     function resumeSubscription(uint256 _subscriptionId) external;
 
-    function cancelSubscription(uint256 _subscriptionId) external;
+    function cancelSubscription(uint256 _subscriptionId, uint32 _cancelAt) external;
 
     function managerCommand(uint256 _subscriptionId, ManagerCommand _command) external;
 
@@ -117,9 +114,9 @@ interface ICaskSubscriptions is IERC721Upgradeable {
 
     function getPendingPlanChange(uint256 _subscriptionId) external view returns (bytes32);
 
-    function getAllSubscriptionsCount() external view returns (uint256);
+    function getActiveSubscriptionsCount() external view returns (uint256);
 
-    function getAllSubscriptions() external view returns (uint256[] memory);
+    function getActiveSubscriptions() external view returns (uint256[] memory);
 
 
     /************************** SUBSCRIPTION EVENTS **************************/
@@ -150,7 +147,7 @@ interface ICaskSubscriptions is IERC721Upgradeable {
 
     /** @dev Emitted when `consumer` unsubscribes to `provider` on subscription `subscriptionId` */
     event SubscriptionPendingCancel(address indexed consumer, address indexed provider,
-        uint256 indexed subscriptionId, bytes32 ref, uint32 planId);
+        uint256 indexed subscriptionId, bytes32 ref, uint32 planId, uint32 cancelAt);
 
     /** @dev Emitted when `consumer` has canceled and the current period is over on subscription `subscriptionId` */
     event SubscriptionCanceled(address indexed consumer, address indexed provider,

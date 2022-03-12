@@ -2,11 +2,12 @@
 # yarn lockfile v1
 
 
-"@caskprotocol/sdk@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@caskprotocol/sdk/-/sdk-1.0.2.tgz#c80188916ca4f8d0538f4edefa83a3e3ead2307a"
-  integrity sha512-IKUSWUMi0+D2pf2nDJY4N810jnJcEkSKu58WqTQmxsrYeOn5DnJbEH5CQGyfRKnoYv99qb/7vnW3lATBZ1V+NA==
+"@caskprotocol/sdk@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@caskprotocol/sdk/-/sdk-1.0.5.tgz#51be84ef346c81fddf3b84344b6bdd77e831b07a"
+  integrity sha512-535X6fTy6nG2oOW9eEfyzsWAT5p5Bn+0aFYPc5Aqoo59S+l7OWeLuMuViUu0s1A7kFRucjBuImPiB8tWbilu+w==
   dependencies:
+    "@pinata/sdk" "^1.1.23"
     ethers "^5.5.4"
     keccak256 "^1.0.6"
     merkletreejs "^0.2.27"

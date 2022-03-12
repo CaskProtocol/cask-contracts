@@ -16,8 +16,7 @@ const SubscriptionStatus = {
     Active: 2,
     Paused: 3,
     Canceled: 4,
-    PendingCancel: 5,
-    PastDue: 6,
+    PastDue: 5,
 };
 
 // keep in sync with ICaskSubscriptionPlans.sol

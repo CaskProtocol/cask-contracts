@@ -217,30 +217,29 @@ KeeperCompatibleInterface
         uint256 _offset
     ) internal view returns(uint256, uint256[] memory) {
 
-        uint256 allSubscriptionCount = subscriptions.getAllSubscriptionsCount();
+        uint256 activeSubscriptionCount = subscriptions.getActiveSubscriptionsCount();
 
         uint256 size = _limit;
-        if (size > allSubscriptionCount) {
-            size = allSubscriptionCount;
+        if (size > activeSubscriptionCount) {
+            size = activeSubscriptionCount;
         }
-        if (_offset >= allSubscriptionCount) {
+        if (_offset >= activeSubscriptionCount) {
             return (0,new uint256[](0));
         }
 
         uint32 timestamp = uint32(block.timestamp);
 
         uint256[] memory renewables = new uint256[](size);
-        uint256[] memory allSubscriptions = subscriptions.getAllSubscriptions();
+        uint256[] memory activeSubscriptions = subscriptions.getActiveSubscriptions();
 
         uint256 renewableCount = 0;
-        for (uint256 i = 0; i < size && i + _offset < allSubscriptionCount; i++) {
+        for (uint256 i = 0; i < size && i + _offset < activeSubscriptionCount; i++) {
             (ICaskSubscriptions.Subscription memory subscription,) =
-                subscriptions.getSubscription(allSubscriptions[i+_offset]);
+                subscriptions.getSubscription(activeSubscriptions[i+_offset]);
             if (subscription.renewAt <= timestamp &&
-                subscription.status != ICaskSubscriptions.SubscriptionStatus.Canceled &&
                 subscription.status != ICaskSubscriptions.SubscriptionStatus.Paused)
             {
-                renewables[renewableCount] = allSubscriptions[i+_offset];
+                renewables[renewableCount] = activeSubscriptions[i+_offset];
                 renewableCount += 1;
                 if (renewableCount >= size) {
                     break;
@@ -281,8 +280,7 @@ KeeperCompatibleInterface
         }
 
         // subscription scheduled to be canceled by consumer or has hit its cancelAt time
-        if (subscription.status == ICaskSubscriptions.SubscriptionStatus.PendingCancel ||
-            (subscription.cancelAt > 0 && subscription.cancelAt <= timestamp) ||
+        if ((subscription.cancelAt > 0 && subscription.cancelAt <= timestamp) ||
             (subscriptionPlans.getPlanStatus(subscription.provider, subscription.planId) ==
                 ICaskSubscriptionPlans.PlanStatus.EndOfLife &&
                 subscriptionPlans.getPlanEOL(subscription.provider, subscription.planId) <= timestamp))
