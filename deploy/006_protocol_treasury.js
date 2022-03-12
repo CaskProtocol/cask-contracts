@@ -14,11 +14,11 @@ const deployProtocolTreasury = async () => {
     const {deployerAddr, governorAddr} = await getNamedAccounts();
     const sDeployer = await ethers.provider.getSigner(deployerAddr);
 
-    let result = await deployWithConfirmation('CaskTreasury');
+    await deployWithConfirmation('CaskTreasury');
 
     const caskTreasury = await ethers.getContract("CaskTreasury");
 
-    result = await withConfirmation(
+    const result = await withConfirmation(
         caskTreasury.connect(sDeployer).transferOwnership(governorAddr)
     );
     log(`Transferred CaskTreasury ownership to ${governorAddr}`, result);

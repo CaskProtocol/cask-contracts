@@ -101,28 +101,41 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
 
     // add supported assets to vault
 
-    await vault.connect(sDeployer).allowAsset(
-        networkAddresses.USDT, // address
-        networkAddresses.USDT_USD, //priceFeed
-        usdtUnits('100000000'), // depositLimit - 100M
-        10, // slippageBps - 0.1%
+    await withConfirmation(
+        vault.connect(sDeployer).allowAsset(
+            networkAddresses.USDT, // address
+            networkAddresses.USDT_USD, //priceFeed
+            usdtUnits('100000000'), // depositLimit - 100M
+            10) // slippageBps - 0.1%
     );
     log("Allowed USDT in vault");
 
-    await vault.connect(sDeployer).allowAsset(
-        networkAddresses.USDC, // address
-        networkAddresses.USDC_USD, //priceFeed
-        usdcUnits('100000000'), // depositLimit - 100M
-        10, // slippageBps - 0.1%
+    await withConfirmation(
+        vault.connect(sDeployer).allowAsset(
+            networkAddresses.USDC, // address
+            networkAddresses.USDC_USD, //priceFeed
+            usdcUnits('100000000'), // depositLimit - 100M
+            10) // slippageBps - 0.1%
     );
+
     log("Allowed USDC in vault");
 
 
-    await vaultManager.transferOwnership(governorAddr);
-    await vault.transferOwnership(governorAddr);
-    await subscriptionPlans.transferOwnership(governorAddr);
-    await subscriptions.transferOwnership(governorAddr);
-    await subscriptionManager.transferOwnership(governorAddr);
+    await withConfirmation(
+        vaultManager.transferOwnership(governorAddr)
+    );
+    await withConfirmation(
+        vault.transferOwnership(governorAddr)
+    );
+    await withConfirmation(
+        subscriptionPlans.transferOwnership(governorAddr)
+    );
+    await withConfirmation(
+        subscriptions.transferOwnership(governorAddr)
+    );
+    await withConfirmation(
+        subscriptionManager.transferOwnership(governorAddr)
+    );
     log(`Protocol contracts ownership transferred to ${governorAddr}`);
 
 }
