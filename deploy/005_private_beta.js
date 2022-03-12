@@ -15,7 +15,10 @@ const deployPrivateBeta = async () => {
     );
     log("Initialized CaskPrivateBeta");
 
-    await privateBeta.connect(sDeployer).transferOwnership(governorAddr);
+    const result = await withConfirmation(
+        privateBeta.connect(sDeployer).transferOwnership(governorAddr)
+    );
+    log(`Transferred CaskPrivateBeta ownership to ${governorAddr}`, result);
 
 }
 

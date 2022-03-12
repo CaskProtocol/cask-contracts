@@ -14,7 +14,7 @@ const isProduction =
 const isTestnet =
     hre.network.name === "testnet_mumbai" ||
     hre.network.name === "testnet_fantom" ||
-    hre.network.name === "testnet_avax";
+    hre.network.name === "testnet_fuji";
 
 const isInternal = hre.network.name === "internal_mumbai"
 
