@@ -108,14 +108,14 @@ module.exports = {
       gasPrice: 55000000000, // TODO: make sure to set to appropriate gwei!
       timeout: 900000,
     },
-    polygon: {
+    production_polygon: {
       url: `${process.env.POLYGON_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.POLYGON_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
     },
-    mumbai: {
+    internal_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.MUMBAI_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
@@ -123,7 +123,7 @@ module.exports = {
       timeout: 300000,
       gas: 2100000, gasPrice: 8000000000,
     },
-    staging: {
+    testnet_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.MUMBAI_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
@@ -139,9 +139,9 @@ module.exports = {
       mainnet: MAINNET_DEPLOYER,
       kovan: KOVAN_DEPLOYER,
       rinkeby: RINKEBY_DEPLOYER,
-      polygon: POLYGON_DEPLOYER,
-      mumbai: MUMBAI_DEPLOYER,
-      staging: MUMBAI_DEPLOYER,
+      production_polygon: POLYGON_DEPLOYER,
+      internal_mumbai: MUMBAI_DEPLOYER,
+      testnet_mumbai: MUMBAI_DEPLOYER,
     },
     governorAddr: {
       default: 1,
@@ -150,17 +150,17 @@ module.exports = {
       mainnet: MAINNET_GOVERNOR,
       kovan: KOVAN_GOVERNOR,
       rinkeby: RINKEBY_GOVERNOR,
-      polygon: POLYGON_GOVERNOR,
-      mumbai: MUMBAI_GOVERNOR,
-      staging: MUMBAI_GOVERNOR,
+      production_polygon: POLYGON_GOVERNOR,
+      internal_mumbai: MUMBAI_GOVERNOR,
+      testnet_mumbai: MUMBAI_GOVERNOR,
     },
     strategistAddr: {
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
       hardhat: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
-      polygon: POLYGON_STRATEGIST,
-      mumbai: MUMBAI_STRATEGIST,
-      staging: MUMBAI_STRATEGIST,
+      production_polygon: POLYGON_STRATEGIST,
+      internal_mumbai: MUMBAI_STRATEGIST,
+      testnet_mumbai: MUMBAI_STRATEGIST,
     },
     consumerA: {
       default: 4
@@ -184,8 +184,8 @@ module.exports = {
       default: 10,
       localhost: process.env.FORK === "true" ? MUMBAI_FAUCET_ADMIN : 10,
       hardhat: process.env.FORK === "true" ? MUMBAI_FAUCET_ADMIN : 10,
-      mumbai: MUMBAI_FAUCET_ADMIN,
-      staging: MUMBAI_FAUCET_ADMIN,
+      internal_mumbai: MUMBAI_FAUCET_ADMIN,
+      testnet_mumbai: MUMBAI_FAUCET_ADMIN,
     },
   },
   etherscan: {
