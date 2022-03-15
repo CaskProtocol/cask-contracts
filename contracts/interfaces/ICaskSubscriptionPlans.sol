@@ -21,8 +21,8 @@ interface ICaskSubscriptionPlans {
 
     struct Provider {
         address paymentAddress;
-        string cid;
         uint256 nonce;
+        string cid;
     }
 
     function setProviderProfile(address _paymentAddress, string calldata _cid, uint256 _nonce) external;

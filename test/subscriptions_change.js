@@ -82,6 +82,7 @@ describe("CaskSubscriptions Change", function () {
         // upgrade subscription from plan 200 -> 201
         expect (await consumerASubscriptions.changeSubscriptionPlan(
             subscriptionId,
+            0, // nonce
             newPlansProof, // planProof
             [], // discountProof
             signedRoots, // providerSignature
