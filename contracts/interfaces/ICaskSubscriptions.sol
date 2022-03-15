@@ -60,6 +60,7 @@ interface ICaskSubscriptions is IERC721Upgradeable {
     /************************** SUBSCRIPTION INSTANCE METHODS **************************/
 
     function createSubscription(
+        uint256 _nonce,
         bytes32[] calldata _planProof,
         bytes32[] calldata _discountProof,
         uint32 _cancelAt,
@@ -68,6 +69,7 @@ interface ICaskSubscriptions is IERC721Upgradeable {
     ) external;
 
     function createNetworkSubscription(
+        uint256 _nonce,
         bytes32[] calldata _planProof,
         bytes32[] calldata _discountProof,
         bytes32 _networkData,
@@ -79,6 +81,7 @@ interface ICaskSubscriptions is IERC721Upgradeable {
 
     function changeSubscriptionPlan(
         uint256 _subscriptionId,
+        uint256 _nonce,
         bytes32[] calldata _planProof,
         bytes32[] calldata _discountProof,
         bytes memory _providerSignature,

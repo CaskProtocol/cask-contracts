@@ -21,7 +21,6 @@ async function fixtures(taskArguments, hre) {
 
     const caskVault = await hre.ethers.getContract("CaskVault");
     const caskSubscriptionPlans = await hre.ethers.getContract("CaskSubscriptionPlans");
-    const caskSubscriptions = await hre.ethers.getContract("CaskSubscriptions");
 
     // fund consumers and deposit to vault
 
@@ -29,7 +28,7 @@ async function fixtures(taskArguments, hre) {
     await dai.connect(deployer).mint(consumerA.address, daiUnits('10000.0'));
     await dai.connect(consumerA).approve(caskVault.address, daiUnits('10000.0'));
 
-    await caskVault.connect(consumerA).deposit(dai.address, daiUnits('100'));
+    await caskVault.connect(consumerA).deposit(dai.address, daiUnits('25'));
 
 
 
@@ -41,8 +40,8 @@ async function fixtures(taskArguments, hre) {
     plans.push(_createProviderPlan(100, daiUnits('10'), month,
         7 * day, 0, 0, 7, true, true));
 
-    plans.push(_createProviderPlan(101, daiUnits('20'), month,
-        7 * day, 0, 0, 7, true, true));
+    plans.push(_createProviderPlan(101, daiUnits('20'), day,
+        0, 0, 0, 7, true, true));
 
     discounts.push(_createProviderDiscount('CODE10', 1000, 0,
         0, 0, 0, 0, false));
@@ -76,43 +75,61 @@ async function fixtures(taskArguments, hre) {
     await caskSubscriptionPlans.connect(providerA).setProviderProfile(providerA.address, providerCid);
 
 
-    // create consumer A subscription to provider A plan 100
+    // subscription creations
 
-    const plan = plans.find((p) => p.planId === 100);
+    await createSubscription(consumerA, providerA, '12345', 100, profileData);
+
+    await createSubscription(consumerA, providerA, '67890', 101, profileData);
+}
+
+async function createSubscription(consumer, provider, refString, planId, profileData) {
+    const plans = Object.values(profileData.plans);
+    const plan = plans.find((p) => p.planId === planId);
+    if (!plan) {
+        return;
+    }
+
+    const caskSubscriptions = await hre.ethers.getContract("CaskSubscriptions");
+
     const plansProof = cask.utils.generatePlanProof(
-        providerA.address,
-        cask.utils.stringToRef('12345'),
+        provider.address,
+        cask.utils.stringToRef(refString),
         plan.planData,
-        plansRoot,
+        profileData.planMerkleRoot,
         cask.utils.plansMerkleProof(plans, plan)
     );
     const discountProof = cask.utils.generateDiscountProof(
         0,
         0,
-        discountsRoot
+        profileData.discountMerkleRoot
     );
 
     let subscriptionCid = "";
     if (process.env.PINATA_API_KEY) {
         const ipfs = new cask.ipfs.IPFS(process.env.PINATA_API_KEY, process.env.PINATA_API_SECRET);
-        subscriptionCid = await ipfs.save({image: profileData.metadata.iconUrl});
+        subscriptionCid = await ipfs.save({
+            consumer: consumer.address,
+            ref: refString,
+            planId: planId,
+            image: profileData.metadata.iconUrl,
+        });
     }
 
     // create subscription
-    const tx = await caskSubscriptions.connect(consumerA).createSubscription(
+    const tx = await caskSubscriptions.connect(consumer).createSubscription(
         plansProof, // planProof
         discountProof, // discountProof
         0, // cancelAt
-        signedRoots, // providerSignature
+        profileData.signedRoots, // providerSignature
         subscriptionCid // cid
     );
 
     const events = (await tx.wait()).events || [];
     const createdEvent = events.find((e) => e.event === "SubscriptionCreated");
     const subscriptionId = createdEvent.args.subscriptionId;
-    console.log(`Created subscriptionId ${subscriptionId} to plan ${plan.planId} for consumerA (${consumerA.address})`);
-
+    console.log(`Created subscriptionId ${subscriptionId} to plan ${planId} for consumer (${consumer.address})`);
 }
+
 
 function _createProviderPlan(planId, price, period, freeTrial, maxActive,
                                    minPeriods, gracePeriod, canPause, canTransfer)

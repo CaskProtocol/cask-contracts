@@ -57,11 +57,13 @@ PausableUpgradeable
 
     function setProviderProfile(
         address _paymentAddress,
-        string calldata _cid
+        string calldata _cid,
+        uint256 _nonce
     ) external override {
         Provider storage profile = providerProfiles[_msgSender()];
         profile.paymentAddress = _paymentAddress;
         profile.cid = _cid;
+        profile.nonce = _nonce;
     }
 
     function getProviderProfile(

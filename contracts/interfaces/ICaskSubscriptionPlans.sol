@@ -22,9 +22,10 @@ interface ICaskSubscriptionPlans {
     struct Provider {
         address paymentAddress;
         string cid;
+        uint256 nonce;
     }
 
-    function setProviderProfile(address _paymentAddress, string calldata _cid) external;
+    function setProviderProfile(address _paymentAddress, string calldata _cid, uint256 _nonce) external;
 
     function getProviderProfile(address _provider) external view returns(Provider memory);
 
