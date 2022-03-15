@@ -17,37 +17,19 @@ const { fund } = require("./tasks/fund");
 const { fixtures } = require("./tasks/fixtures");
 
 
-// dao networks
+// production deployer
+const DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
 
-const MAINNET_DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
+// production networks - each chain has their own governor/strategist (multisigs)
 const MAINNET_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
-
-const KOVAN_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
-const KOVAN_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
-
-const RINKEBY_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
-const RINKEBY_GOVERNOR = "0x939Bb832cF8cfD720C746fE25f3d6632fB1442c3";
-
-// protocol networks
-
-const POLYGON_DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
 const POLYGON_GOVERNOR = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
 const POLYGON_STRATEGIST = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
 
-const MUMBAI_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
-const MUMBAI_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
-const MUMBAI_STRATEGIST = "0x4776e69279A0d500537A5d2241d6fF3189442690";
-const MUMBAI_FAUCET_ADMIN = "0xaA411e7F2daE036f4f75D0a4c21dbCb074641064";
-
-const FTMTESTNET_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
-const FTMTESTNET_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
-const FTMTESTNET_STRATEGIST = "0x4776e69279A0d500537A5d2241d6fF3189442690";
-const FTMTESTNET_FAUCET_ADMIN = "0xaA411e7F2daE036f4f75D0a4c21dbCb074641064";
-
-const FUJI_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
-const FUJI_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
-const FUJI_STRATEGIST = "0x4776e69279A0d500537A5d2241d6fF3189442690";
-const FUJI_FAUCET_ADMIN = "0xaA411e7F2daE036f4f75D0a4c21dbCb074641064";
+// testnet networks - common across all testnets
+const TESTNET_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
+const TESTNET_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
+const TESTNET_STRATEGIST = "0x4776e69279A0d500537A5d2241d6fF3189442690";
+const TESTNET_FAUCET_ADMIN = "0xaA411e7F2daE036f4f75D0a4c21dbCb074641064";
 
 
 const mnemonic =
@@ -96,7 +78,7 @@ module.exports = {
     kovan: {
       url: `${process.env.KOVAN_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
-        process.env.KOVAN_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+        process.env.KOVAN_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
       gas: 2100000, gasPrice: 8000000000,
@@ -104,7 +86,7 @@ module.exports = {
     rinkeby: {
       url: `${process.env.RINKEBY_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
-        process.env.RINKEBY_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+        process.env.RINKEBY_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
       gas: 2100000, gasPrice: 8000000000,
@@ -127,7 +109,7 @@ module.exports = {
     internal_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
-        process.env.MUMBAI_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+        process.env.INTERNAL_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
       gas: 2100000, gasPrice: 8000000000,
@@ -135,7 +117,7 @@ module.exports = {
     testnet_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
-        process.env.MUMBAI_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+        process.env.MUMBAI_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
       gas: 2100000, gasPrice: 8000000000,
@@ -143,7 +125,7 @@ module.exports = {
     testnet_fantom: {
       url: `${process.env.FTMTESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
-        process.env.FTMTESTNET_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+        process.env.FTMTESTNET_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
       gas: 2100000, gasPrice: 210000000000,
@@ -151,7 +133,7 @@ module.exports = {
     testnet_fuji: {
       url: `${process.env.FUJI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
-        process.env.FUJI_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+        process.env.FUJI_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
       gas: 2100000, gasPrice: 26000000000,
@@ -159,39 +141,42 @@ module.exports = {
   },
   namedAccounts: {
     deployerAddr: {
+      mainnet: DEPLOYER,
+      production_polygon: DEPLOYER,
+
       default: 0,
       localhost: 0,
-      mainnet: MAINNET_DEPLOYER,
-      kovan: KOVAN_DEPLOYER,
-      rinkeby: RINKEBY_DEPLOYER,
-      production_polygon: POLYGON_DEPLOYER,
-      internal_mumbai: MUMBAI_DEPLOYER,
-      testnet_mumbai: MUMBAI_DEPLOYER,
-      testnet_fantom: FTMTESTNET_DEPLOYER,
-      testnet_fuji: FUJI_DEPLOYER,
+      kovan: TESTNET_DEPLOYER,
+      rinkeby: TESTNET_DEPLOYER,
+      internal_mumbai: TESTNET_DEPLOYER,
+      testnet_mumbai: TESTNET_DEPLOYER,
+      testnet_fantom: TESTNET_DEPLOYER,
+      testnet_fuji: TESTNET_DEPLOYER,
     },
     governorAddr: {
+      mainnet: MAINNET_GOVERNOR,
+      production_polygon: POLYGON_GOVERNOR,
+
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
       hardhat: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
-      mainnet: MAINNET_GOVERNOR,
-      kovan: KOVAN_GOVERNOR,
-      rinkeby: RINKEBY_GOVERNOR,
-      production_polygon: POLYGON_GOVERNOR,
-      internal_mumbai: MUMBAI_GOVERNOR,
-      testnet_mumbai: MUMBAI_GOVERNOR,
-      testnet_fantom: FTMTESTNET_GOVERNOR,
-      testnet_fuji: FUJI_GOVERNOR,
+      kovan: TESTNET_GOVERNOR,
+      rinkeby: TESTNET_GOVERNOR,
+      internal_mumbai: TESTNET_GOVERNOR,
+      testnet_mumbai: TESTNET_GOVERNOR,
+      testnet_fantom: TESTNET_GOVERNOR,
+      testnet_fuji: TESTNET_GOVERNOR,
     },
     strategistAddr: {
+      production_polygon: POLYGON_STRATEGIST,
+
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
       hardhat: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
-      production_polygon: POLYGON_STRATEGIST,
-      internal_mumbai: MUMBAI_STRATEGIST,
-      testnet_mumbai: MUMBAI_STRATEGIST,
-      testnet_fantom: FTMTESTNET_STRATEGIST,
-      testnet_fuji: FUJI_STRATEGIST,
+      internal_mumbai: TESTNET_STRATEGIST,
+      testnet_mumbai: TESTNET_STRATEGIST,
+      testnet_fantom: TESTNET_STRATEGIST,
+      testnet_fuji: TESTNET_STRATEGIST,
     },
     consumerA: {
       default: 4
@@ -213,12 +198,12 @@ module.exports = {
     },
     faucetAdmin: {
       default: 10,
-      localhost: process.env.FORK === "true" ? MUMBAI_FAUCET_ADMIN : 10,
-      hardhat: process.env.FORK === "true" ? MUMBAI_FAUCET_ADMIN : 10,
-      internal_mumbai: MUMBAI_FAUCET_ADMIN,
-      testnet_mumbai: MUMBAI_FAUCET_ADMIN,
-      testnet_fantom: FTMTESTNET_FAUCET_ADMIN,
-      testnet_fuji: FUJI_FAUCET_ADMIN,
+      localhost: process.env.FORK === "true" ? TESTNET_FAUCET_ADMIN : 10,
+      hardhat: process.env.FORK === "true" ? TESTNET_FAUCET_ADMIN : 10,
+      internal_mumbai: TESTNET_FAUCET_ADMIN,
+      testnet_mumbai: TESTNET_FAUCET_ADMIN,
+      testnet_fantom: TESTNET_FAUCET_ADMIN,
+      testnet_fuji: TESTNET_FAUCET_ADMIN,
     },
   },
   etherscan: {
