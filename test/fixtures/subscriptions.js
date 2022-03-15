@@ -45,7 +45,7 @@ async function onePlanFixture() {
 
     fixture.plansRoot = cask.utils.plansMerkleRoot(fixture.plans);
     fixture.discountsRoot = cask.utils.discountsMerkleRoot(fixture.discounts);
-    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, fixture.plansRoot,
+    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
         fixture.discountsRoot);
 
     return fixture;
@@ -86,7 +86,7 @@ async function twoPlanFixture() {
 
     fixture.plansRoot = cask.utils.plansMerkleRoot(fixture.plans);
     fixture.discountsRoot = cask.utils.discountsMerkleRoot(fixture.discounts);
-    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, fixture.plansRoot,
+    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
         fixture.discountsRoot);
 
     return fixture;
@@ -112,7 +112,7 @@ async function unpausablePlanFixture() {
 
     fixture.plansRoot = cask.utils.plansMerkleRoot(fixture.plans);
     fixture.discountsRoot = cask.utils.discountsMerkleRoot(fixture.discounts);
-    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, fixture.plansRoot,
+    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
         fixture.discountsRoot);
 
     return fixture;
@@ -138,7 +138,7 @@ async function minTermPlanFixture() {
 
     fixture.plansRoot = cask.utils.plansMerkleRoot(fixture.plans);
     fixture.discountsRoot = cask.utils.discountsMerkleRoot(fixture.discounts);
-    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, fixture.plansRoot,
+    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
         fixture.discountsRoot);
 
     return fixture;
@@ -190,7 +190,7 @@ async function onePlanWithDiscountsFixture() {
 
     fixture.plansRoot = cask.utils.plansMerkleRoot(fixture.plans);
     fixture.discountsRoot = cask.utils.discountsMerkleRoot(fixture.discounts);
-    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, fixture.plansRoot,
+    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
         fixture.discountsRoot);
 
     return fixture;

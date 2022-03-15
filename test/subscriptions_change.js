@@ -50,6 +50,7 @@ describe("CaskSubscriptions Change", function () {
 
         // create subscription
         const tx = await consumerASubscriptions.createSubscription(
+            0, // nonce
             plansProof, // planProof
             discountProof, // discountProof
             0, // cancelAt
@@ -81,6 +82,7 @@ describe("CaskSubscriptions Change", function () {
         // upgrade subscription from plan 200 -> 201
         expect (await consumerASubscriptions.changeSubscriptionPlan(
             subscriptionId,
+            0, // nonce
             newPlansProof, // planProof
             [], // discountProof
             signedRoots, // providerSignature

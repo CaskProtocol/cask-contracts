@@ -120,6 +120,7 @@ PausableUpgradeable
     /************************** SUBSCRIPTION METHODS **************************/
 
     function createNetworkSubscription(
+        uint256 _nonce,
         bytes32[] calldata _planProof,  // [provider, ref, planData, merkleRoot, merkleProof...]
         bytes32[] calldata _discountProof, // [discountCodeProof, discountData, merkleRoot, merkleProof...]
         bytes32 _networkData,
@@ -128,7 +129,7 @@ PausableUpgradeable
         bytes memory _networkSignature,
         string calldata _cid
     ) external override whenNotPaused {
-        uint256 subscriptionId = _createSubscription(_planProof, _discountProof, _cancelAt,
+        uint256 subscriptionId = _createSubscription(_nonce, _planProof, _discountProof, _cancelAt,
             _providerSignature, _cid);
 
         _verifyNetworkData(_networkData, _networkSignature);
@@ -138,32 +139,35 @@ PausableUpgradeable
     }
 
     function createSubscription(
+        uint256 _nonce,
         bytes32[] calldata _planProof, // [provider, ref, planData, merkleRoot, merkleProof...]
         bytes32[] calldata _discountProof, // [discountCodeProof, discountData, merkleRoot, merkleProof...]
         uint32 _cancelAt,
         bytes memory _providerSignature,
         string calldata _cid
     ) external override whenNotPaused {
-        _createSubscription(_planProof, _discountProof, _cancelAt, _providerSignature, _cid);
+        _createSubscription(_nonce, _planProof, _discountProof, _cancelAt, _providerSignature, _cid);
     }
 
     function changeSubscriptionPlan(
         uint256 _subscriptionId,
+        uint256 _nonce,
         bytes32[] calldata _planProof,  // [provider, ref, planData, merkleRoot, merkleProof...]
         bytes32[] calldata _discountProof, // [discountCodeProof, discountData, merkleRoot, merkleProof...]
         bytes memory _providerSignature,
         string calldata _cid
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
-        _changeSubscriptionPlan(_subscriptionId, _planProof, _discountProof, _providerSignature, _cid);
+        _changeSubscriptionPlan(_subscriptionId, _nonce, _planProof, _discountProof, _providerSignature, _cid);
     }
 
     function changeSubscriptionDiscount(
         uint256 _subscriptionId,
         bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
-    ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
+    ) external override whenNotPaused {
 
         Subscription storage subscription = subscriptions[_subscriptionId];
         require(subscription.discountId == 0, "!EXISTING_DISCOUNT");
+        require(_msgSender() == subscription.provider, "!AUTH"); // only provider can set discount after subscription creation
 
         if (pendingPlanChanges[_subscriptionId] > 0) {
             PlanInfo memory newPlanInfo = _parsePlanData(pendingPlanChanges[_subscriptionId]);
@@ -418,6 +422,7 @@ PausableUpgradeable
     }
 
     function _createSubscription(
+        uint256 _nonce,
         bytes32[] calldata _planProof,  // [provider, ref, planData, merkleRoot, merkleProof...]
         bytes32[] calldata _discountProof, // [discountCodeProof, discountData, merkleRoot, merkleProof...]
         uint32 _cancelAt,
@@ -429,9 +434,9 @@ PausableUpgradeable
         // confirms merkleroots are in fact the ones provider committed to
         address provider;
         if (_discountProof.length >= 3) {
-            provider = _verifyMerkleRoots(_planProof[0], _providerSignature, _planProof[3], _discountProof[2]);
+            provider = _verifyMerkleRoots(_planProof[0], _nonce, _planProof[3], _discountProof[2], _providerSignature);
         } else {
-            provider = _verifyMerkleRoots(_planProof[0], _providerSignature, _planProof[3], 0);
+            provider = _verifyMerkleRoots(_planProof[0], _nonce, _planProof[3], 0, _providerSignature);
         }
 
         // confirms plan data is included in merkle root
@@ -499,6 +504,7 @@ PausableUpgradeable
 
     function _changeSubscriptionPlan(
         uint256 _subscriptionId,
+        uint256 _nonce,
         bytes32[] calldata _planProof,  // [provider, ref, planData, merkleRoot, merkleProof...]
         bytes32[] calldata _discountProof, // [discountCodeProof, discountData, merkleRoot, merkleProof...]
         bytes memory _providerSignature,
@@ -515,9 +521,9 @@ PausableUpgradeable
         // confirms merkleroots are in fact the ones provider committed to
         address provider;
         if (_discountProof.length >= 3) {
-            provider = _verifyMerkleRoots(_planProof[0], _providerSignature, _planProof[3], _discountProof[2]);
+            provider = _verifyMerkleRoots(_planProof[0], _nonce, _planProof[3], _discountProof[2], _providerSignature);
         } else {
-            provider = _verifyMerkleRoots(_planProof[0], _providerSignature, _planProof[3], 0);
+            provider = _verifyMerkleRoots(_planProof[0], _nonce, _planProof[3], 0, _providerSignature);
         }
 
         // confirms plan data is included in merkle root
@@ -726,14 +732,16 @@ PausableUpgradeable
 
     function _verifyMerkleRoots(
         bytes32 providerAddr,
-        bytes memory _providerSignature,
+        uint256 _nonce,
         bytes32 _planMerkleRoot,
-        bytes32 _discountMerkleRoot
-    ) internal pure returns (address) {
-        address recovered = keccak256(abi.encode(_planMerkleRoot, _discountMerkleRoot))
+        bytes32 _discountMerkleRoot,
+        bytes memory _providerSignature
+    ) internal view returns (address) {
+        address recovered = keccak256(abi.encode(_nonce, _planMerkleRoot, _discountMerkleRoot))
             .toEthSignedMessageHash()
             .recover(_providerSignature);
         require(address(bytes20(providerAddr << 96)) == recovered, "!INVALID(proof)");
+        require(_nonce == subscriptionPlans.getProviderProfile(recovered).nonce, "!PROVIDER_NONCE");
         return recovered;
     }
 

@@ -54,6 +54,7 @@ describe("CaskSubscriptions General", function () {
 
     // create subscription
     const tx = await consumerASubscriptions.createSubscription(
+        0, // nonce
         plansProof, // planProof
         discountProof, // discountProof
         0, // cancelAt
