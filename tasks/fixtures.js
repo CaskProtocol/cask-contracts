@@ -49,7 +49,7 @@ async function fixtures(taskArguments, hre) {
     const plansRoot = cask.utils.plansMerkleRoot(plans);
     const discountsRoot = cask.utils.discountsMerkleRoot(discounts);
 
-    const signedRoots = await cask.utils.signMerkleRoots(providerA, plansRoot, discountsRoot);
+    const signedRoots = await cask.utils.signMerkleRoots(providerA, 0, plansRoot, discountsRoot);
     console.log(`Generated signature for providerA configuration: ${signedRoots}`);
 
     const profileData = {
@@ -72,7 +72,7 @@ async function fixtures(taskArguments, hre) {
         providerCid = await ipfs.save(profileData);
     }
     // save provider profile to chain
-    await caskSubscriptionPlans.connect(providerA).setProviderProfile(providerA.address, providerCid);
+    await caskSubscriptionPlans.connect(providerA).setProviderProfile(providerA.address, providerCid, 0);
 
 
     // subscription creations
@@ -117,6 +117,7 @@ async function createSubscription(consumer, provider, refString, planId, profile
 
     // create subscription
     const tx = await caskSubscriptions.connect(consumer).createSubscription(
+        0, // nonce
         plansProof, // planProof
         discountProof, // discountProof
         0, // cancelAt
