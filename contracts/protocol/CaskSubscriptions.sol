@@ -487,6 +487,8 @@ PausableUpgradeable
 
         if (subscription.renewAt <= timestamp) {
             subscriptionManager.renewSubscription(subscriptionId);
+            // if no trial, make sure first payment cleared
+            require(subscription.status == SubscriptionStatus.Active, "!INSUFFICIENT_FUNDS");
         }
 
         emit SubscriptionCreated(ownerOf(subscriptionId), subscription.provider, subscriptionId,
