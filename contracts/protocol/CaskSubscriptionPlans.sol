@@ -9,6 +9,7 @@ import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
 
 import "../interfaces/ICaskSubscriptionPlans.sol";
+import "../interfaces/ICaskPrivateBeta.sol";
 
 contract CaskSubscriptionPlans is
 ICaskSubscriptionPlans,
@@ -30,6 +31,10 @@ PausableUpgradeable
     /** @dev Maps for discounts. */
     mapping(address => mapping(uint32 => mapping(bytes32 => uint256))) internal discountRedemptions;
 
+    ICaskPrivateBeta public privateBeta;
+    bool public privateBetaOnly;
+
+
     modifier onlyManager() {
         require(_msgSender() == subscriptionManager, "!AUTH");
         _;
@@ -38,6 +43,8 @@ PausableUpgradeable
     function initialize() public initializer {
         __Ownable_init();
         __Pausable_init();
+
+        privateBetaOnly = false;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -54,16 +61,31 @@ PausableUpgradeable
         return BaseRelayRecipient._msgData();
     }
 
+    function setPrivateBeta(
+        bool enabled,
+        address _privateBeta
+    ) external onlyOwner {
+        privateBetaOnly = enabled;
+        privateBeta = ICaskPrivateBeta(_privateBeta);
+    }
 
     function setProviderProfile(
         address _paymentAddress,
         string calldata _cid,
         uint256 _nonce
     ) external override {
+        if (privateBetaOnly) {
+            require(privateBeta.betaProviders(_msgSender()) > 0, "!PRIVATE_BETA_ONLY");
+        }
         Provider storage profile = providerProfiles[_msgSender()];
+        if (profile.nonce > 0) {
+            require(_nonce > profile.nonce, "!NONCE");
+        }
         profile.paymentAddress = _paymentAddress;
         profile.cid = _cid;
         profile.nonce = _nonce;
+
+        emit ProviderSetProfile(_msgSender(), _paymentAddress, _nonce, _cid);
     }
 
     function getProviderProfile(
