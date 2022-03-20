@@ -46,6 +46,9 @@ interface ICaskSubscriptionPlans {
         bytes32 _merkleRoot, bytes32[] calldata _merkleProof) external returns(bool);
 
 
+    /** @dev Emitted when `provider` sets their profile info */
+    event ProviderSetProfile(address indexed provider, address indexed paymentAddress, uint256 nonce, string cid);
+
     /** @dev Emitted when `provider` disables a subscription plan */
     event PlanDisabled(address indexed provider, uint32 indexed planId);
 
