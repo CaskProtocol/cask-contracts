@@ -94,8 +94,15 @@ const subscriptionPerformUpkeep = async(performData) => {
 };
 
 const runSubscriptionKeeper = async(limit= 4, offset= 0) => {
-    const abiCoder = new ethers.utils.AbiCoder();
-    const checkData = abiCoder.encode(['uint256','uint256'], [limit, offset]);
+    await runSubscriptionKeeperType(0, limit, offset); // active
+    await runSubscriptionKeeperType(1, limit, offset); // trialing
+    await runSubscriptionKeeperType(2, limit, offset); // past due
+};
+
+const runSubscriptionKeeperType = async(checkType, limit= 4, offset= 0) => {
+    const checkData = ethers.utils.defaultAbiCoder.encode(
+        ['uint256','uint256', 'uint8'],
+        [limit, offset, checkType]);
     const checkUpkeep = await subscriptionCheckUpkeep(checkData);
 
     // console.log(`runSubscriptionKeeper checkUpkeep upkeepNeeded: ${checkUpkeep.upkeepNeeded}`);
@@ -106,7 +113,8 @@ const runSubscriptionKeeper = async(limit= 4, offset= 0) => {
     } else {
         return false;
     }
-};
+}
+
 
 
 const advanceTimeRunSubscriptionKeeper = async (times, seconds, keeperLimit=10) => {

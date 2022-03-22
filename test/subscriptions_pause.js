@@ -157,8 +157,7 @@ describe("CaskSubscriptions Pause", function () {
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Canceled);
 
-        expect (await advanceTimeRunSubscriptionKeeper(1, month))
-            .to.emit(consumerASubscriptions, "SubscriptionCanceled");
+        await advanceTimeRunSubscriptionKeeper(1, month);
 
         // confirm canceled
         result = await consumerASubscriptions.getSubscription(subscriptionId);

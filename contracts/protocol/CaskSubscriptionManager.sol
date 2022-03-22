@@ -35,9 +35,11 @@ KeeperCompatibleInterface
     uint256 public paymentFeeRateMin; // floor if full discount applied
     uint256 public paymentFeeRateMax; // fee if no discount applied
 
-
     /** @dev factor used to reduce payment fee based on qty of staked CASK */
     uint256 public stakeTargetFactor;
+
+    /** @dev map used to track when to reattempt a failed payment */
+    mapping(uint256 => uint32) private attemptAfter; // subscriptionId => timestamp
 
 
     modifier onlySubscriptions() {
@@ -182,13 +184,14 @@ KeeperCompatibleInterface
     ) external view override returns(bool upkeepNeeded, bytes memory performData) {
         (
         uint256 limit,
-        uint256 offset
-        ) = abi.decode(checkData, (uint256, uint256));
+        uint256 offset,
+        uint8 checkType
+        ) = abi.decode(checkData, (uint256, uint256, uint8));
 
         (
         uint256 renewableCount,
         uint256[] memory subscriptionIds
-        ) = _subscriptionsRenewable(limit, offset);
+        ) = _subscriptionsRenewable(limit, offset, checkType);
 
         if (renewableCount == 0) {
             upkeepNeeded = false;
@@ -200,7 +203,7 @@ KeeperCompatibleInterface
             for (uint256 i = 0; i < limit && j < renewableCount; i++) {
                 if (subscriptionIds[i] > 0) {
                     renewables[j] = subscriptionIds[i];
-                    j = j + 1;
+                    j += 1;
                 }
             }
             upkeepNeeded = true;
@@ -214,7 +217,8 @@ KeeperCompatibleInterface
 
     function _subscriptionsRenewable(
         uint256 _limit,
-        uint256 _offset
+        uint256 _offset,
+        uint8 _checkType
     ) internal view returns(uint256, uint256[] memory) {
 
         uint256 activeSubscriptionCount = subscriptions.getActiveSubscriptionsCount();
@@ -233,16 +237,28 @@ KeeperCompatibleInterface
         uint256[] memory activeSubscriptions = subscriptions.getActiveSubscriptions();
 
         uint256 renewableCount = 0;
-        for (uint256 i = 0; i < size && i + _offset < activeSubscriptionCount; i++) {
+        for (uint256 i = 0; renewableCount < size && i + _offset < activeSubscriptionCount; i++) {
             (ICaskSubscriptions.Subscription memory subscription,) =
                 subscriptions.getSubscription(activeSubscriptions[i+_offset]);
-            if (subscription.renewAt <= timestamp &&
-                subscription.status != ICaskSubscriptions.SubscriptionStatus.Paused)
-            {
-                renewables[renewableCount] = activeSubscriptions[i+_offset];
-                renewableCount += 1;
-                if (renewableCount >= size) {
-                    break;
+
+            if (subscription.renewAt <= timestamp) {
+                if (_checkType == 0) { // active
+                    if (subscription.status == ICaskSubscriptions.SubscriptionStatus.Active) {
+                        renewables[renewableCount] = activeSubscriptions[i+_offset];
+                        renewableCount += 1;
+                    }
+                } else if (_checkType == 1) { // trial ending
+                    if (subscription.status == ICaskSubscriptions.SubscriptionStatus.Trialing) {
+                        renewables[renewableCount] = activeSubscriptions[i+_offset];
+                        renewableCount += 1;
+                    }
+                } else if (_checkType == 2) { // past due
+                    if (subscription.status == ICaskSubscriptions.SubscriptionStatus.PastDue &&
+                        attemptAfter[activeSubscriptions[i+_offset]] <= timestamp)
+                    {
+                        renewables[renewableCount] = activeSubscriptions[i+_offset];
+                        renewableCount += 1;
+                    }
                 }
             }
         }
@@ -321,11 +337,13 @@ KeeperCompatibleInterface
             if (subscription.renewAt < timestamp - (planInfo.gracePeriod * 1 days)) {
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
             } else if (subscription.status != ICaskSubscriptions.SubscriptionStatus.PastDue) {
+                attemptAfter[_subscriptionId] = timestamp + 4 hours;
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PastDue);
             }
 
         } else if (chargePrice > 0) {
             _processPayment(subscriptions.ownerOf(_subscriptionId), subscription.provider, _subscriptionId, chargePrice);
+            delete attemptAfter[_subscriptionId]; // clear if successful payment
             subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
 
         } else { // no charge, move along now

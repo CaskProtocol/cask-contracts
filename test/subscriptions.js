@@ -79,23 +79,20 @@ describe("CaskSubscriptions General", function () {
     // confirm no charge before 7 day trial ends
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('100'));
 
-    expect(await advanceTimeRunSubscriptionKeeper(1, day * 3))
-        .to.emit(consumerASubscriptions, "SubscriptionTrialEnded");
+    await advanceTimeRunSubscriptionKeeper(1, day * 3);
 
     // confirm charge after 7 day trial ended
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('90'));
     result = await consumerASubscriptions.getSubscription(subscriptionId);
     expect(result.subscription.discountId).to.equal(ethers.utils.hexZeroPad(0, 32)); // no discount code
 
-    expect(await advanceTimeRunSubscriptionKeeper(1, month))
-        .to.emit(consumerASubscriptions, "SubscriptionRenewed");
+    await advanceTimeRunSubscriptionKeeper(1, month);
 
     // confirm charge after another month
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('80'));
     result = await consumerASubscriptions.getSubscription(subscriptionId);
 
-    expect(await advanceTimeRunSubscriptionKeeper(1, month))
-        .to.emit(consumerASubscriptions, "SubscriptionRenewed");
+    await advanceTimeRunSubscriptionKeeper(1, month);
 
     // confirm charge after another month
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));
@@ -105,8 +102,7 @@ describe("CaskSubscriptions General", function () {
     expect(await consumerASubscriptions.cancelSubscription(subscriptionId, result.subscription.renewAt))
         .to.emit(consumerASubscriptions, "SubscriptionPendingCancel");
 
-    expect(await advanceTimeRunSubscriptionKeeper(1, month + day))
-        .to.emit(consumerASubscriptions, "SubscriptionCanceled");
+    await advanceTimeRunSubscriptionKeeper(1, month + day);
 
     // confirm no charges after cancel
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));
