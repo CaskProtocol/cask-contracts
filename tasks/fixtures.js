@@ -68,7 +68,9 @@ async function fixtures(taskArguments, hre) {
 
     let providerCid = "";
     if (process.env.PINATA_API_KEY) {
-        const ipfs = new cask.ipfs.IPFS(process.env.PINATA_API_KEY, process.env.PINATA_API_SECRET);
+        const ipfs = new cask.ipfs.IPFS({
+            pinataApiKey: process.env.PINATA_API_KEY,
+            pinataApiSecret: process.env.PINATA_API_SECRET});
         providerCid = await ipfs.save(profileData);
     }
     // save provider profile to chain
@@ -106,7 +108,9 @@ async function createSubscription(consumer, provider, refString, planId, profile
 
     let subscriptionCid = "";
     if (process.env.PINATA_API_KEY) {
-        const ipfs = new cask.ipfs.IPFS(process.env.PINATA_API_KEY, process.env.PINATA_API_SECRET);
+        const ipfs = new cask.ipfs.IPFS({
+            pinataApiKey: process.env.PINATA_API_KEY,
+            pinataApiSecret: process.env.PINATA_API_SECRET});
         subscriptionCid = await ipfs.save({
             consumer: consumer.address,
             ref: refString,
