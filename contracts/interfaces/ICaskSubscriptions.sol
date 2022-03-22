@@ -117,10 +117,6 @@ interface ICaskSubscriptions is IERC721Upgradeable {
 
     function getPendingPlanChange(uint256 _subscriptionId) external view returns (bytes32);
 
-    function getActiveSubscriptionsCount() external view returns (uint256);
-
-    function getActiveSubscriptions() external view returns (uint256[] memory);
-
 
     /************************** SUBSCRIPTION EVENTS **************************/
 

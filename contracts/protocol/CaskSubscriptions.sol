@@ -33,7 +33,8 @@ PausableUpgradeable
 
     /************************** STATE **************************/
 
-    uint256[] private activeSubscriptions;
+    // FIXME: remove
+    uint256[] private deprecated1;
 
     /** @dev Maps for consumer to list of subscriptions. */
     mapping(address => uint256[]) private consumerSubscriptions; // consumer => subscriptionId[]
@@ -45,7 +46,8 @@ PausableUpgradeable
     mapping(address => uint256) private providerActiveSubscriptionCount; // provider => count
     mapping(address => mapping(uint32 => uint256)) private planActiveSubscriptionCount; // provider => planId => count
 
-    mapping(uint256 => uint256) private idxMap; // subscriptionId => activeSubscriptions index
+    // FIXME: remove
+    mapping(uint256 => uint256) private deprecated2; // subscriptionId => activeSubscriptions index
 
     modifier onlyManager() {
         require(_msgSender() == address(subscriptionManager), "!AUTH");
@@ -232,6 +234,12 @@ PausableUpgradeable
             subscription.renewAt = uint32(block.timestamp);
         }
 
+        // re-register subscription with manager
+        subscriptionManager.renewSubscription(_subscriptionId);
+
+        // make sure still active if payment was required to resume
+        require(subscription.status == SubscriptionStatus.Active, "!INSUFFICIENT_FUNDS");
+
         emit SubscriptionResumed(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
             subscription.ref, subscription.planId);
     }
@@ -298,13 +306,6 @@ PausableUpgradeable
             emit SubscriptionCanceled(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
                 subscription.ref, subscription.planId);
 
-            // remove canceled subscription from activeSubscriptions by moving last subscription into
-            // the place the canceled subscription occupied
-            activeSubscriptions[idxMap[_subscriptionId]] = activeSubscriptions[activeSubscriptions.length-1];
-            idxMap[activeSubscriptions[idxMap[_subscriptionId]]] = idxMap[_subscriptionId];
-            activeSubscriptions.pop();
-            delete idxMap[_subscriptionId];
-
             _burn(_subscriptionId);
 
         } else if (_command == ManagerCommand.PastDue) {
@@ -331,14 +332,6 @@ PausableUpgradeable
                     subscription.discountData = 0;
         }
 
-    }
-
-    function getActiveSubscriptionsCount() external view returns (uint256) {
-        return activeSubscriptions.length;
-    }
-
-    function getActiveSubscriptions() external override view returns (uint256[] memory) {
-        return activeSubscriptions;
     }
 
     function getSubscription(
@@ -485,9 +478,9 @@ PausableUpgradeable
         subscription.discountData
         ) = _verifyDiscountProof(subscription.provider, planInfo.planId, _discountProof);
 
-        if (subscription.renewAt <= timestamp) {
-            subscriptionManager.renewSubscription(subscriptionId);
-            // if no trial, make sure first payment cleared
+        subscriptionManager.renewSubscription(subscriptionId); // registers subscription with manager
+
+        if (planInfo.freeTrial == 0) {
             require(subscription.status == SubscriptionStatus.Active, "!INSUFFICIENT_FUNDS");
         }
 
@@ -498,8 +491,6 @@ PausableUpgradeable
         providerSubscriptions[provider].push(subscriptionId);
         providerActiveSubscriptionCount[provider] += 1;
         planActiveSubscriptionCount[provider][planInfo.planId] += 1;
-        idxMap[subscriptionId] = activeSubscriptions.length;
-        activeSubscriptions.push(subscriptionId);
 
         return subscriptionId;
     }

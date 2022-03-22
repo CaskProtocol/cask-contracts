@@ -1,11 +1,14 @@
 const {
     usdtUnits,
     usdcUnits,
-    daiUnits
+    daiUnits,
+    day,
+    hour,
 } = require("../utils/units");
 
 const {
     isProtocolChain,
+    isMemnet,
 } = require("../test/_networks");
 
 const { getNetworkAddresses } = require("../test/_helpers");
@@ -65,6 +68,12 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
         subscriptionManager.initialize(vault.address, subscriptionPlans.address, subscriptions.address)
     );
     log("Initialized CaskSubscriptionManager");
+    if (isMemnet) {
+        await withConfirmation(
+            subscriptionManager.setParameters(0, 0, 0, 0, 6 * hour)
+        );
+        log("Set CaskSubscriptionManager parameters for memnet");
+    }
 
     await withConfirmation(
         vault.connect(sDeployer).addProtocol(subscriptionManager.address)

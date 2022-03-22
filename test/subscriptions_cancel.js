@@ -85,8 +85,8 @@ describe("CaskSubscriptions Cancel", function () {
         // deposit one more months worth
         await consumerAVault.deposit(networkAddresses.DAI, daiUnits('10'));
 
-        // confirm successful renew
-        await advanceTimeRunSubscriptionKeeper(5, hour);
+        // confirm successful renew by next day
+        await advanceTimeRunSubscriptionKeeper(1, day);
 
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Active);

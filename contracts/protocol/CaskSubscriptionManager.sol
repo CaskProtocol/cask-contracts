@@ -38,8 +38,16 @@ KeeperCompatibleInterface
     /** @dev factor used to reduce payment fee based on qty of staked CASK */
     uint256 public stakeTargetFactor;
 
-    /** @dev map used to track when to reattempt a failed payment */
-    mapping(uint256 => uint32) private attemptAfter; // subscriptionId => timestamp
+    // FIXME: remove
+    mapping(uint256 => uint32) private deprecated1; // subscriptionId => timestamp
+
+    /** @dev size (in seconds) of buckets to group subscriptions into for processing */
+    uint32 public processBucketSize;
+
+    /** @dev map used to track when subscriptions need attention next */
+    mapping(CheckType => mapping(uint32 => uint256[])) public processQueue; // renewal bucket => subscriptionId[]
+    mapping(CheckType => uint32) public processingBucket; // current bucket being processed
+
 
 
     modifier onlySubscriptions() {
@@ -64,6 +72,10 @@ KeeperCompatibleInterface
         paymentFeeRateMin = 0;
         paymentFeeRateMax = 0;
         stakeTargetFactor = 0;
+        processBucketSize = 300;
+
+        processingBucket[CheckType.Active] = currentBucket();
+        processingBucket[CheckType.PastDue] = currentBucket();
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -179,99 +191,74 @@ KeeperCompatibleInterface
         }
     }
 
+    function bucketAt(uint32 timestamp) internal view returns(uint32) {
+        return timestamp - (timestamp % processBucketSize) + processBucketSize;
+    }
+
+    function currentBucket() internal view returns(uint32) {
+        uint32 timestamp = uint32(block.timestamp);
+        return timestamp - (timestamp % processBucketSize);
+    }
+
     function checkUpkeep(
         bytes calldata checkData
     ) external view override returns(bool upkeepNeeded, bytes memory performData) {
         (
         uint256 limit,
-        uint256 offset,
-        uint8 checkType
-        ) = abi.decode(checkData, (uint256, uint256, uint8));
+        CheckType checkType
+        ) = abi.decode(checkData, (uint256, CheckType));
 
-        (
-        uint256 renewableCount,
-        uint256[] memory subscriptionIds
-        ) = _subscriptionsRenewable(limit, offset, checkType);
+        uint32 checkBucket = processingBucket[checkType];
+        if (checkBucket == 0) {
+            checkBucket = currentBucket();
+        }
 
-        if (renewableCount == 0) {
-            upkeepNeeded = false;
-            performData = bytes("");
-        } else if (renewableCount < limit) {
-            // convert array of `limit` length to new array sized to hold only renewing subscriptionIds
-            uint256 j = 0;
-            uint256[] memory renewables = new uint256[](renewableCount);
-            for (uint256 i = 0; i < limit && j < renewableCount; i++) {
-                if (subscriptionIds[i] > 0) {
-                    renewables[j] = subscriptionIds[i];
-                    j += 1;
-                }
-            }
+        upkeepNeeded = false;
+
+        if (processQueue[checkType][checkBucket].length > 0) {
             upkeepNeeded = true;
-            performData = abi.encode(renewables);
-
+        } else if (currentBucket() >= checkBucket && currentBucket() - checkBucket > 1 hours) {
+            upkeepNeeded = true;
         } else {
-            upkeepNeeded = true;
-            performData = abi.encode(subscriptionIds);
-        }
-    }
-
-    function _subscriptionsRenewable(
-        uint256 _limit,
-        uint256 _offset,
-        uint8 _checkType
-    ) internal view returns(uint256, uint256[] memory) {
-
-        uint256 activeSubscriptionCount = subscriptions.getActiveSubscriptionsCount();
-
-        uint256 size = _limit;
-        if (size > activeSubscriptionCount) {
-            size = activeSubscriptionCount;
-        }
-        if (_offset >= activeSubscriptionCount) {
-            return (0,new uint256[](0));
-        }
-
-        uint32 timestamp = uint32(block.timestamp);
-
-        uint256[] memory renewables = new uint256[](size);
-        uint256[] memory activeSubscriptions = subscriptions.getActiveSubscriptions();
-
-        uint256 renewableCount = 0;
-        for (uint256 i = 0; renewableCount < size && i + _offset < activeSubscriptionCount; i++) {
-            (ICaskSubscriptions.Subscription memory subscription,) =
-                subscriptions.getSubscription(activeSubscriptions[i+_offset]);
-
-            if (subscription.renewAt <= timestamp) {
-                if (_checkType == 0) { // active
-                    if (subscription.status == ICaskSubscriptions.SubscriptionStatus.Active) {
-                        renewables[renewableCount] = activeSubscriptions[i+_offset];
-                        renewableCount += 1;
-                    }
-                } else if (_checkType == 1) { // trial ending
-                    if (subscription.status == ICaskSubscriptions.SubscriptionStatus.Trialing) {
-                        renewables[renewableCount] = activeSubscriptions[i+_offset];
-                        renewableCount += 1;
-                    }
-                } else if (_checkType == 2) { // past due
-                    if (subscription.status == ICaskSubscriptions.SubscriptionStatus.PastDue &&
-                        attemptAfter[activeSubscriptions[i+_offset]] <= timestamp)
-                    {
-                        renewables[renewableCount] = activeSubscriptions[i+_offset];
-                        renewableCount += 1;
-                    }
+            for (uint32 i = checkBucket; i <= currentBucket(); i += processBucketSize) {
+                if (processQueue[checkType][i].length > 0) {
+                    upkeepNeeded = true;
+                    break;
                 }
             }
         }
-        return (renewableCount, renewables);
+
+        performData = checkData;
     }
+
 
     function performUpkeep(
         bytes calldata performData
     ) external override whenNotPaused {
-        uint256[] memory subscriptionIds = abi.decode(performData, (uint256[]));
-        for (uint256 i = 0; i < subscriptionIds.length; i++) {
-            if (subscriptionIds[i] > 0) {
-                _renewSubscription(subscriptionIds[i]);
+        (
+        uint256 limit,
+        CheckType checkType
+        ) = abi.decode(performData, (uint256, CheckType));
+
+        if (processingBucket[checkType] == 0) {
+            processingBucket[checkType] = currentBucket();
+        }
+
+        uint256 maxBucketChecks = limit * 10;
+        while (limit > 0 && maxBucketChecks > 0) {
+            if (processQueue[checkType][processingBucket[checkType]].length > 0) {
+                uint256 queueLen = processQueue[checkType][processingBucket[checkType]].length;
+                uint256 subscriptionId = processQueue[checkType][processingBucket[checkType]][queueLen-1];
+                processQueue[checkType][processingBucket[checkType]].pop();
+                _renewSubscription(subscriptionId);
+                limit -= 1;
+            } else {
+                if (processingBucket[checkType] < currentBucket()) {
+                    processingBucket[checkType] += processBucketSize;
+                    maxBucketChecks -= 0;
+                } else {
+                    break; // nothing left to do
+                }
             }
         }
     }
@@ -289,9 +276,14 @@ KeeperCompatibleInterface
 
         uint32 timestamp = uint32(block.timestamp);
 
-        // not time to renew yet or is paused
-        if (subscription.renewAt > timestamp ||
-            subscription.status == ICaskSubscriptions.SubscriptionStatus.Paused) {
+        // will be re-queued when resumed
+        if (subscription.status == ICaskSubscriptions.SubscriptionStatus.Paused) {
+            return;
+        }
+
+        // not time to renew yet, re-queue for renewal time
+        if (subscription.renewAt > timestamp) {
+            processQueue[CheckType.Active][bucketAt(subscription.renewAt)].push(_subscriptionId);
             return;
         }
 
@@ -337,16 +329,17 @@ KeeperCompatibleInterface
             if (subscription.renewAt < timestamp - (planInfo.gracePeriod * 1 days)) {
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
             } else if (subscription.status != ICaskSubscriptions.SubscriptionStatus.PastDue) {
-                attemptAfter[_subscriptionId] = timestamp + 4 hours;
+                processQueue[CheckType.PastDue][bucketAt(timestamp + 4 hours)].push(_subscriptionId);
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PastDue);
             }
 
         } else if (chargePrice > 0) {
             _processPayment(subscriptions.ownerOf(_subscriptionId), subscription.provider, _subscriptionId, chargePrice);
-            delete attemptAfter[_subscriptionId]; // clear if successful payment
+            processQueue[CheckType.Active][bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
             subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
 
         } else { // no charge, move along now
+            processQueue[CheckType.Active][bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
             subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
         }
 
@@ -368,12 +361,33 @@ KeeperCompatibleInterface
         uint256 _paymentFeeFixed,
         uint256 _paymentFeeRateMin,
         uint256 _paymentFeeRateMax,
-        uint256 _stakeTargetFactor
+        uint256 _stakeTargetFactor,
+        uint32 _processBucketSize
     ) external onlyOwner {
         paymentFeeFixed = _paymentFeeFixed;
         paymentFeeRateMin = _paymentFeeRateMin;
         paymentFeeRateMax = _paymentFeeRateMax;
         stakeTargetFactor = _stakeTargetFactor;
+        processBucketSize = _processBucketSize;
+
+        // re-map to new bucket size
+        if (processingBucket[CheckType.Active] == 0) {
+            processingBucket[CheckType.Active] = currentBucket();
+        } else {
+            processingBucket[CheckType.Active] = bucketAt(processingBucket[CheckType.Active]);
+        }
+        if (processingBucket[CheckType.PastDue] == 0) {
+            processingBucket[CheckType.PastDue] = currentBucket();
+        } else {
+            processingBucket[CheckType.PastDue] = bucketAt(processingBucket[CheckType.PastDue]);
+        }
+    }
+
+    function setProcessingBucket(
+        CheckType _checkType,
+        uint32 _timestamp
+    ) external onlyOwner {
+        processingBucket[_checkType] = bucketAt(_timestamp);
     }
 
 }
