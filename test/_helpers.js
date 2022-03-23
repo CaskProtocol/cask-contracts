@@ -4,7 +4,7 @@ const { parseUnits, formatUnits } = require("ethers").utils;
 
 const {
     isRealChain,
-    isPolygon,
+    isProduction,
 } = require("./_networks");
 
 
@@ -66,19 +66,30 @@ const setOracleTokenPriceUsd = async (tokenSymbol, usdPrice) => {
 };
 
 const getNetworkAddresses = async (deployments) => {
-    if (isPolygon) {
-        return addresses.polygon;
+    if (isProduction) {
+        return addresses[hre.network.name];
     } else {
-        // On other environments, return mock feeds.
+        if (!addresses[hre.network.name]) {
+            addresses[hre.network.name] = {};
+        }
         return {
-            DAI_USD: (await deployments.get("MockChainlinkOracleFeedDAI")).address,
-            USDC_USD: (await deployments.get("MockChainlinkOracleFeedUSDC")).address,
-            USDT_USD: (await deployments.get("MockChainlinkOracleFeedUSDT")).address,
-            WETH_USD: (await deployments.get("MockChainlinkOracleFeedWETH")).address,
-            USDT: (await deployments.get("MockUSDT")).address,
-            USDC: (await deployments.get("MockUSDC")).address,
-            DAI: (await deployments.get("MockDAI")).address,
-            WETH: (await deployments.get("MockWETH")).address,
+            DAI: addresses[hre.network.name].DAI ||
+                (await deployments.get("MockDAI")).address,
+            USDC: addresses[hre.network.name].USDC ||
+                (await deployments.get("MockUSDC")).address,
+            USDT: addresses[hre.network.name].USDT ||
+                (await deployments.get("MockUSDT")).address,
+            WETH: addresses[hre.network.name].WETH ||
+                (await deployments.get("MockWETH")).address,
+
+            DAI_USD: addresses[hre.network.name].DAI_USD ||
+                (await deployments.get("MockChainlinkOracleFeedDAI")).address,
+            USDC_USD: addresses[hre.network.name].USDC_USD ||
+                (await deployments.get("MockChainlinkOracleFeedUSDC")).address,
+            USDT_USD: addresses[hre.network.name].USDT_USD ||
+                (await deployments.get("MockChainlinkOracleFeedUSDT")).address,
+            WETH_USD: addresses[hre.network.name].WETH_USD ||
+                (await deployments.get("MockChainlinkOracleFeedWETH")).address,
         };
     }
 };

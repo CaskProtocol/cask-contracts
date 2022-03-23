@@ -246,8 +246,8 @@ KeeperCompatibleInterface
 
         uint256 maxBucketChecks = limit * 10;
         while (limit > 0 && maxBucketChecks > 0) {
-            if (processQueue[checkType][processingBucket[checkType]].length > 0) {
-                uint256 queueLen = processQueue[checkType][processingBucket[checkType]].length;
+            uint256 queueLen = processQueue[checkType][processingBucket[checkType]].length;
+            if (queueLen > 0) {
                 uint256 subscriptionId = processQueue[checkType][processingBucket[checkType]][queueLen-1];
                 processQueue[checkType][processingBucket[checkType]].pop();
                 _renewSubscription(subscriptionId);
