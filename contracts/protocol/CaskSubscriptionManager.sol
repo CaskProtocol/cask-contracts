@@ -211,26 +211,26 @@ KeeperCompatibleInterface
         CheckType checkType
         ) = abi.decode(checkData, (uint256, uint256, CheckType));
 
-        uint32 checkBucket = processingBucket[checkType];
-        if (checkBucket == 0) {
-            checkBucket = _currentBucket();
-        }
-
+        uint32 currentBucket = _currentBucket();
         upkeepNeeded = false;
 
-        if (processQueue[checkType][checkBucket].length > 0 &&
-            processQueue[checkType][checkBucket].length >= minDepth)
-        {
-            upkeepNeeded = true;
-        } else if (_currentBucket() >= checkBucket && _currentBucket() - checkBucket > 1 hours) {
+        uint32 checkBucket = processingBucket[checkType];
+        if (checkBucket == 0) {
+            checkBucket = currentBucket;
+        }
+
+        // if queue is more than an hour old, all hands on deck
+        if (currentBucket >= checkBucket && currentBucket - checkBucket > 1 hours) {
             upkeepNeeded = true;
         } else {
-            // check if the queue is behind
-            for (uint32 i = checkBucket; i < _currentBucket() - processBucketSize; i += processBucketSize) {
-                if (processQueue[checkType][i].length > 0) {
+            while (checkBucket <= currentBucket) {
+                if (processQueue[checkType][checkBucket].length > 0 &&
+                    processQueue[checkType][checkBucket].length >= minDepth)
+                {
                     upkeepNeeded = true;
                     break;
                 }
+                checkBucket += processBucketSize;
             }
         }
 
@@ -247,12 +247,14 @@ KeeperCompatibleInterface
         CheckType checkType
         ) = abi.decode(performData, (uint256, uint256, CheckType));
 
-        if (processingBucket[checkType] == 0) {
-            processingBucket[checkType] = _currentBucket();
-        }
-
+        uint32 currentBucket = _currentBucket();
         uint256 renewals = 0;
         uint256 maxBucketChecks = limit * 10;
+
+        if (processingBucket[checkType] == 0) {
+            processingBucket[checkType] = currentBucket;
+        }
+
         while (renewals < limit && maxBucketChecks > 0) {
             uint256 queueLen = processQueue[checkType][processingBucket[checkType]].length;
             if (queueLen > 0) {
@@ -261,7 +263,7 @@ KeeperCompatibleInterface
                 _renewSubscription(subscriptionId);
                 renewals += 1;
             } else {
-                if (processingBucket[checkType] < _currentBucket()) {
+                if (processingBucket[checkType] < currentBucket) {
                     processingBucket[checkType] += processBucketSize;
                     maxBucketChecks -= 1;
                 } else {
@@ -384,16 +386,8 @@ KeeperCompatibleInterface
         processBucketSize = _processBucketSize;
 
         // re-map to new bucket size
-        if (processingBucket[CheckType.Active] == 0) {
-            processingBucket[CheckType.Active] = _currentBucket();
-        } else {
-            processingBucket[CheckType.Active] = _bucketAt(processingBucket[CheckType.Active]);
-        }
-        if (processingBucket[CheckType.PastDue] == 0) {
-            processingBucket[CheckType.PastDue] = _currentBucket();
-        } else {
-            processingBucket[CheckType.PastDue] = _bucketAt(processingBucket[CheckType.PastDue]);
-        }
+        processingBucket[CheckType.Active] = _bucketAt(processingBucket[CheckType.Active]);
+        processingBucket[CheckType.PastDue] = _bucketAt(processingBucket[CheckType.PastDue]);
     }
 
     function setProcessingBucket(
