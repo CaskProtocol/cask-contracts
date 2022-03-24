@@ -67,7 +67,7 @@ describe("CaskSubscriptions Change", function () {
         // normal trial end
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('140'));
 
-        await advanceTimeRunSubscriptionKeeper(1, month); // next month
+        await advanceTimeRunSubscriptionKeeper(31, day); // next month
 
         // normal renewal pre-upgrade
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('130'));
@@ -92,7 +92,7 @@ describe("CaskSubscriptions Change", function () {
         // upgrade used some funds
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.lt(daiUnits('130'));
 
-        await advanceTimeRunSubscriptionKeeper(1, month); // next month
+        await advanceTimeRunSubscriptionKeeper(31, day); // next month
 
         // upgrade used some funds and new plan is 20, so should have less than 110
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.lt(daiUnits('110'));

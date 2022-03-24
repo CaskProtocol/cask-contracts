@@ -207,8 +207,9 @@ KeeperCompatibleInterface
     ) external view override returns(bool upkeepNeeded, bytes memory performData) {
         (
         uint256 limit,
+        uint256 minDepth,
         CheckType checkType
-        ) = abi.decode(checkData, (uint256, CheckType));
+        ) = abi.decode(checkData, (uint256, uint256, CheckType));
 
         uint32 checkBucket = processingBucket[checkType];
         if (checkBucket == 0) {
@@ -217,7 +218,9 @@ KeeperCompatibleInterface
 
         upkeepNeeded = false;
 
-        if (processQueue[checkType][checkBucket].length > 0) {
+        if (processQueue[checkType][checkBucket].length > 0 &&
+            processQueue[checkType][checkBucket].length >= minDepth)
+        {
             upkeepNeeded = true;
         } else if (_currentBucket() >= checkBucket && _currentBucket() - checkBucket > 1 hours) {
             upkeepNeeded = true;
@@ -230,7 +233,7 @@ KeeperCompatibleInterface
             }
         }
 
-        performData = checkData;
+        performData = abi.encode(limit, checkType);
     }
 
 
@@ -246,23 +249,27 @@ KeeperCompatibleInterface
             processingBucket[checkType] = _currentBucket();
         }
 
+        uint256 renewals = 0;
         uint256 maxBucketChecks = limit * 10;
-        while (limit > 0 && maxBucketChecks > 0) {
+        while (renewals < limit && maxBucketChecks > 0) {
             uint256 queueLen = processQueue[checkType][processingBucket[checkType]].length;
             if (queueLen > 0) {
                 uint256 subscriptionId = processQueue[checkType][processingBucket[checkType]][queueLen-1];
                 processQueue[checkType][processingBucket[checkType]].pop();
                 _renewSubscription(subscriptionId);
-                limit -= 1;
+                renewals += 1;
             } else {
                 if (processingBucket[checkType] < _currentBucket()) {
                     processingBucket[checkType] += processBucketSize;
-                    maxBucketChecks -= 0;
+                    maxBucketChecks -= 1;
                 } else {
                     break; // nothing left to do
                 }
             }
         }
+
+        emit SubscriptionsRenewed(limit, renewals, checkType,
+            processQueue[checkType][processingBucket[checkType]].length, processingBucket[checkType]);
     }
 
     function renewSubscription(
@@ -333,6 +340,8 @@ KeeperCompatibleInterface
             } else if (subscription.status != ICaskSubscriptions.SubscriptionStatus.PastDue) {
                 processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PastDue);
+            } else {
+                processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
             }
 
         } else if (chargePrice > 0) {
