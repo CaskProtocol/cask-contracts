@@ -17,7 +17,7 @@
   },
   "mocha": {
     "require": "hardhat/register",
-    "timeout": 60000
+    "timeout": 600000
   },
   "author": "Subverse Labs, LLC <info@subverselabs.com>",
   "license": "MIT",

@@ -74,6 +74,7 @@ describe("CaskSubscriptions Pause", function () {
     });
 
     it("Pause respects minTerm and stops payments while paused", async function () {
+        this.timeout(0);
 
         const {
             networkAddresses,
