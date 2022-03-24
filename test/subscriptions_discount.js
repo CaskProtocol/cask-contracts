@@ -75,7 +75,7 @@ describe("CaskSubscriptions Discount", function () {
         const subscriptionId = createdEvent.args.subscriptionId;
         expect(subscriptionId).to.not.be.undefined;
 
-        await advanceTimeRunSubscriptionKeeper(1, 8 * day); // past trial
+        await advanceTimeRunSubscriptionKeeper(8, day); // past trial
 
         // confirm discounted charge after 7 day trial ended - 50% off 10/month == 5; 100 - 5 == 95
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('95'));

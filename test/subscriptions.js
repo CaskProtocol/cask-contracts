@@ -4,7 +4,6 @@ const cask = require('@caskprotocol/sdk');
 const {
   daiUnits,
   day,
-  month,
 } = require("../utils/units");
 
 const {
@@ -74,25 +73,25 @@ describe("CaskSubscriptions General", function () {
     // confirm no charge immediately due to 7 day trial
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('100'));
 
-    await advanceTimeRunSubscriptionKeeper(1, 5 * day);
+    await advanceTimeRunSubscriptionKeeper(5, day);
 
     // confirm no charge before 7 day trial ends
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('100'));
 
-    await advanceTimeRunSubscriptionKeeper(1, day * 3);
+    await advanceTimeRunSubscriptionKeeper(3, day);
 
     // confirm charge after 7 day trial ended
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('90'));
     result = await consumerASubscriptions.getSubscription(subscriptionId);
     expect(result.subscription.discountId).to.equal(ethers.utils.hexZeroPad(0, 32)); // no discount code
 
-    await advanceTimeRunSubscriptionKeeper(1, month);
+    await advanceTimeRunSubscriptionKeeper(31, day);
 
     // confirm charge after another month
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('80'));
     result = await consumerASubscriptions.getSubscription(subscriptionId);
 
-    await advanceTimeRunSubscriptionKeeper(1, month);
+    await advanceTimeRunSubscriptionKeeper(31, day);
 
     // confirm charge after another month
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));
@@ -102,13 +101,13 @@ describe("CaskSubscriptions General", function () {
     expect(await consumerASubscriptions.cancelSubscription(subscriptionId, result.subscription.renewAt))
         .to.emit(consumerASubscriptions, "SubscriptionPendingCancel");
 
-    await advanceTimeRunSubscriptionKeeper(1, month + day);
+    await advanceTimeRunSubscriptionKeeper(32, day);
 
     // confirm no charges after cancel
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));
     result = await consumerASubscriptions.getSubscription(subscriptionId);
 
-    await advanceTimeRunSubscriptionKeeper(1, month);
+    await advanceTimeRunSubscriptionKeeper(31, day);
 
     // confirm still no charges after cancel
     expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('70'));

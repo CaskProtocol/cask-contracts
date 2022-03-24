@@ -57,6 +57,7 @@ task("fixtures", "Setup fixtured provider plans and consumer subscriptions", fix
 
 task("keeper", "Run a keeper")
     .addOptionalParam("limit", "Max subscriptions to process per run", "4")
+    .addOptionalParam("minDepth", "Only run keeper if queue is at least this deep", "0")
     .addOptionalParam("queue", "1 for active queue, 2 for past due queue", "1")
     .addOptionalParam("interval", "How often (in ms) to do keeper upkeep check", "10000")
     .setAction(keeper);

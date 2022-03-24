@@ -7,8 +7,12 @@ async function keeper(taskArguments, hre) {
         console.log(`Checking for upkeep...`);
         const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
         const checkData = ethers.utils.defaultAbiCoder.encode(
-            ['uint256','uint8'],
-            [parseInt(taskArguments.limit), parseInt(taskArguments.queue)]);
+            ['uint256','uint256','uint8'],
+            [
+                parseInt(taskArguments.limit),
+                parseInt(taskArguments.minDepth),
+                parseInt(taskArguments.queue)
+            ]);
         const checkResult = await subscriptionManager.checkUpkeep(checkData);
         if (checkResult.upkeepNeeded) {
             console.log(`Upkeep needed. Performing upkeep...`);

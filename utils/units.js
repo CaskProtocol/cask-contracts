@@ -3,6 +3,7 @@ const { parseUnits, formatUnits } = require("ethers").utils;
 const now = Math.floor(Date.now() / 1000);
 const hour = 3600;
 const day = 24 * hour;
+const week = day * 7;
 const month = (365/12) * day;
 const year = month * 12;
 
@@ -42,6 +43,7 @@ module.exports = {
     now,
     hour,
     day,
+    week,
     month,
     year,
     caskUnits,

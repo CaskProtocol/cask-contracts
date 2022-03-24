@@ -74,6 +74,7 @@ describe("CaskSubscriptions Pause", function () {
     });
 
     it("Pause respects minTerm and stops payments while paused", async function () {
+        this.timeout(0);
 
         const {
             networkAddresses,
@@ -116,7 +117,7 @@ describe("CaskSubscriptions Pause", function () {
         const createdEvent = events.find((e) => e.event === "SubscriptionCreated");
         const subscriptionId = createdEvent.args.subscriptionId;
 
-        await advanceTimeRunSubscriptionKeeper(1, month + day)
+        await advanceTimeRunSubscriptionKeeper(32, day)
 
         // confirm pause and cancel before min term fail
         await expect(consumerASubscriptions.pauseSubscription(subscriptionId)).to.be.revertedWith("!MIN_TERM");
@@ -125,7 +126,7 @@ describe("CaskSubscriptions Pause", function () {
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
 
-        await advanceTimeRunSubscriptionKeeper(12, month);
+        await advanceTimeRunSubscriptionKeeper(365, day);
 
         // confirm current state after 13 months
         result = await consumerASubscriptions.getSubscription(subscriptionId);
@@ -137,7 +138,7 @@ describe("CaskSubscriptions Pause", function () {
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Paused);
 
-        await advanceTimeRunSubscriptionKeeper(2, month);
+        await advanceTimeRunSubscriptionKeeper(31 * 2, day);
 
         // resume subscription - confirm no payment while paused
         expect(await consumerASubscriptions.resumeSubscription(subscriptionId))
@@ -145,7 +146,7 @@ describe("CaskSubscriptions Pause", function () {
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
 
-        await advanceTimeRunSubscriptionKeeper(1, month);
+        await advanceTimeRunSubscriptionKeeper(31, day);
 
         // confirm new payment after resume
         result = await consumerASubscriptions.getSubscription(subscriptionId);
@@ -157,7 +158,7 @@ describe("CaskSubscriptions Pause", function () {
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Canceled);
 
-        await advanceTimeRunSubscriptionKeeper(1, month);
+        await advanceTimeRunSubscriptionKeeper(31, day);
 
         // confirm canceled
         result = await consumerASubscriptions.getSubscription(subscriptionId);
