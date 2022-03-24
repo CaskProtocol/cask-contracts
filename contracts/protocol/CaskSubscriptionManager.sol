@@ -225,7 +225,8 @@ KeeperCompatibleInterface
         } else if (_currentBucket() >= checkBucket && _currentBucket() - checkBucket > 1 hours) {
             upkeepNeeded = true;
         } else {
-            for (uint32 i = checkBucket; i <= _currentBucket(); i += processBucketSize) {
+            // check if the queue is behind
+            for (uint32 i = checkBucket; i < _currentBucket() - processBucketSize; i += processBucketSize) {
                 if (processQueue[checkType][i].length > 0) {
                     upkeepNeeded = true;
                     break;
@@ -233,7 +234,7 @@ KeeperCompatibleInterface
             }
         }
 
-        performData = abi.encode(limit, checkType);
+        performData = abi.encode(limit, processQueue[checkType][checkBucket].length, checkType);
     }
 
 
@@ -242,8 +243,9 @@ KeeperCompatibleInterface
     ) external override whenNotPaused {
         (
         uint256 limit,
+        uint256 depth,
         CheckType checkType
-        ) = abi.decode(performData, (uint256, CheckType));
+        ) = abi.decode(performData, (uint256, uint256, CheckType));
 
         if (processingBucket[checkType] == 0) {
             processingBucket[checkType] = _currentBucket();
@@ -268,7 +270,7 @@ KeeperCompatibleInterface
             }
         }
 
-        emit SubscriptionsRenewed(limit, renewals, checkType,
+        emit SubscriptionsRenewed(limit, renewals, depth, checkType,
             processQueue[checkType][processingBucket[checkType]].length, processingBucket[checkType]);
     }
 
