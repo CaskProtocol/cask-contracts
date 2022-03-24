@@ -15,6 +15,7 @@ const { accounts } = require("./tasks/account");
 const { debug } = require("./tasks/debug");
 const { fund } = require("./tasks/fund");
 const { fixtures } = require("./tasks/fixtures");
+const { keeper } = require("./tasks/keeper");
 
 
 // production deployer
@@ -54,6 +55,11 @@ task("fund", "Funds all accounts with USDC/USDT/DAI", fund);
 
 task("fixtures", "Setup fixtured provider plans and consumer subscriptions", fixtures);
 
+task("keeper", "Run a keeper")
+    .addOptionalParam("limit", "Max subscriptions to process per run", "4")
+    .addOptionalParam("queue", "1 for active queue, 2 for past due queue", "1")
+    .addOptionalParam("interval", "How often (in ms) to do keeper upkeep check", "10000")
+    .setAction(keeper);
 
 module.exports = {
   solidity: {

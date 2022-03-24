@@ -74,8 +74,8 @@ KeeperCompatibleInterface
         stakeTargetFactor = 0;
         processBucketSize = 300;
 
-        processingBucket[CheckType.Active] = currentBucket();
-        processingBucket[CheckType.PastDue] = currentBucket();
+        processingBucket[CheckType.Active] = _currentBucket();
+        processingBucket[CheckType.PastDue] = _currentBucket();
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -191,11 +191,13 @@ KeeperCompatibleInterface
         }
     }
 
-    function bucketAt(uint32 timestamp) internal view returns(uint32) {
-        return timestamp - (timestamp % processBucketSize) + processBucketSize;
+    function _bucketAt(
+        uint32 _timestamp
+    ) internal view returns(uint32) {
+        return _timestamp - (_timestamp % processBucketSize) + processBucketSize;
     }
 
-    function currentBucket() internal view returns(uint32) {
+    function _currentBucket() internal view returns(uint32) {
         uint32 timestamp = uint32(block.timestamp);
         return timestamp - (timestamp % processBucketSize);
     }
@@ -210,17 +212,17 @@ KeeperCompatibleInterface
 
         uint32 checkBucket = processingBucket[checkType];
         if (checkBucket == 0) {
-            checkBucket = currentBucket();
+            checkBucket = _currentBucket();
         }
 
         upkeepNeeded = false;
 
         if (processQueue[checkType][checkBucket].length > 0) {
             upkeepNeeded = true;
-        } else if (currentBucket() >= checkBucket && currentBucket() - checkBucket > 1 hours) {
+        } else if (_currentBucket() >= checkBucket && _currentBucket() - checkBucket > 1 hours) {
             upkeepNeeded = true;
         } else {
-            for (uint32 i = checkBucket; i <= currentBucket(); i += processBucketSize) {
+            for (uint32 i = checkBucket; i <= _currentBucket(); i += processBucketSize) {
                 if (processQueue[checkType][i].length > 0) {
                     upkeepNeeded = true;
                     break;
@@ -241,7 +243,7 @@ KeeperCompatibleInterface
         ) = abi.decode(performData, (uint256, CheckType));
 
         if (processingBucket[checkType] == 0) {
-            processingBucket[checkType] = currentBucket();
+            processingBucket[checkType] = _currentBucket();
         }
 
         uint256 maxBucketChecks = limit * 10;
@@ -253,7 +255,7 @@ KeeperCompatibleInterface
                 _renewSubscription(subscriptionId);
                 limit -= 1;
             } else {
-                if (processingBucket[checkType] < currentBucket()) {
+                if (processingBucket[checkType] < _currentBucket()) {
                     processingBucket[checkType] += processBucketSize;
                     maxBucketChecks -= 0;
                 } else {
@@ -283,7 +285,7 @@ KeeperCompatibleInterface
 
         // not time to renew yet, re-queue for renewal time
         if (subscription.renewAt > timestamp) {
-            processQueue[CheckType.Active][bucketAt(subscription.renewAt)].push(_subscriptionId);
+            processQueue[CheckType.Active][_bucketAt(subscription.renewAt)].push(_subscriptionId);
             return;
         }
 
@@ -329,17 +331,17 @@ KeeperCompatibleInterface
             if (subscription.renewAt < timestamp - (planInfo.gracePeriod * 1 days)) {
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
             } else if (subscription.status != ICaskSubscriptions.SubscriptionStatus.PastDue) {
-                processQueue[CheckType.PastDue][bucketAt(timestamp + 4 hours)].push(_subscriptionId);
+                processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PastDue);
             }
 
         } else if (chargePrice > 0) {
             _processPayment(subscriptions.ownerOf(_subscriptionId), subscription.provider, _subscriptionId, chargePrice);
-            processQueue[CheckType.Active][bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
+            processQueue[CheckType.Active][_bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
             subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
 
         } else { // no charge, move along now
-            processQueue[CheckType.Active][bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
+            processQueue[CheckType.Active][_bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
             subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
         }
 
@@ -372,14 +374,14 @@ KeeperCompatibleInterface
 
         // re-map to new bucket size
         if (processingBucket[CheckType.Active] == 0) {
-            processingBucket[CheckType.Active] = currentBucket();
+            processingBucket[CheckType.Active] = _currentBucket();
         } else {
-            processingBucket[CheckType.Active] = bucketAt(processingBucket[CheckType.Active]);
+            processingBucket[CheckType.Active] = _bucketAt(processingBucket[CheckType.Active]);
         }
         if (processingBucket[CheckType.PastDue] == 0) {
-            processingBucket[CheckType.PastDue] = currentBucket();
+            processingBucket[CheckType.PastDue] = _currentBucket();
         } else {
-            processingBucket[CheckType.PastDue] = bucketAt(processingBucket[CheckType.PastDue]);
+            processingBucket[CheckType.PastDue] = _bucketAt(processingBucket[CheckType.PastDue]);
         }
     }
 
@@ -387,7 +389,7 @@ KeeperCompatibleInterface
         CheckType _checkType,
         uint32 _timestamp
     ) external onlyOwner {
-        processingBucket[_checkType] = bucketAt(_timestamp);
+        processingBucket[_checkType] = _bucketAt(_timestamp);
     }
 
 }
