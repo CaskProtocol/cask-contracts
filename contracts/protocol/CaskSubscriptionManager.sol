@@ -352,8 +352,8 @@ KeeperCompatibleInterface
             _processPayment(subscriptions.ownerOf(_subscriptionId), subscription.provider, _subscriptionId, chargePrice);
 
             if (subscription.renewAt + planInfo.period <= timestamp) {
-                // subscription is still behind, keep in past due queue until current
-                processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
+                // subscription is still behind, put in next queue bucket
+                processQueue[CheckType.PastDue][_bucketAt(timestamp)].push(_subscriptionId);
             } else {
                 processQueue[CheckType.Active][_bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
             }
