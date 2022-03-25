@@ -279,6 +279,8 @@ PausableUpgradeable
 
         Subscription storage subscription = subscriptions[_subscriptionId];
 
+        uint32 timestamp = uint32(block.timestamp);
+
         if (_command == ManagerCommand.PlanChange) {
             bytes32 pendingPlanData = pendingPlanChanges[_subscriptionId];
             require(pendingPlanData > 0, "!INVALID(pendingPlanData)");
@@ -292,7 +294,7 @@ PausableUpgradeable
             subscription.planData = pendingPlanData;
 
             if (newPlanInfo.minPeriods > 0) {
-                subscription.minTermAt = uint32(block.timestamp + (newPlanInfo.period * newPlanInfo.minPeriods));
+                subscription.minTermAt = timestamp + (newPlanInfo.period * newPlanInfo.minPeriods);
             }
 
             delete pendingPlanChanges[_subscriptionId]; // free up memory
@@ -322,8 +324,12 @@ PausableUpgradeable
                     _subscriptionId, subscription.ref, subscription.planId);
             }
 
-            subscription.status = SubscriptionStatus.Active; // just in case it was something else previously
             subscription.renewAt = subscription.renewAt + planInfo.period;
+
+            if (subscription.renewAt > timestamp) {
+                // leave in current status unless subscription is current
+                subscription.status = SubscriptionStatus.Active;
+            }
 
             emit SubscriptionRenewed(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
                 subscription.ref, subscription.planId);
