@@ -194,6 +194,9 @@ interface ICaskVault is IERC20MetadataUpgradeable {
     /** @dev Emitted when `asset` is added as a new supported asset */
     event AllowedAsset(address indexed asset);
 
+    /** @dev Emitted when `asset` is disallowed t */
+    event DisallowedAsset(address indexed asset);
+
     /** @dev Emitted when `participant` deposits `asset` */
     event AssetDeposited(address indexed participant, address indexed asset, uint256 assetAmount,
         uint256 baseAssetAmount, uint256 shares);

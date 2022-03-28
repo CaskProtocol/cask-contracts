@@ -272,7 +272,7 @@ KeeperCompatibleInterface
             }
         }
 
-        emit SubscriptionsRenewed(limit, renewals, depth, checkType,
+        emit SubscriptionManagerReport(limit, renewals, depth, checkType,
             processQueue[checkType][processingBucket[checkType]].length, processingBucket[checkType]);
     }
 
@@ -285,7 +285,10 @@ KeeperCompatibleInterface
     function _renewSubscription(
         uint256 _subscriptionId
     ) internal {
-        (ICaskSubscriptions.Subscription memory subscription,) = subscriptions.getSubscription(_subscriptionId);
+        (
+        ICaskSubscriptions.Subscription memory subscription,
+        address consumer
+        ) = subscriptions.getSubscription(_subscriptionId);
 
         uint32 timestamp = uint32(block.timestamp);
 
@@ -337,7 +340,7 @@ KeeperCompatibleInterface
         }
 
         // consumer does not have enough balance to cover payment
-        if (chargePrice > 0 && vault.currentValueOf(subscriptions.ownerOf(_subscriptionId)) < chargePrice) {
+        if (chargePrice > 0 && vault.currentValueOf(consumer) < chargePrice) {
             // if have not been able to renew for up to `gracePeriod` days, cancel subscription
             if (subscription.renewAt < timestamp - (planInfo.gracePeriod * 1 days)) {
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
@@ -349,9 +352,9 @@ KeeperCompatibleInterface
             }
 
         } else if (chargePrice > 0) {
-            _processPayment(subscriptions.ownerOf(_subscriptionId), subscription.provider, _subscriptionId, chargePrice);
+            _processPayment(consumer, subscription.provider, _subscriptionId, chargePrice);
 
-            if (subscription.renewAt + planInfo.period <= timestamp) {
+            if (subscription.renewAt + planInfo.period < timestamp) {
                 // subscription is still behind, put in next queue bucket
                 processQueue[CheckType.PastDue][_bucketAt(timestamp)].push(_subscriptionId);
             } else {

@@ -498,19 +498,34 @@ ReentrancyGuardUpgradeable
         require(AggregatorV3Interface(_priceFeed).decimals() > 0, "!INVALID(priceFeed)");
 
         Asset storage asset = assets[_asset];
+
+        // add to allAsset list just the first time
+        if (asset.assetDecimals == 0) {
+            allAssets.push(_asset);
+        }
+
+        asset.allowed = true;
         asset.priceFeed = _priceFeed;
         asset.depositLimit = _depositLimit;
         asset.slippageBps = _slippageBps;
-
         asset.assetDecimals = IERC20Metadata(_asset).decimals();
         asset.priceFeedDecimals = AggregatorV3Interface(_priceFeed).decimals();
 
-        if (!asset.allowed) {
-            asset.allowed = true;
-            allAssets.push(_asset); // just once
-        }
-
         emit AllowedAsset(_asset);
+    }
+
+    /**
+     * @dev Mark an already allowed asset to no longer be allowed for deposits/withdraws
+     * @param _asset Address of new ERC20 asset
+     */
+    function disallowAsset(
+        address _asset
+    ) external onlyOwner {
+        require(assets[_asset].allowed, "!ASSET_NOT_ALLOWED");
+
+        assets[_asset].allowed = false;
+
+        emit DisallowedAsset(_asset);
     }
 
     function convertPrice(
@@ -529,9 +544,9 @@ ReentrancyGuardUpgradeable
         address _toAsset,
         uint256 _fromAmount
     ) internal view returns(uint256) {
-        require(_fromAsset != _toAsset, "!INVALID(fromAsset");
-        require(assets[_fromAsset].allowed, "!NOT_ALLOWED(fromAsset)");
-        require(assets[_toAsset].allowed, "!NOT_ALLOWED(toAsset)");
+        require(_fromAsset != _toAsset, "!SAME_ASSET");
+        require(assets[_fromAsset].priceFeed != address(0), "!INVALID(fromAsset)");
+        require(assets[_toAsset].priceFeed != address(0), "!NOT_ALLOWED(toAsset)");
 
         if (_fromAmount == 0) {
             return 0;
