@@ -9,6 +9,12 @@ interface ICaskSubscriptionManager {
         PastDue
     }
 
+    function queueItem(CheckType _checkType, uint32 _bucket, uint256 _idx) external view returns(uint256);
+
+    function queueSize(CheckType _checkType, uint32 _bucket) external view returns(uint256);
+
+    function queuePosition(CheckType _checkType) external view returns(uint32);
+
     function processSinglePayment(address _consumer, address _provider, uint256 _subscriptionId, uint256 _value) external;
 
     function renewSubscription(uint256 _subscriptionId) external;

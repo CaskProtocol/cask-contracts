@@ -45,9 +45,8 @@ KeeperCompatibleInterface
     uint32 public processBucketSize;
 
     /** @dev map used to track when subscriptions need attention next */
-    mapping(CheckType => mapping(uint32 => uint256[])) public processQueue; // renewal bucket => subscriptionId[]
-    mapping(CheckType => uint32) public processingBucket; // current bucket being processed
-
+    mapping(CheckType => mapping(uint32 => uint256[])) private processQueue; // renewal bucket => subscriptionId[]
+    mapping(CheckType => uint32) private processingBucket; // current bucket being processed
 
 
     modifier onlySubscriptions() {
@@ -202,6 +201,27 @@ KeeperCompatibleInterface
         return timestamp - (timestamp % processBucketSize);
     }
 
+    function queueItem(
+        CheckType _checkType,
+        uint32 _bucket,
+        uint256 _idx
+    ) external view returns(uint256) {
+        return processQueue[_checkType][_bucket][_idx];
+    }
+
+    function queueSize(
+        CheckType _checkType,
+        uint32 _bucket
+    ) external view returns(uint256) {
+        return processQueue[_checkType][_bucket].length;
+    }
+
+    function queuePosition(
+        CheckType _checkType
+    ) external view returns(uint32) {
+        return processingBucket[_checkType];
+    }
+
     function checkUpkeep(
         bytes calldata checkData
     ) external view override returns(bool upkeepNeeded, bytes memory performData) {
@@ -249,13 +269,13 @@ KeeperCompatibleInterface
 
         uint32 currentBucket = _currentBucket();
         uint256 renewals = 0;
-        uint256 maxBucketChecks = limit * 10;
+        uint256 maxBucketChecks = limit * 5;
 
         if (processingBucket[checkType] == 0) {
             processingBucket[checkType] = currentBucket;
         }
 
-        while (renewals < limit && maxBucketChecks > 0) {
+        while (renewals < limit && maxBucketChecks > 0 && processingBucket[checkType] <= currentBucket) {
             uint256 queueLen = processQueue[checkType][processingBucket[checkType]].length;
             if (queueLen > 0) {
                 uint256 subscriptionId = processQueue[checkType][processingBucket[checkType]][queueLen-1];

@@ -16,8 +16,8 @@ async function keeper(taskArguments, hre) {
         const checkResult = await subscriptionManager.checkUpkeep(checkData);
         if (checkResult.upkeepNeeded) {
             console.log(`Upkeep needed. Performing upkeep...`);
-            const txn = await subscriptionManager.performUpkeep(checkResult.performData);
-            console.log(`Upkeep complete: txn ${txn.hash}.`);
+            const txn = await subscriptionManager.performUpkeep(checkResult.performData, {gasLimit: 2600000});
+            console.log(`Upkeep complete: txn ${txn.hash}`);
         } else {
             console.log(`No upkeep needed.`);
         }
