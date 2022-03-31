@@ -25,12 +25,14 @@ const DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
 const MAINNET_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
 const POLYGON_GOVERNOR = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
 const POLYGON_STRATEGIST = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
+const POLYGON_KEEPER = "0x";
 
 // testnet networks - common across all testnets
 const TESTNET_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
 const TESTNET_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
 const TESTNET_STRATEGIST = "0x4776e69279A0d500537A5d2241d6fF3189442690";
 const TESTNET_FAUCET_ADMIN = "0xaA411e7F2daE036f4f75D0a4c21dbCb074641064";
+const TESTNET_KEEPER = "0x34F7C3f7D5354820433162D79aa3C505b612837d";
 
 
 const mnemonic =
@@ -39,7 +41,7 @@ const mnemonic =
 let privateKeys = [];
 
 let derivePath = "m/44'/60'/0'/0/";
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 15; i++) {
   const wallet = new ethers.Wallet.fromMnemonic(mnemonic, `${derivePath}${i}`);
   privateKeys.push(wallet.privateKey);
 }
@@ -212,6 +214,17 @@ module.exports = {
       testnet_mumbai: TESTNET_FAUCET_ADMIN,
       testnet_fantom: TESTNET_FAUCET_ADMIN,
       testnet_fuji: TESTNET_FAUCET_ADMIN,
+    },
+    keeperAddr: {
+      production_polygon: POLYGON_KEEPER,
+
+      default: 11,
+      localhost: process.env.FORK === "true" ? POLYGON_KEEPER : 11,
+      hardhat: process.env.FORK === "true" ? POLYGON_KEEPER : 11,
+      internal_mumbai: TESTNET_KEEPER,
+      testnet_mumbai: TESTNET_KEEPER,
+      testnet_fantom: TESTNET_KEEPER,
+      testnet_fuji: TESTNET_KEEPER,
     },
   },
   etherscan: {
