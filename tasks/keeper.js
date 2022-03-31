@@ -6,7 +6,7 @@ async function keeper(taskArguments, hre) {
     const keeperWallet = new ethers.Wallet(process.env.TESTNET_KEEPER_PK, hre.ethers.provider);
     const keeperManager = subscriptionManager.connect(keeperWallet);
 
-    console.log(`Keeper ${keeper.address} running with limit ${taskArguments.limit} on queue(s) ${queues}`)
+    console.log(`Keeper ${keeperWallet.address} running with limit ${taskArguments.limit} on queue(s) ${queues}`)
 
     while(true) {
 
