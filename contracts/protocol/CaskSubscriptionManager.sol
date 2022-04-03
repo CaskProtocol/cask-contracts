@@ -153,7 +153,7 @@ KeeperCompatibleInterface
 
         if (stakedBalance > 0) {
             uint256 loadFactor = 365 / (planData.period / 1 days);
-            uint256 noFeeTarget = subscriptions.getProviderActiveSubscriptionCount(subscription.provider) *
+            uint256 noFeeTarget = subscriptions.getProviderSubscriptionCount(subscription.provider, false) *
                     stakeTargetFactor * loadFactor;
 
             paymentFeeRateAdjusted = paymentFeeRateMax - (paymentFeeRateMax * (stakedBalance / noFeeTarget));
