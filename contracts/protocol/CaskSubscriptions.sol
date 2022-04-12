@@ -33,9 +33,6 @@ PausableUpgradeable
 
     /************************** STATE **************************/
 
-    // FIXME: remove
-    uint256[] private deprecated1;
-
     /** @dev Maps for consumer to list of subscriptions. */
     mapping(address => uint256[]) private consumerSubscriptions; // consumer => subscriptionId[]
     mapping(uint256 => Subscription) private subscriptions; // subscriptionId => Subscription
@@ -45,9 +42,6 @@ PausableUpgradeable
     mapping(address => uint256[]) private providerSubscriptions; // provider => subscriptionId[]
     mapping(address => uint256) private providerActiveSubscriptionCount; // provider => count
     mapping(address => mapping(uint32 => uint256)) private planActiveSubscriptionCount; // provider => planId => count
-
-    // FIXME: remove
-    mapping(uint256 => uint256) private deprecated2; // subscriptionId => activeSubscriptions index
 
     modifier onlyManager() {
         require(_msgSender() == address(subscriptionManager), "!AUTH");
@@ -382,12 +376,17 @@ PausableUpgradeable
 
     function getProviderSubscriptionCount(
         address _provider,
-        bool _includeCanceled
+        bool _includeCanceled,
+        uint32 _planId
     ) external override view returns (uint256) {
         if (_includeCanceled) {
             return providerSubscriptions[_provider].length;
         } else {
-            return providerActiveSubscriptionCount[_provider];
+            if (_planId > 0) {
+                return planActiveSubscriptionCount[_provider][_planId];
+            } else {
+                return providerActiveSubscriptionCount[_provider];
+            }
         }
     }
 

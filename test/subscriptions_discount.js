@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const cask = require('@caskprotocol/sdk');
+const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
     daiUnits,
@@ -47,17 +47,17 @@ describe("CaskSubscriptions Discount", function () {
         const ref = ethers.utils.id("user1");
 
         const plan = plans.find((p) => p.planId === 501);
-        const plansProof = cask.utils.generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
-            cask.utils.plansMerkleProof(plans, plan));
+        const plansProof = CaskSDK.utils.generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
+            CaskSDK.utils.plansMerkleProof(plans, plan));
 
-        const discountCodeProof = cask.utils.generateDiscountCodeProof("discount1");
-        const discount = cask.utils.lookupDiscount(discountCodeProof, discounts);
+        const discountCodeProof = CaskSDK.utils.generateDiscountCodeProof("discount1");
+        const discount = CaskSDK.utils.lookupDiscount(discountCodeProof, discounts);
         let discountProof = [];
         if (discount) {
-            discountProof = cask.utils.generateDiscountProof(discountCodeProof, discount.discountData, discountsRoot,
-                cask.utils.discountsMerkleProof(discounts, discount));
+            discountProof = CaskSDK.utils.generateDiscountProof(discountCodeProof, discount.discountData, discountsRoot,
+                CaskSDK.utils.discountsMerkleProof(discounts, discount));
         } else {
-            discountProof = cask.utils.generateDiscountProof(0, 0, discountsRoot)
+            discountProof = CaskSDK.utils.generateDiscountProof(0, 0, discountsRoot)
         }
 
         // create subscription

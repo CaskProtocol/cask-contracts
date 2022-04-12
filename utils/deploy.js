@@ -8,12 +8,13 @@ const {
     isMainnet,
     isTestnet,
     isRealChain,
+    isInternal,
 } = require("../test/_networks");
 
 const { getTxOpts } = require("../utils/tx.js");
 
 // Wait for 3 blocks confirmation on Mainnet/Testnets.
-const NUM_CONFIRMATIONS = isMainnet || isTestnet ? 2 : 0;
+const NUM_CONFIRMATIONS = isMainnet || isTestnet || isInternal ? 2 : 0;
 
 function log(msg, deployResult = null) {
     if (isRealChain || process.env.VERBOSE) {

@@ -191,15 +191,17 @@ ReentrancyGuardUpgradeable
             _transfer(_to, _network, networkFeeShares); // network fee from provider to network
         }
 
-        emit Payment(_from, _to, _value, _protocolFee, shares);
+        emit Payment(_from, _to, _value, shares, _protocolFee, protocolFeeShares, _network,
+            _networkFee, networkFeeShares);
     }
 
     function transferValue(
         address _recipient,
         uint256 _value
     ) external override nonReentrant returns (bool) {
-        _transfer(_msgSender(), _recipient, _sharesForValue(_value));
-        emit TransferValue(_msgSender(), _recipient, _value);
+        uint256 amount = _sharesForValue(_value);
+        _transfer(_msgSender(), _recipient, amount);
+        emit TransferValue(_msgSender(), _recipient, _value, amount);
         return true;
     }
 
@@ -216,7 +218,7 @@ ReentrancyGuardUpgradeable
         unchecked {
             _approve(_sender, _msgSender(), currentAllowance - amount);
         }
-        emit TransferValue(_sender, _recipient, _value);
+        emit TransferValue(_sender, _recipient, _value, amount);
         return true;
     }
 

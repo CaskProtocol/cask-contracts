@@ -110,7 +110,11 @@ interface ICaskSubscriptions is IERC721Upgradeable {
     function getProviderSubscriptions(address _provider, uint256 limit,
         uint256 offset) external view returns (uint256[] memory);
 
-    function getProviderSubscriptionCount(address _provider, bool _includeCanceled) external view returns (uint256);
+    function getProviderSubscriptionCount(
+        address _provider,
+        bool _includeCanceled,
+        uint32 _planId
+    ) external view returns (uint256);
 
     function getPendingPlanChange(uint256 _subscriptionId) external view returns (bytes32);
 
@@ -128,10 +132,6 @@ interface ICaskSubscriptions is IERC721Upgradeable {
     /** @dev Emitted when `consumer` changes the plan to `provider` on subscription `subscriptionId` */
     event SubscriptionPendingChangePlan(address indexed consumer, address indexed provider,
         uint256 indexed subscriptionId, bytes32 ref, uint32 prevPlanId, uint32 planId);
-
-    /** @dev Emitted when `consumer` changes the discount on subscription `subscriptionId` */
-    event SubscriptionChangedDiscount(address indexed consumer, address indexed provider,
-        uint256 indexed subscriptionId, bytes32 ref, uint32 planId, bytes32 discountId);
 
     /** @dev Emitted when `consumer` pauses the subscription to `provider` on subscription `subscriptionId` */
     event SubscriptionPaused(address indexed consumer, address indexed provider,

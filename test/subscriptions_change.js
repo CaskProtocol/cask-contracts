@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const cask = require('@caskprotocol/sdk');
+const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
     daiUnits,
@@ -44,9 +44,9 @@ describe("CaskSubscriptions Change", function () {
         const ref = ethers.utils.id("user1");
 
         const plan = plans.find((p) => p.planId === 200);
-        const plansProof = cask.utils.generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
-            cask.utils.plansMerkleProof(plans, plan));
-        const discountProof = cask.utils.generateDiscountProof(0, 0, discountsRoot)
+        const plansProof = CaskSDK.utils.generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
+            CaskSDK.utils.plansMerkleProof(plans, plan));
+        const discountProof = CaskSDK.utils.generateDiscountProof(0, 0, discountsRoot)
 
         // create subscription
         const tx = await consumerASubscriptions.createSubscription(
@@ -76,8 +76,8 @@ describe("CaskSubscriptions Change", function () {
         expect(result.subscription.planId).to.equal(plan.planId);
 
         const newPlan = plans.find((p) => p.planId === 201);
-        const newPlansProof = cask.utils.generatePlanProof(newPlan.provider, 0, newPlan.planData, plansRoot,
-            cask.utils.plansMerkleProof(plans, newPlan));
+        const newPlansProof = CaskSDK.utils.generatePlanProof(newPlan.provider, 0, newPlan.planData, plansRoot,
+            CaskSDK.utils.plansMerkleProof(plans, newPlan));
 
         // upgrade subscription from plan 200 -> 201
         expect (await consumerASubscriptions.changeSubscriptionPlan(

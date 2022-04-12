@@ -38,9 +38,6 @@ KeeperCompatibleInterface
     /** @dev factor used to reduce payment fee based on qty of staked CASK */
     uint256 public stakeTargetFactor;
 
-    // FIXME: remove
-    mapping(uint256 => uint32) private deprecated1; // subscriptionId => timestamp
-
     /** @dev size (in seconds) of buckets to group subscriptions into for processing */
     uint32 public processBucketSize;
 
@@ -153,7 +150,7 @@ KeeperCompatibleInterface
 
         if (stakedBalance > 0) {
             uint256 loadFactor = 365 / (planData.period / 1 days);
-            uint256 noFeeTarget = subscriptions.getProviderSubscriptionCount(subscription.provider, false) *
+            uint256 noFeeTarget = subscriptions.getProviderSubscriptionCount(subscription.provider, false, 0) *
                     stakeTargetFactor * loadFactor;
 
             paymentFeeRateAdjusted = paymentFeeRateMax - (paymentFeeRateMax * (stakedBalance / noFeeTarget));

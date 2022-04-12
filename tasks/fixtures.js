@@ -4,7 +4,7 @@ const {
     day
 } = require("../utils/units");
 
-const cask = require("@caskprotocol/sdk");
+const { CaskSDK } = require('@caskprotocol/sdk');
 
 async function fixtures(taskArguments, hre) {
 
@@ -46,15 +46,15 @@ async function fixtures(taskArguments, hre) {
     discounts.push(_createProviderDiscount('CODE10', 1000, 0,
         0, 0, 0, 0, false));
 
-    const plansRoot = cask.utils.plansMerkleRoot(plans);
-    const discountsRoot = cask.utils.discountsMerkleRoot(discounts);
+    const plansRoot = CaskSDK.utils.plansMerkleRoot(plans);
+    const discountsRoot = CaskSDK.utils.discountsMerkleRoot(discounts);
 
-    const signedRoots = await cask.utils.signMerkleRoots(providerA, 0, plansRoot, discountsRoot);
-    console.log(`Generated signature for providerA configuration: ${signedRoots}`);
+    const signedRoots = await CaskSDK.utils.signMerkleRoots(providerA, 0, plansRoot, discountsRoot);
+    console.log(`Generated signature for providerA ${providerA.address} configuration: ${signedRoots}`);
 
     const profileData = {
-        plans: cask.utils.plansMap(plans),
-        discounts: cask.utils.discountsMap(discounts),
+        plans: CaskSDK.utils.plansMap(plans),
+        discounts: CaskSDK.utils.discountsMap(discounts),
         planMerkleRoot: plansRoot,
         discountMerkleRoot: discountsRoot,
         signedRoots: signedRoots,
@@ -68,11 +68,13 @@ async function fixtures(taskArguments, hre) {
 
     let providerCid = "";
     if (process.env.PINATA_API_KEY) {
-        const ipfs = new cask.ipfs.IPFS({
+        const ipfs = new CaskSDK.ipfs.IPFS({
             pinataApiKey: process.env.PINATA_API_KEY,
             pinataApiSecret: process.env.PINATA_API_SECRET});
         providerCid = await ipfs.save(profileData);
     }
+    console.log(`CID: ${providerCid}`);
+    console.log(`Profile: ${JSON.stringify(profileData)}`);
     // save provider profile to chain
     await caskSubscriptionPlans.connect(providerA).setProviderProfile(providerA.address, providerCid, 0);
 
@@ -93,14 +95,14 @@ async function createSubscription(consumer, provider, refString, planId, profile
 
     const caskSubscriptions = await hre.ethers.getContract("CaskSubscriptions");
 
-    const plansProof = cask.utils.generatePlanProof(
+    const plansProof = CaskSDK.utils.generatePlanProof(
         provider.address,
-        cask.utils.stringToRef(refString),
+        CaskSDK.utils.stringToRef(refString),
         plan.planData,
         profileData.planMerkleRoot,
-        cask.utils.plansMerkleProof(plans, plan)
+        CaskSDK.utils.plansMerkleProof(plans, plan)
     );
-    const discountProof = cask.utils.generateDiscountProof(
+    const discountProof = CaskSDK.utils.generateDiscountProof(
         0,
         0,
         profileData.discountMerkleRoot
@@ -108,7 +110,7 @@ async function createSubscription(consumer, provider, refString, planId, profile
 
     let subscriptionCid = "";
     if (process.env.PINATA_API_KEY) {
-        const ipfs = new cask.ipfs.IPFS({
+        const ipfs = new CaskSDK.ipfs.IPFS({
             pinataApiKey: process.env.PINATA_API_KEY,
             pinataApiSecret: process.env.PINATA_API_SECRET});
         subscriptionCid = await ipfs.save({
@@ -142,7 +144,7 @@ function _createProviderPlan(planId, price, period, freeTrial, maxActive,
     return {
         name: 'Acme Plan ' + planId,
         planId: planId,
-        planData: cask.utils.encodePlanData(
+        planData: CaskSDK.utils.encodePlanData(
             planId,
             price,
             period,
@@ -159,8 +161,8 @@ function _createProviderDiscount(discountCode, value, validAfter, expiresAt,
                                  maxUses, planId, applyPeriods, isFixed)
 {
     return {
-        discountId: cask.utils.generateDiscountId(discountCode),
-        discountData: cask.utils.encodeDiscountData(
+        discountId: CaskSDK.utils.generateDiscountId(discountCode),
+        discountData: CaskSDK.utils.encodeDiscountData(
             value,
             validAfter,
             expiresAt,

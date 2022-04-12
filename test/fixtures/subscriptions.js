@@ -1,4 +1,4 @@
-const cask = require('@caskprotocol/sdk');
+const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
     daiUnits,
@@ -31,7 +31,7 @@ async function onePlanFixture() {
     fixture.plans.push({
         provider: fixture.providerA.address,
         planId: 100,
-        planData: cask.utils.encodePlanData(
+        planData: CaskSDK.utils.encodePlanData(
             100, // planId
             daiUnits('10'), // price
             month, // period
@@ -43,9 +43,9 @@ async function onePlanFixture() {
             true) // canTransfer
     });
 
-    fixture.plansRoot = cask.utils.plansMerkleRoot(fixture.plans);
-    fixture.discountsRoot = cask.utils.discountsMerkleRoot(fixture.discounts);
-    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
+    fixture.plansRoot = CaskSDK.utils.plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = CaskSDK.utils.discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await CaskSDK.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
         fixture.discountsRoot);
 
     return fixture;
@@ -57,7 +57,7 @@ async function twoPlanFixture() {
     fixture.plans.push({
         provider: fixture.providerA.address,
         planId: 200,
-        planData: cask.utils.encodePlanData(
+        planData: CaskSDK.utils.encodePlanData(
             200, // planId
             daiUnits('10'), // price
             month, // period
@@ -72,7 +72,7 @@ async function twoPlanFixture() {
     fixture.plans.push({
         provider: fixture.providerA.address,
         planId: 201,
-        planData: cask.utils.encodePlanData(
+        planData: CaskSDK.utils.encodePlanData(
             201, // planId
             daiUnits('20'), // price
             month, // period
@@ -84,9 +84,9 @@ async function twoPlanFixture() {
             true) // canTransfer
     });
 
-    fixture.plansRoot = cask.utils.plansMerkleRoot(fixture.plans);
-    fixture.discountsRoot = cask.utils.discountsMerkleRoot(fixture.discounts);
-    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
+    fixture.plansRoot = CaskSDK.utils.plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = CaskSDK.utils.discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await CaskSDK.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
         fixture.discountsRoot);
 
     return fixture;
@@ -98,7 +98,7 @@ async function unpausablePlanFixture() {
     fixture.plans.push({
         provider: fixture.providerA.address,
         planId: 301,
-        planData: cask.utils.encodePlanData(
+        planData: CaskSDK.utils.encodePlanData(
             301, // planId
             daiUnits('10'), // price
             month, // period
@@ -110,9 +110,9 @@ async function unpausablePlanFixture() {
             true) // canTransfer
     });
 
-    fixture.plansRoot = cask.utils.plansMerkleRoot(fixture.plans);
-    fixture.discountsRoot = cask.utils.discountsMerkleRoot(fixture.discounts);
-    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
+    fixture.plansRoot = CaskSDK.utils.plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = CaskSDK.utils.discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await CaskSDK.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
         fixture.discountsRoot);
 
     return fixture;
@@ -124,7 +124,7 @@ async function minTermPlanFixture() {
     fixture.plans.push({
         provider: fixture.providerA.address,
         planId: 401,
-        planData: cask.utils.encodePlanData(
+        planData: CaskSDK.utils.encodePlanData(
             401, // planId
             daiUnits('10'), // price
             month, // period
@@ -136,9 +136,9 @@ async function minTermPlanFixture() {
             true) // canTransfer
     });
 
-    fixture.plansRoot = cask.utils.plansMerkleRoot(fixture.plans);
-    fixture.discountsRoot = cask.utils.discountsMerkleRoot(fixture.discounts);
-    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
+    fixture.plansRoot = CaskSDK.utils.plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = CaskSDK.utils.discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await CaskSDK.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
         fixture.discountsRoot);
 
     return fixture;
@@ -150,7 +150,7 @@ async function onePlanWithDiscountsFixture() {
     fixture.plans.push({
         provider: fixture.providerA.address,
         planId: 501,
-        planData: cask.utils.encodePlanData(
+        planData: CaskSDK.utils.encodePlanData(
             501, // planId
             daiUnits('10'), // price
             month, // period
@@ -164,8 +164,8 @@ async function onePlanWithDiscountsFixture() {
 
 
     fixture.discounts.push({
-        discountId: cask.utils.generateDiscountId('discount1'),
-        discountData: cask.utils.encodeDiscountData(
+        discountId: CaskSDK.utils.generateDiscountId('discount1'),
+        discountData: CaskSDK.utils.encodeDiscountData(
             5000, // value
             0,  // validAfter
             0, // expiresAt
@@ -176,8 +176,8 @@ async function onePlanWithDiscountsFixture() {
     });
 
     fixture.discounts.push({
-        discountId: cask.utils.generateDiscountId('discount2'),
-        discountData: cask.utils.encodeDiscountData(
+        discountId: CaskSDK.utils.generateDiscountId('discount2'),
+        discountData: CaskSDK.utils.encodeDiscountData(
             1000, // value
             0,  // validAfter
             0, // expiresAt
@@ -188,9 +188,9 @@ async function onePlanWithDiscountsFixture() {
     });
 
 
-    fixture.plansRoot = cask.utils.plansMerkleRoot(fixture.plans);
-    fixture.discountsRoot = cask.utils.discountsMerkleRoot(fixture.discounts);
-    fixture.signedRoots = await cask.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
+    fixture.plansRoot = CaskSDK.utils.plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = CaskSDK.utils.discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await CaskSDK.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
         fixture.discountsRoot);
 
     return fixture;

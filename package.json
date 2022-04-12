@@ -13,7 +13,10 @@
     "local": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat --network localhost",
     "export": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat deploy --export '../p-cask-frontend/src/abi/network.json'",
     "test": "NODE_OPTIONS=--openssl-legacy-provider IS_TEST=true npx hardhat test",
-    "clean": "rm -rf artifacts cache deployments/local*"
+    "clean": "rm -rf artifacts cache deployments/local*",
+    "keeper:testnet_mumbai": "npx hardhat keeper --network testnet_mumbai",
+    "keeper:testnet_fantom": "npx hardhat keeper --network testnet_fantom",
+    "keeper:testnet_fuji": "npx hardhat keeper --network testnet_fuji"
   },
   "mocha": {
     "require": "hardhat/register",
@@ -43,7 +46,7 @@
     "merkletreejs": "^0.2.27"
   },
   "dependencies": {
-    "@caskprotocol/sdk": "^1.0.12",
+    "@caskprotocol/sdk": "^1.0.30",
     "@opengsn/contracts": "^2.2.6",
     "dotenv": "^10.0.0",
     "yarn": "^1.22.17"

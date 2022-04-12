@@ -10,13 +10,14 @@ const isMainnet = hre.network.name === "mainnet";
 const isProduction =
     hre.network.name === "production_polygon" ||
     hre.network.name === "production_fantom" ||
-    hre.network.name === "production_avax";
+    hre.network.name === "production_avalanche";
 const isTestnet =
     hre.network.name === "testnet_mumbai" ||
     hre.network.name === "testnet_fantom" ||
     hre.network.name === "testnet_fuji";
 
-const isInternal = hre.network.name === "internal_mumbai"
+const isInternal = hre.network.name === "internal_mumbai" ||
+    hre.network.name === "internal_fuji";
 
 const isTest = process.env.IS_TEST === "true";
 

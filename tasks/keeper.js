@@ -33,9 +33,16 @@ async function keeper(taskArguments, hre) {
                 if (performEstimatedGas.gt(taskArguments.gasLimit)){
                     console.log(`Warning: estimatedGas for performUpkeep on queue ${queue} is above gasLimit ${taskArguments.gasLimit}`);
                 }
-                const txn = await keeperManager
+                const tx = await keeperManager
                     .performUpkeep(checkResult.performData, {gasLimit: parseInt(taskArguments.gasLimit)});
-                console.log(`Upkeep complete for queue ${queue}: txn ${txn.hash}`);
+                const events = (await tx.wait()).events || [];
+                const report = events.find((e) => e.event === "SubscriptionManagerReport");
+                if (report) {
+                    console.log(`Report: performed ${report.args.renewals} renewals`);
+                } else {
+                    console.log(`Report not detected after keeper run`);
+                }
+                console.log(`Upkeep complete for queue ${queue}: txn ${tx.hash}`);
             } else {
                 console.log(`No upkeep needed on queue ${queue}.`);
             }
