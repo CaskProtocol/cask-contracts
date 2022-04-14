@@ -14,9 +14,14 @@
     "export": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat deploy --export '../p-cask-frontend/src/abi/network.json'",
     "test": "NODE_OPTIONS=--openssl-legacy-provider IS_TEST=true npx hardhat test",
     "clean": "rm -rf artifacts cache deployments/local*",
-    "keeper:testnet_mumbai": "npx hardhat keeper --network testnet_mumbai",
-    "keeper:testnet_fantom": "npx hardhat keeper --network testnet_fantom",
-    "keeper:testnet_fuji": "npx hardhat keeper --network testnet_fuji"
+    "keeper:polygon": "npx hardhat keeper --network production_polygon",
+    "keeper:avalanche": "npx hardhat keeper --network production_avalanche",
+    "keeper:fantom": "npx hardhat keeper --network production_fantom",
+    "keeper:internal:mumbai": "npx hardhat keeper --network internal_mumbai",
+    "keeper:internal:fuji": "npx hardhat keeper --network internal_fuji",
+    "keeper:testnet:mumbai": "npx hardhat keeper --network testnet_mumbai",
+    "keeper:testnet:fantom": "npx hardhat keeper --network testnet_fantom",
+    "keeper:testnet:fuji": "npx hardhat keeper --network testnet_fuji"
   },
   "mocha": {
     "require": "hardhat/register",

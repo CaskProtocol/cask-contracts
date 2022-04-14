@@ -102,6 +102,14 @@ PausableUpgradeable
         return MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_planData)));
     }
 
+    function getDiscountRedemptions(
+        address _provider,
+        uint32 _planId,
+        bytes32 _discountId
+    ) external view override returns(uint256) {
+        return discountRedemptions[_provider][_planId][_discountId];
+    }
+
     function verifyDiscount(
         address _provider,
         uint32 _planId,

@@ -3,7 +3,17 @@ async function keeper(taskArguments, hre) {
     const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
     const queues = taskArguments.queue.split(/\s*,\s*/);
 
-    const keeperWallet = new ethers.Wallet(process.env.TESTNET_KEEPER_PK, hre.ethers.provider);
+    let keeperWallet;
+
+    if (hre.network.name.includes('testnet_')) {
+        keeperWallet = new ethers.Wallet(process.env.TESTNET_KEEPER_PK, hre.ethers.provider);
+    } else if (hre.network.name.includes('internal_')) {
+        keeperWallet = new ethers.Wallet(process.env.INTERNAL_KEEPER_PK || process.env.TESTNET_KEEPER_PK,
+            hre.ethers.provider);
+    } else {
+        keeperWallet = new ethers.Wallet(process.env.KEEPER_PK, hre.ethers.provider);
+    }
+
     const keeperManager = subscriptionManager.connect(keeperWallet);
 
     console.log(`Keeper ${keeperWallet.address} running with limit ${taskArguments.limit} on queue(s) ${queues}`)

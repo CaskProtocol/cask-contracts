@@ -146,7 +146,7 @@ module.exports = {
         process.env.INTERNAL_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
-      gas: 2100000, gasPrice: 8000000000,
+      gas: 2100000, gasPrice: 8500000000,
     },
     testnet_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -154,7 +154,7 @@ module.exports = {
         process.env.MUMBAI_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
-      gas: 2100000, gasPrice: 8000000000,
+      gas: 2100000, gasPrice: 8500000000,
     },
     testnet_fantom: {
       url: `${process.env.FTMTESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
