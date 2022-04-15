@@ -2,7 +2,8 @@ const { parseUnits } = require("ethers").utils;
 
 const {
     isDevnet,
-    isTestnet
+    isTestnet,
+    isInternal,
 } = require("../test/_networks");
 
 const {
@@ -59,6 +60,6 @@ const main = async (hre) => {
 
 main.id = "001_mocks";
 main.tags = ["mocks"];
-main.skip = () => (!isDevnet && !isTestnet);
+main.skip = () => (!isDevnet && !isTestnet &&!isInternal);
 
 module.exports = main

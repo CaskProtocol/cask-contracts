@@ -102,6 +102,37 @@ PausableUpgradeable
         return MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_planData)));
     }
 
+    function getDiscountRedemptions(
+        address _provider,
+        uint32 _planId,
+        bytes32 _discountId
+    ) external view override returns(uint256) {
+        return discountRedemptions[_provider][_planId][_discountId];
+    }
+
+    function verifyDiscount(
+        address _provider,
+        uint32 _planId,
+        bytes32 _discountId,
+        bytes32 _discountData,
+        bytes32 _merkleRoot,
+        bytes32[] calldata _merkleProof
+    ) public view override returns(bool) {
+        if (MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_discountId, _discountData)))) {
+            Discount memory discountInfo = _parseDiscountData(_discountData);
+            require(discountInfo.planId == 0 || discountInfo.planId == _planId, "!INVALID(planId)");
+
+            if ( (discountInfo.maxRedemptions == 0 ||
+            discountRedemptions[_provider][discountInfo.planId][_discountId] < discountInfo.maxRedemptions) &&
+            (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
+                (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp)) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function verifyAndConsumeDiscount(
         address _provider,
         uint32 _planId,
@@ -110,18 +141,9 @@ PausableUpgradeable
         bytes32 _merkleRoot,
         bytes32[] calldata _merkleProof
     ) external override returns(bool) {
-        if (MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_discountId, _discountData)))) {
-            Discount memory discountInfo = _parseDiscountData(_discountData);
-            require(discountInfo.planId == 0 || discountInfo.planId == _planId, "!INVALID(planId)");
-
-            if ( (discountInfo.maxRedemptions == 0 ||
-                     discountRedemptions[_provider][discountInfo.planId][_discountId] < discountInfo.maxRedemptions) &&
-                     (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
-                     (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp)) )
-            {
-                discountRedemptions[_provider][_planId][_discountId] += 1;
-                return true;
-            }
+        if (verifyDiscount(_provider, _planId, _discountId, _discountData, _merkleRoot, _merkleProof)) {
+            discountRedemptions[_provider][_planId][_discountId] += 1;
+            return true;
         }
         return false;
     }

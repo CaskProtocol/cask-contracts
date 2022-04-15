@@ -185,11 +185,12 @@ interface ICaskVault is IERC20MetadataUpgradeable {
     /************************** EVENTS **************************/
 
     /** @dev Emitted when `sender` transfers `baseAssetValue` (denominated in vault baseAsset) to `recipient` */
-    event TransferValue(address indexed from, address indexed to, uint256 baseAssetValue);
+    event TransferValue(address indexed from, address indexed to, uint256 baseAssetAmount, uint256 shares);
 
     /** @dev Emitted when an amount of `baseAsset` is paid from `from` to `to` within the vault */
-    event Payment(address indexed from, address indexed to, uint256 baseAssetAmount, uint256 baseAssetFee,
-        uint256 shares);
+    event Payment(address indexed from, address indexed to, uint256 baseAssetAmount, uint256 shares,
+        uint256 protocolFee, uint256 protocolFeeShares,
+        address indexed network, uint256 networkFee, uint256 networkFeeShares);
 
     /** @dev Emitted when `asset` is added as a new supported asset */
     event AllowedAsset(address indexed asset);

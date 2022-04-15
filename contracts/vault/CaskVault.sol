@@ -191,15 +191,17 @@ ReentrancyGuardUpgradeable
             _transfer(_to, _network, networkFeeShares); // network fee from provider to network
         }
 
-        emit Payment(_from, _to, _value, _protocolFee, shares);
+        emit Payment(_from, _to, _value, shares, _protocolFee, protocolFeeShares, _network,
+            _networkFee, networkFeeShares);
     }
 
     function transferValue(
         address _recipient,
         uint256 _value
     ) external override nonReentrant returns (bool) {
-        _transfer(_msgSender(), _recipient, _sharesForValue(_value));
-        emit TransferValue(_msgSender(), _recipient, _value);
+        uint256 amount = _sharesForValue(_value);
+        _transfer(_msgSender(), _recipient, amount);
+        emit TransferValue(_msgSender(), _recipient, _value, amount);
         return true;
     }
 
@@ -216,7 +218,7 @@ ReentrancyGuardUpgradeable
         unchecked {
             _approve(_sender, _msgSender(), currentAllowance - amount);
         }
-        emit TransferValue(_sender, _recipient, _value);
+        emit TransferValue(_sender, _recipient, _value, amount);
         return true;
     }
 
@@ -259,9 +261,9 @@ ReentrancyGuardUpgradeable
             Asset storage asset = assets[_asset];
 
             // subtract slippage bps from deposited amount
-            uint256 slippage = _assetAmount * asset.slippageBps / 10000;
+            uint256 slippage = (_assetAmount * asset.slippageBps) / 10000;
 
-            baseAssetAmount = _convertPrice(_asset, baseAsset, _assetAmount - slippage);
+            baseAssetAmount = _convertPrice(_asset, baseAsset, (_assetAmount - slippage));
         }
 
         // calculate shares before transferring new asset into vault
@@ -320,7 +322,7 @@ ReentrancyGuardUpgradeable
             assetAmount = _convertPrice(baseAsset, _asset, baseAmount);
 
             // subtract slippage bps from withdrawing amount
-            uint256 slippage = assetAmount * asset.slippageBps / 10000;
+            uint256 slippage = (assetAmount * asset.slippageBps) / 10000;
             assetAmount = assetAmount - slippage;
         }
 
@@ -345,8 +347,8 @@ ReentrancyGuardUpgradeable
     function _sharesForValue(
         uint256 _amount
     ) internal view returns(uint256) {
-        if (_totalValue() > 0) {
-            return _amount * totalSupply() / _totalValue();
+        if (totalSupply() > 0) {
+            return (_amount * totalSupply()) / _totalValue();
         } else {
             return _amount;
         }
@@ -358,7 +360,7 @@ ReentrancyGuardUpgradeable
         if (totalSupply() == 0) {
             return _shares;
         }
-        return _shares * _totalValue() / totalSupply();
+        return (_shares * _totalValue()) / totalSupply();
     }
 
     function totalValue() external override view returns(uint256) {

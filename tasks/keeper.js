@@ -3,7 +3,17 @@ async function keeper(taskArguments, hre) {
     const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
     const queues = taskArguments.queue.split(/\s*,\s*/);
 
-    const keeperWallet = new ethers.Wallet(process.env.TESTNET_KEEPER_PK, hre.ethers.provider);
+    let keeperWallet;
+
+    if (hre.network.name.includes('testnet_')) {
+        keeperWallet = new ethers.Wallet(process.env.TESTNET_KEEPER_PK, hre.ethers.provider);
+    } else if (hre.network.name.includes('internal_')) {
+        keeperWallet = new ethers.Wallet(process.env.INTERNAL_KEEPER_PK || process.env.TESTNET_KEEPER_PK,
+            hre.ethers.provider);
+    } else {
+        keeperWallet = new ethers.Wallet(process.env.KEEPER_PK, hre.ethers.provider);
+    }
+
     const keeperManager = subscriptionManager.connect(keeperWallet);
 
     console.log(`Keeper ${keeperWallet.address} running with limit ${taskArguments.limit} on queue(s) ${queues}`)
@@ -33,9 +43,16 @@ async function keeper(taskArguments, hre) {
                 if (performEstimatedGas.gt(taskArguments.gasLimit)){
                     console.log(`Warning: estimatedGas for performUpkeep on queue ${queue} is above gasLimit ${taskArguments.gasLimit}`);
                 }
-                const txn = await keeperManager
+                const tx = await keeperManager
                     .performUpkeep(checkResult.performData, {gasLimit: parseInt(taskArguments.gasLimit)});
-                console.log(`Upkeep complete for queue ${queue}: txn ${txn.hash}`);
+                const events = (await tx.wait()).events || [];
+                const report = events.find((e) => e.event === "SubscriptionManagerReport");
+                if (report) {
+                    console.log(`Report: performed ${report.args.renewals} renewals`);
+                } else {
+                    console.log(`Report not detected after keeper run`);
+                }
+                console.log(`Upkeep complete for queue ${queue}: txn ${tx.hash}`);
             } else {
                 console.log(`No upkeep needed on queue ${queue}.`);
             }

@@ -23,9 +23,19 @@ const DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
 
 // production networks - each chain has their own governor/strategist (multisigs)
 const MAINNET_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
+
 const POLYGON_GOVERNOR = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
 const POLYGON_STRATEGIST = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
 const POLYGON_KEEPER = "0x";
+
+const AVALANCHE_GOVERNOR = "";
+const AVALANCHE_STRATEGIST = "";
+const AVALANCHE_KEEPER = "0x";
+
+const FANTOM_GOVERNOR = "";
+const FANTOM_STRATEGIST = "";
+const FANTOM_KEEPER = "0x";
+
 
 // testnet networks - common across all testnets
 const TESTNET_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
@@ -116,13 +126,27 @@ module.exports = {
       ],
       timeout: 300000,
     },
+    production_avalanche: {
+      url: `${process.env.AVALANCHE_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.AVALANCHE_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+    },
+    production_fantom: {
+      url: `${process.env.FANTOM_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.FANTOM_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+    },
     internal_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.INTERNAL_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
-      gas: 2100000, gasPrice: 8000000000,
+      gas: 2100000, gasPrice: 8500000000,
     },
     testnet_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -130,7 +154,7 @@ module.exports = {
         process.env.MUMBAI_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
-      gas: 2100000, gasPrice: 8000000000,
+      gas: 2100000, gasPrice: 8500000000,
     },
     testnet_fantom: {
       url: `${process.env.FTMTESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -148,17 +172,28 @@ module.exports = {
       timeout: 300000,
       gas: 2100000, gasPrice: 26000000000,
     },
+    internal_fuji: {
+      url: `${process.env.FUJI_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.INTERNAL_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+      gas: 2100000, gasPrice: 26000000000,
+    },
   },
   namedAccounts: {
     deployerAddr: {
       mainnet: DEPLOYER,
       production_polygon: DEPLOYER,
+      production_avalanche: DEPLOYER,
+      production_fantom: DEPLOYER,
 
       default: 0,
       localhost: 0,
       kovan: TESTNET_DEPLOYER,
       rinkeby: TESTNET_DEPLOYER,
       internal_mumbai: TESTNET_DEPLOYER,
+      internal_fuji: TESTNET_DEPLOYER,
       testnet_mumbai: TESTNET_DEPLOYER,
       testnet_fantom: TESTNET_DEPLOYER,
       testnet_fuji: TESTNET_DEPLOYER,
@@ -166,6 +201,8 @@ module.exports = {
     governorAddr: {
       mainnet: MAINNET_GOVERNOR,
       production_polygon: POLYGON_GOVERNOR,
+      production_avalanche: AVALANCHE_GOVERNOR,
+      production_fantom: FANTOM_GOVERNOR,
 
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
@@ -173,17 +210,21 @@ module.exports = {
       kovan: TESTNET_GOVERNOR,
       rinkeby: TESTNET_GOVERNOR,
       internal_mumbai: TESTNET_GOVERNOR,
+      internal_fuji: TESTNET_GOVERNOR,
       testnet_mumbai: TESTNET_GOVERNOR,
       testnet_fantom: TESTNET_GOVERNOR,
       testnet_fuji: TESTNET_GOVERNOR,
     },
     strategistAddr: {
       production_polygon: POLYGON_STRATEGIST,
+      production_avalanche: AVALANCHE_STRATEGIST,
+      production_fantom: FANTOM_STRATEGIST,
 
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
       hardhat: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
       internal_mumbai: TESTNET_STRATEGIST,
+      internal_fuji: TESTNET_STRATEGIST,
       testnet_mumbai: TESTNET_STRATEGIST,
       testnet_fantom: TESTNET_STRATEGIST,
       testnet_fuji: TESTNET_STRATEGIST,
@@ -211,17 +252,21 @@ module.exports = {
       localhost: process.env.FORK === "true" ? TESTNET_FAUCET_ADMIN : 10,
       hardhat: process.env.FORK === "true" ? TESTNET_FAUCET_ADMIN : 10,
       internal_mumbai: TESTNET_FAUCET_ADMIN,
+      internal_fuji: TESTNET_FAUCET_ADMIN,
       testnet_mumbai: TESTNET_FAUCET_ADMIN,
       testnet_fantom: TESTNET_FAUCET_ADMIN,
       testnet_fuji: TESTNET_FAUCET_ADMIN,
     },
     keeperAddr: {
       production_polygon: POLYGON_KEEPER,
+      production_avalanche: AVALANCHE_KEEPER,
+      production_fantom: FANTOM_KEEPER,
 
       default: 11,
       localhost: process.env.FORK === "true" ? POLYGON_KEEPER : 11,
       hardhat: process.env.FORK === "true" ? POLYGON_KEEPER : 11,
       internal_mumbai: TESTNET_KEEPER,
+      internal_fuji: TESTNET_KEEPER,
       testnet_mumbai: TESTNET_KEEPER,
       testnet_fantom: TESTNET_KEEPER,
       testnet_fuji: TESTNET_KEEPER,

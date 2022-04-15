@@ -33,9 +33,6 @@ PausableUpgradeable
 
     /************************** STATE **************************/
 
-    // FIXME: remove
-    uint256[] private deprecated1;
-
     /** @dev Maps for consumer to list of subscriptions. */
     mapping(address => uint256[]) private consumerSubscriptions; // consumer => subscriptionId[]
     mapping(uint256 => Subscription) private subscriptions; // subscriptionId => Subscription
@@ -45,9 +42,6 @@ PausableUpgradeable
     mapping(address => uint256[]) private providerSubscriptions; // provider => subscriptionId[]
     mapping(address => uint256) private providerActiveSubscriptionCount; // provider => count
     mapping(address => mapping(uint32 => uint256)) private planActiveSubscriptionCount; // provider => planId => count
-
-    // FIXME: remove
-    mapping(uint256 => uint256) private deprecated2; // subscriptionId => activeSubscriptions index
 
     modifier onlyManager() {
         require(_msgSender() == address(subscriptionManager), "!AUTH");
@@ -151,6 +145,15 @@ PausableUpgradeable
         _createSubscription(_nonce, _planProof, _discountProof, _cancelAt, _providerSignature, _cid);
     }
 
+    function attachData(
+        uint256 _subscriptionId,
+        string calldata _dataCid
+    ) external override onlySubscriberOrProvider(_subscriptionId) whenNotPaused {
+        Subscription storage subscription = subscriptions[_subscriptionId];
+        require(subscription.status != SubscriptionStatus.Canceled, "!CANCELED");
+        subscription.dataCid = _dataCid;
+    }
+
     function changeSubscriptionPlan(
         uint256 _subscriptionId,
         uint256 _nonce,
@@ -160,33 +163,6 @@ PausableUpgradeable
         string calldata _cid
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
         _changeSubscriptionPlan(_subscriptionId, _nonce, _planProof, _discountProof, _providerSignature, _cid);
-    }
-
-    function changeSubscriptionDiscount(
-        uint256 _subscriptionId,
-        bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
-    ) external override whenNotPaused {
-
-        Subscription storage subscription = subscriptions[_subscriptionId];
-        require(subscription.discountId == 0, "!EXISTING_DISCOUNT");
-        require(_msgSender() == subscription.provider, "!AUTH"); // only provider can set discount after subscription creation
-
-        if (pendingPlanChanges[_subscriptionId] > 0) {
-            PlanInfo memory newPlanInfo = _parsePlanData(pendingPlanChanges[_subscriptionId]);
-            // pending plan change, get discount for new plan
-            (
-            subscription.discountId,
-            subscription.discountData
-            ) = _verifyDiscountProof(subscription.provider, newPlanInfo.planId, _discountProof);
-        } else {
-            (
-            subscription.discountId,
-            subscription.discountData
-            ) = _verifyDiscountProof(subscription.provider, subscription.planId, _discountProof);
-        }
-
-        emit SubscriptionChangedDiscount(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
-            subscription.ref, subscription.planId, subscription.discountData);
     }
 
     function pauseSubscription(
@@ -258,18 +234,21 @@ PausableUpgradeable
         if(_cancelAt == 0) {
             require(_msgSender() == ownerOf(_subscriptionId), "!AUTH"); // clearing cancel only allowed by subscriber
             subscription.cancelAt = _cancelAt;
+
+            emit SubscriptionPendingCancel(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+                subscription.ref, subscription.planId, _cancelAt);
         } else if(_cancelAt <= timestamp) {
             require(subscription.minTermAt == 0 || timestamp >= subscription.minTermAt, "!MIN_TERM");
-            subscription.status = SubscriptionStatus.Canceled; // prevent anymore changes
-            subscription.renewAt = timestamp; // cause keeper to process cancel at next run
+            subscription.renewAt = timestamp;
             subscription.cancelAt = timestamp;
+            subscriptionManager.renewSubscription(_subscriptionId); // registers subscription with manager
         } else {
             require(subscription.minTermAt == 0 || _cancelAt >= subscription.minTermAt, "!MIN_TERM");
             subscription.cancelAt = _cancelAt;
-        }
 
-        emit SubscriptionPendingCancel(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
-            subscription.ref, subscription.planId, _cancelAt);
+            emit SubscriptionPendingCancel(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+                subscription.ref, subscription.planId, _cancelAt);
+        }
     }
 
     function managerCommand(
@@ -396,22 +375,19 @@ PausableUpgradeable
     }
 
     function getProviderSubscriptionCount(
-        address _provider
-    ) external override view returns (uint256) {
-        return providerSubscriptions[_provider].length;
-    }
-
-    function getProviderActiveSubscriptionCount(
-        address _provider
-    ) external override view returns (uint256) {
-        return providerActiveSubscriptionCount[_provider];
-    }
-
-    function getProviderPlanActiveSubscriptionCount(
         address _provider,
+        bool _includeCanceled,
         uint32 _planId
     ) external override view returns (uint256) {
-        return planActiveSubscriptionCount[_provider][_planId];
+        if (_includeCanceled) {
+            return providerSubscriptions[_provider].length;
+        } else {
+            if (_planId > 0) {
+                return planActiveSubscriptionCount[_provider][_planId];
+            } else {
+                return providerActiveSubscriptionCount[_provider];
+            }
+        }
     }
 
     function getPendingPlanChange(
@@ -560,7 +536,16 @@ PausableUpgradeable
 
         if (subscription.status == SubscriptionStatus.Trialing) { // still in trial, just change now
 
-            _swapTrialingPlan(_subscriptionId, currentPlanInfo, _newPlanInfo, _planData);
+            // adjust renewal based on new plan trial length
+            subscription.renewAt = subscription.renewAt - currentPlanInfo.freeTrial + _newPlanInfo.freeTrial;
+
+            // if new plan trial length would have caused trial to already be over, end trial as of now
+            // subscription will be charged and converted to active during next keeper run
+            if (subscription.renewAt <= uint32(block.timestamp)) {
+                subscription.renewAt = uint32(block.timestamp);
+            }
+
+            _swapPlan(_subscriptionId, _newPlanInfo, _planData);
 
         } else if (_newPlanInfo.price / _newPlanInfo.period ==
             currentPlanInfo.price / currentPlanInfo.period)
@@ -635,26 +620,6 @@ PausableUpgradeable
             network: address(bytes20(_networkData)),
             feeBps: uint16(bytes2(_networkData << 160))
         });
-    }
-
-    function _swapTrialingPlan(
-        uint256 _subscriptionId,
-        PlanInfo memory _currentPlanInfo,
-        PlanInfo memory _newPlanInfo,
-        bytes32 _newPlanData
-    ) internal {
-        Subscription storage subscription = subscriptions[_subscriptionId];
-
-        // adjust renewal based on new plan trial length
-        subscription.renewAt = subscription.renewAt - _currentPlanInfo.freeTrial + _newPlanInfo.freeTrial;
-
-        // if new plan trial length would have caused trial to already be over, end trial as of now
-        // subscription will be charged and converted to active during next keeper run
-        if (subscription.renewAt <= uint32(block.timestamp)) {
-            subscription.renewAt = uint32(block.timestamp);
-        }
-
-        _swapPlan(_subscriptionId, _newPlanInfo, _newPlanData);
     }
 
     function _scheduleSwapPlan(
