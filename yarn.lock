@@ -31,10 +31,10 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@caskprotocol/sdk@^1.0.30":
-  version "1.0.30"
-  resolved "https://registry.yarnpkg.com/@caskprotocol/sdk/-/sdk-1.0.30.tgz#0017d704e3e81893115bd0aad4490639325ce251"
-  integrity sha512-rKIgby+tYGIX8AK1i1lQ0MxVuZeUC8SxAkzGXY9Qed624yp//G79hqZqPpuJL3g0ekECCHsasVSgdxGwg/R/Bw==
+"@caskprotocol/sdk@^1.0.32":
+  version "1.0.32"
+  resolved "https://registry.yarnpkg.com/@caskprotocol/sdk/-/sdk-1.0.32.tgz#b6066204d3130c970cc5afbec147103782a498c6"
+  integrity sha512-rWL9Q+Fctk9NdckvxY2sTwd4ZWBo7P15NMzFk1Jd6Vo+vdbbRDyM6xVEUk4DHRv+Vuw2fDmjAtNYy+cotD+M1Q==
   dependencies:
     "@alch/alchemy-web3" "^1.3.0"
     "@peculiar/webcrypto" "^1.3.3"
