@@ -344,13 +344,19 @@ ReentrancyGuardUpgradeable
 
     /************************** SHARES FUNCTIONS **************************/
 
+    function sharesForValue(
+        uint256 _value
+    ) external override view returns(uint256) {
+        return _sharesForValue(_value);
+    }
+
     function _sharesForValue(
-        uint256 _amount
+        uint256 _value
     ) internal view returns(uint256) {
         if (totalSupply() > 0) {
-            return (_amount * totalSupply()) / _totalValue();
+            return (_value * totalSupply()) / _totalValue();
         } else {
-            return _amount;
+            return _value;
         }
     }
 
@@ -360,7 +366,7 @@ ReentrancyGuardUpgradeable
         if (totalSupply() == 0) {
             return _shares;
         }
-        return (_shares * _totalValue()) / totalSupply();
+        return (_totalValue() * _shares) / totalSupply();
     }
 
     function totalValue() external override view returns(uint256) {

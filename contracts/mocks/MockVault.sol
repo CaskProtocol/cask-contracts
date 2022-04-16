@@ -90,6 +90,10 @@ contract MockVault is ICaskVault, ERC20Upgradeable {
         return true;
     }
 
+    function sharesForValue(uint256 _value) external override view returns(uint256) {
+        return 0;
+    }
+
     function totalValue() external override view returns(uint256) {
         return 0;
     }
