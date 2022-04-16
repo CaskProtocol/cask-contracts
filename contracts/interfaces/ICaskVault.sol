@@ -163,6 +163,12 @@ interface ICaskVault is IERC20MetadataUpgradeable {
     function pricePerShare() external view returns(uint256);
 
     /**
+     * @dev Get the number of vault shares that represents a given value of the base asset
+     * @param _value Amount of value
+     */
+    function sharesForValue(uint256 _value) external view returns(uint256);
+
+    /**
      * @dev Get total value in vault and managed by admin - denominated in `baseAsset`
      */
     function totalValue() external view returns(uint256);
@@ -175,7 +181,7 @@ interface ICaskVault is IERC20MetadataUpgradeable {
 
     /**
      * @dev Send an amount of asset to a strategy
-     * @param _asset Address of strategy
+     * @param _strategy Address of strategy
      * @param _asset Address of asset
      * @param _assetAmount Amount of asset to send
      */
