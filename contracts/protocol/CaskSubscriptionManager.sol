@@ -140,22 +140,26 @@ KeeperCompatibleInterface
     ) internal {
         require(vault.currentValueOf(_consumer) >= _value, "!BALANCE");
 
-        // TODO: reduce fee based on staked balance
-        //        uint256 stakedBalance = ICaskStakeManager(stakeManager).providerStakeBalanceOf(_provider);
-        uint256 stakedBalance = 0;
+        (ICaskSubscriptions.Subscription memory subscription,) = subscriptions.getSubscription(_subscriptionId);
+
         uint256 paymentFeeRateAdjusted = paymentFeeRateMax;
 
-        (ICaskSubscriptions.Subscription memory subscription,) = subscriptions.getSubscription(_subscriptionId);
-        ICaskSubscriptions.PlanInfo memory planData = _parsePlanData(subscription.planData);
+        if (stakeTargetFactor > 0) {
+            // TODO: reduce fee based on staked balance
+            //        uint256 stakedBalance = ICaskStakeManager(stakeManager).providerStakeBalanceOf(_provider);
+            uint256 stakedBalance = 0;
 
-        if (stakedBalance > 0) {
-            uint256 loadFactor = 365 / (planData.period / 1 days);
-            uint256 noFeeTarget = subscriptions.getProviderSubscriptionCount(subscription.provider, false, 0) *
-                    stakeTargetFactor * loadFactor;
+            ICaskSubscriptions.PlanInfo memory planData = _parsePlanData(subscription.planData);
 
-            paymentFeeRateAdjusted = paymentFeeRateMax - (paymentFeeRateMax * (stakedBalance / noFeeTarget));
-            if (paymentFeeRateAdjusted < paymentFeeRateMin) {
-                paymentFeeRateAdjusted = paymentFeeRateMin;
+            if (stakedBalance > 0) {
+                uint256 loadFactor = 365 / (planData.period / 1 days);
+                uint256 noFeeTarget = subscriptions.getProviderSubscriptionCount(subscription.provider, false, 0) *
+                stakeTargetFactor * loadFactor;
+
+                paymentFeeRateAdjusted = paymentFeeRateMax - (paymentFeeRateMax * (stakedBalance / noFeeTarget));
+                if (paymentFeeRateAdjusted < paymentFeeRateMin) {
+                    paymentFeeRateAdjusted = paymentFeeRateMin;
+                }
             }
         }
 

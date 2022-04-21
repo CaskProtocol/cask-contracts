@@ -2,6 +2,8 @@ const {
     usdtUnits,
     usdcUnits,
     daiUnits,
+    ustUnits,
+    fraxUnits,
     day,
     hour,
 } = require("../utils/units");
@@ -42,7 +44,7 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
 
     const vault = await ethers.getContract("CaskVault");
     await withConfirmation(
-        vault.initialize(vaultManager.address, networkAddresses.DAI, networkAddresses.DAI_USD, governorAddr)
+        vault.initialize(vaultManager.address, networkAddresses.USDC, networkAddresses.USDC_USD, governorAddr)
     );
     log("Initialized CaskVault");
 
@@ -121,13 +123,30 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
 
     await withConfirmation(
         vault.connect(sDeployer).allowAsset(
-            networkAddresses.USDC, // address
-            networkAddresses.USDC_USD, //priceFeed
-            usdcUnits('100000000'), // depositLimit - 100M
+            networkAddresses.DAI, // address
+            networkAddresses.DAI_USD, //priceFeed
+            daiUnits('100000000'), // depositLimit - 100M
             10) // slippageBps - 0.1%
     );
+    log("Allowed DAI in vault");
 
-    log("Allowed USDC in vault");
+    await withConfirmation(
+        vault.connect(sDeployer).allowAsset(
+            networkAddresses.UST, // address
+            networkAddresses.UST_USD, //priceFeed
+            ustUnits('100000000'), // depositLimit - 100M
+            10) // slippageBps - 0.1%
+    );
+    log("Allowed UST in vault");
+
+    await withConfirmation(
+        vault.connect(sDeployer).allowAsset(
+            networkAddresses.FRAX, // address
+            networkAddresses.FRAX_USD, //priceFeed
+            fraxUnits('100000000'), // depositLimit - 100M
+            10) // slippageBps - 0.1%
+    );
+    log("Allowed FRAX in vault");
 
 
     await withConfirmation(

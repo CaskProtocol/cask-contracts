@@ -16,13 +16,16 @@ const deployMocks = async ({getNamedAccounts}) => {
     const {faucetAdmin} = await getNamedAccounts();
 
     // Deploy mock coins (assets)
-    const assetContracts = [
-        "MockUSDT",
-        "MockUSDC",
-        "MockDAI",
-        "MockWETH",
+    const mockTokens = [
+        "USDT",
+        "USDC",
+        "DAI",
+        "UST",
+        "FRAX",
     ];
-    for (const contract of assetContracts) {
+    for (const mockToken of mockTokens) {
+        const contract = "Mock"+mockToken;
+
         await deployWithConfirmation(contract);
 
         const deployedContract = await ethers.getContract(contract);
@@ -31,23 +34,11 @@ const deployMocks = async ({getNamedAccounts}) => {
             deployedContract.grantRole(await deployedContract.MINTER_ROLE(), faucetAdmin)
         );
         log(`Granted MINTER_ROLE on ${contract} at ${deployedContract.address} to faucetAdmin ${faucetAdmin}`);
+
+        await deployWithConfirmation("MockChainlinkOracleFeed"+mockToken,
+            [parseUnits("1", 8).toString(), 8],
+            "MockChainlinkOracleFeed");
     }
-
-    await deployWithConfirmation("MockChainlinkOracleFeedDAI",
-        [parseUnits("1", 8).toString(), 8],
-        "MockChainlinkOracleFeed");
-
-    await  deployWithConfirmation("MockChainlinkOracleFeedUSDT",
-        [parseUnits("1", 8).toString(), 8],
-        "MockChainlinkOracleFeed");
-
-    await deployWithConfirmation("MockChainlinkOracleFeedUSDC",
-        [parseUnits("1", 8).toString(), 8],
-        "MockChainlinkOracleFeed");
-
-    await deployWithConfirmation("MockChainlinkOracleFeedWETH",
-        [parseUnits("3000", 8).toString(), 8],
-        "MockChainlinkOracleFeed");
 
 };
 

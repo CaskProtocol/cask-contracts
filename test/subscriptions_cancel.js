@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
-    daiUnits,
+    usdcUnits,
     hour,
     day,
     month,
@@ -39,7 +39,7 @@ describe("CaskSubscriptions Cancel", function () {
 
 
         // deposit to vault
-        await consumerAVault.deposit(networkAddresses.DAI, daiUnits('20'));
+        await consumerAVault.deposit(networkAddresses.USDC, usdcUnits('20'));
 
         let result;
 
@@ -68,7 +68,7 @@ describe("CaskSubscriptions Cancel", function () {
         await advanceTimeRunSubscriptionKeeper(8, day);
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
-        expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('10'));
+        expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(usdcUnits('10'));
 
         // funds just enough for one renewal
         await advanceTimeRunSubscriptionKeeper(31, day);
@@ -84,7 +84,7 @@ describe("CaskSubscriptions Cancel", function () {
         expect(result.subscription.status).to.equal(SubscriptionStatus.PastDue);
 
         // deposit one more months worth
-        await consumerAVault.deposit(networkAddresses.DAI, daiUnits('10'));
+        await consumerAVault.deposit(networkAddresses.USDC, usdcUnits('10'));
 
         // confirm successful renew by next day
         await advanceTimeRunSubscriptionKeeper(1, day);

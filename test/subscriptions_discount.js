@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
-    daiUnits,
+    usdcUnits,
     day,
 } = require("../utils/units");
 
@@ -36,11 +36,11 @@ describe("CaskSubscriptions Discount", function () {
 
 
         // deposit to vault
-        await consumerAVault.deposit(networkAddresses.DAI, daiUnits('100'));
+        await consumerAVault.deposit(networkAddresses.USDC, usdcUnits('100'));
 
         // check initial balance
         const initialConsumerBalance = await consumerAVault.currentValueOf(consumerA.address);
-        expect(initialConsumerBalance).to.equal(daiUnits('100'));
+        expect(initialConsumerBalance).to.equal(usdcUnits('100'));
 
         let result;
 
@@ -78,7 +78,7 @@ describe("CaskSubscriptions Discount", function () {
         await advanceTimeRunSubscriptionKeeper(8, day); // past trial
 
         // confirm discounted charge after 7 day trial ended - 50% off 10/month == 5; 100 - 5 == 95
-        expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('95'));
+        expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(usdcUnits('95'));
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.discountId).to.not.equal(ethers.utils.hexZeroPad(0, 32));
 

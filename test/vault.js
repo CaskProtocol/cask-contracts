@@ -21,8 +21,8 @@ describe("CaskVault", function () {
             consumerA,
         } = await fundedFixture();
 
-        await vault.connect(consumerA).deposit(networkAddresses.USDC, usdcUnits('100.0'));
-        expect(await vault.currentValueOf(consumerA.address)).to.equal(daiUnits('100.0'));
+        await vault.connect(consumerA).deposit(networkAddresses.DAI, daiUnits('100.0'));
+        expect(await vault.currentValueOf(consumerA.address)).to.equal(usdcUnits('100.0'));
 
     });
 
@@ -34,8 +34,8 @@ describe("CaskVault", function () {
             consumerA,
         } = await fundedFixture();
 
-        await vault.connect(consumerA).deposit(networkAddresses.DAI, daiUnits('100.0'));
-        expect(await vault.currentValueOf(consumerA.address)).to.equal(daiUnits('100.0'));
+        await vault.connect(consumerA).deposit(networkAddresses.USDC, usdcUnits('100.0'));
+        expect(await vault.currentValueOf(consumerA.address)).to.equal(usdcUnits('100.0'));
 
     });
 

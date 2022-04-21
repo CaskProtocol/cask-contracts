@@ -95,22 +95,6 @@ module.exports = {
     localhost: {
       timeout: 60000,
     },
-    kovan: {
-      url: `${process.env.KOVAN_PROVIDER_URL || process.env.PROVIDER_URL}`,
-      accounts: [
-        process.env.KOVAN_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
-      ],
-      timeout: 300000,
-      gas: 2100000, gasPrice: 8000000000,
-    },
-    rinkeby: {
-      url: `${process.env.RINKEBY_PROVIDER_URL || process.env.PROVIDER_URL}`,
-      accounts: [
-        process.env.RINKEBY_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
-      ],
-      timeout: 300000,
-      gas: 2100000, gasPrice: 8000000000,
-    },
     mainnet: {
       url: `${process.env.MAINNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
@@ -172,6 +156,20 @@ module.exports = {
       timeout: 300000,
       gas: 2100000, gasPrice: 26000000000,
     },
+    testnet_evmos: {
+      url: `${process.env.EVMOSTESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.EVMOSTESTNET_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+    },
+    testnet_alfajores: {
+      url: `${process.env.ALFAJORES_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.ALFAJORES_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+    },
     internal_fuji: {
       url: `${process.env.FUJI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
@@ -190,13 +188,13 @@ module.exports = {
 
       default: 0,
       localhost: 0,
-      kovan: TESTNET_DEPLOYER,
-      rinkeby: TESTNET_DEPLOYER,
       internal_mumbai: TESTNET_DEPLOYER,
       internal_fuji: TESTNET_DEPLOYER,
       testnet_mumbai: TESTNET_DEPLOYER,
       testnet_fantom: TESTNET_DEPLOYER,
       testnet_fuji: TESTNET_DEPLOYER,
+      testnet_alfajores: TESTNET_DEPLOYER,
+      testnet_evmos: TESTNET_DEPLOYER,
     },
     governorAddr: {
       mainnet: MAINNET_GOVERNOR,
@@ -207,13 +205,13 @@ module.exports = {
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
       hardhat: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
-      kovan: TESTNET_GOVERNOR,
-      rinkeby: TESTNET_GOVERNOR,
       internal_mumbai: TESTNET_GOVERNOR,
       internal_fuji: TESTNET_GOVERNOR,
       testnet_mumbai: TESTNET_GOVERNOR,
       testnet_fantom: TESTNET_GOVERNOR,
       testnet_fuji: TESTNET_GOVERNOR,
+      testnet_alfajores: TESTNET_GOVERNOR,
+      testnet_evmos: TESTNET_GOVERNOR,
     },
     strategistAddr: {
       production_polygon: POLYGON_STRATEGIST,
@@ -228,6 +226,8 @@ module.exports = {
       testnet_mumbai: TESTNET_STRATEGIST,
       testnet_fantom: TESTNET_STRATEGIST,
       testnet_fuji: TESTNET_STRATEGIST,
+      testnet_alfajores: TESTNET_STRATEGIST,
+      testnet_evmos: TESTNET_STRATEGIST,
     },
     consumerA: {
       default: 4
@@ -256,6 +256,8 @@ module.exports = {
       testnet_mumbai: TESTNET_FAUCET_ADMIN,
       testnet_fantom: TESTNET_FAUCET_ADMIN,
       testnet_fuji: TESTNET_FAUCET_ADMIN,
+      testnet_alfajores: TESTNET_FAUCET_ADMIN,
+      testnet_evmos: TESTNET_FAUCET_ADMIN,
     },
     keeperAddr: {
       production_polygon: POLYGON_KEEPER,
@@ -270,13 +272,13 @@ module.exports = {
       testnet_mumbai: TESTNET_KEEPER,
       testnet_fantom: TESTNET_KEEPER,
       testnet_fuji: TESTNET_KEEPER,
+      testnet_alfajores: TESTNET_KEEPER,
+      testnet_evmos: TESTNET_KEEPER,
     },
   },
   etherscan: {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY,
-      kovan: process.env.ETHERSCAN_API_KEY,
-      rinkeby: process.env.ETHERSCAN_API_KEY,
       polygon: process.env.POLYGONSCAN_API_KEY,
       polygonMumbai: process.env.POLYGONSCAN_API_KEY,
       opera: process.env.FTMSCAN_API_KEY,

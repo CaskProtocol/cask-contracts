@@ -175,26 +175,17 @@ async function debug(taskArguments, hre) {
     const isLocalhost = !isFork && hre.network.name === "localhost";
     const isMemnet = hre.network.name === "hardhat";
 
-    const isKovan = hre.network.name === "kovan";
     const isMainnet = hre.network.name === "mainnet";
 
-    const isProduction =
-        hre.network.name === "production_polygon" ||
-        hre.network.name === "production_fantom" ||
-        hre.network.name === "production_avax";
-    const isTestnet =
-        hre.network.name === "testnet_mumbai" ||
-        hre.network.name === "testnet_fantom" ||
-        hre.network.name === "testnet_fuji";
-
-    const isInternal = hre.network.name === "internal_mumbai" ||
-        hre.network.name === "internal_fuji";
+    const isProduction = hre.network.name.startsWith('production_');
+    const isTestnet = hre.network.name.startsWith('testnet_');
+    const isInternal = hre.network.name.startsWith('internal_');
 
     const isTest = process.env.IS_TEST === "true";
 
     const isDevnet = isLocalhost || isMemnet;
     const isRealChain = !isLocalhost && !isMemnet;
-    const isDaoChain = isMemnet || isFork || isLocalhost || isMainnet || isKovan;
+    const isDaoChain = isMemnet || isFork || isLocalhost || isMainnet;
     const isProtocolChain = isMemnet || isFork || isLocalhost || isProduction || isTestnet || isInternal;
 
 
