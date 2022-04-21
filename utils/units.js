@@ -39,6 +39,22 @@ function daiUnitsFormat(amount) {
     return formatUnits(amount, 18);
 }
 
+function ustUnits(amount) {
+    return parseUnits(amount, 6);
+}
+
+function ustUnitsFormat(amount) {
+    return formatUnits(amount, 6);
+}
+
+function fraxUnits(amount) {
+    return parseUnits(amount, 18);
+}
+
+function fraxUnitsFormat(amount) {
+    return formatUnits(amount, 18);
+}
+
 module.exports = {
     now,
     hour,
@@ -50,8 +66,12 @@ module.exports = {
     usdtUnits,
     usdcUnits,
     daiUnits,
+    ustUnits,
+    fraxUnits,
     caskUnitsFormat,
     daiUnitsFormat,
     usdcUnitsFormat,
     usdtUnitsFormat,
+    ustUnitsFormat,
+    fraxUnitsFormat,
 };

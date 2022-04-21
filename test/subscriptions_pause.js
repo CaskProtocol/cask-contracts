@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
-    daiUnits,
+    usdcUnits,
     day,
     month,
     now,
@@ -39,7 +39,7 @@ describe("CaskSubscriptions Pause", function () {
 
 
         // deposit to vault
-        await consumerAVault.deposit(networkAddresses.DAI, daiUnits('30'));
+        await consumerAVault.deposit(networkAddresses.USDC, usdcUnits('30'));
 
         let result;
 
@@ -92,7 +92,7 @@ describe("CaskSubscriptions Pause", function () {
 
 
         // deposit to vault
-        await consumerAVault.deposit(networkAddresses.DAI, daiUnits('150'));
+        await consumerAVault.deposit(networkAddresses.USDC, usdcUnits('150'));
 
         let result;
 

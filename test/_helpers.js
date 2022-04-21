@@ -3,7 +3,8 @@ const addresses = require("../utils/addresses");
 const { parseUnits, formatUnits } = require("ethers").utils;
 
 const {
-    isRealChain,
+    isLocalhost,
+    isInternal,
     isProduction,
 } = require("./_networks");
 
@@ -44,15 +45,14 @@ const advanceBlocks = async (numBlocks) => {
 
 
 /**
- * Sets the price in USD the mix oracle will return for a specific token.
- * This first sets the ETH price in USD, then token price in ETH
+ * Sets the price in USD the mock oracle will return for a specific token.
  *
  * @param {string} tokenSymbol: "DAI", USDC", etc...
  * @param {number} usdPrice: price of the token in USD.
  * @returns {Promise<void>}
  */
 const setOracleTokenPriceUsd = async (tokenSymbol, usdPrice) => {
-    if (isRealChain) {
+    if (!isLocalhost && !isInternal) {
         throw new Error(
             `setOracleTokenPriceUsd not supported on network ${hre.network.name}`
         );
@@ -79,8 +79,10 @@ const getNetworkAddresses = async (deployments) => {
                 (await deployments.get("MockUSDC")).address,
             USDT: addresses[hre.network.name].USDT ||
                 (await deployments.get("MockUSDT")).address,
-            WETH: addresses[hre.network.name].WETH ||
-                (await deployments.get("MockWETH")).address,
+            UST: addresses[hre.network.name].UST ||
+                (await deployments.get("MockUST")).address,
+            FRAX: addresses[hre.network.name].FRAX ||
+                (await deployments.get("MockFRAX")).address,
 
             DAI_USD: addresses[hre.network.name].DAI_USD ||
                 (await deployments.get("MockChainlinkOracleFeedDAI")).address,
@@ -88,8 +90,10 @@ const getNetworkAddresses = async (deployments) => {
                 (await deployments.get("MockChainlinkOracleFeedUSDC")).address,
             USDT_USD: addresses[hre.network.name].USDT_USD ||
                 (await deployments.get("MockChainlinkOracleFeedUSDT")).address,
-            WETH_USD: addresses[hre.network.name].WETH_USD ||
-                (await deployments.get("MockChainlinkOracleFeedWETH")).address,
+            UST_USD: addresses[hre.network.name].UST_USD ||
+                (await deployments.get("MockChainlinkOracleFeedUST")).address,
+            FRAX_USD: addresses[hre.network.name].FRAX_USD ||
+                (await deployments.get("MockChainlinkOracleFeedFRAX")).address,
         };
     }
 };

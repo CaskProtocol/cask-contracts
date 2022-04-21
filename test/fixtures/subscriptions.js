@@ -1,7 +1,7 @@
 const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
-    daiUnits,
+    usdcUnits,
     day,
     month,
 } = require("../../utils/units");
@@ -33,7 +33,7 @@ async function onePlanFixture() {
         planId: 100,
         planData: CaskSDK.utils.encodePlanData(
             100, // planId
-            daiUnits('10'), // price
+            usdcUnits('10'), // price
             month, // period
             7 * day, // freeTrial
             0, // maxActive
@@ -59,7 +59,7 @@ async function twoPlanFixture() {
         planId: 200,
         planData: CaskSDK.utils.encodePlanData(
             200, // planId
-            daiUnits('10'), // price
+            usdcUnits('10'), // price
             month, // period
             7 * day, // freeTrial
             0, // maxActive
@@ -74,7 +74,7 @@ async function twoPlanFixture() {
         planId: 201,
         planData: CaskSDK.utils.encodePlanData(
             201, // planId
-            daiUnits('20'), // price
+            usdcUnits('20'), // price
             month, // period
             7 * day, // freeTrial
             0, // maxActive
@@ -100,7 +100,7 @@ async function unpausablePlanFixture() {
         planId: 301,
         planData: CaskSDK.utils.encodePlanData(
             301, // planId
-            daiUnits('10'), // price
+            usdcUnits('10'), // price
             month, // period
             7 * day, // freeTrial
             0, // maxActive
@@ -126,7 +126,7 @@ async function minTermPlanFixture() {
         planId: 401,
         planData: CaskSDK.utils.encodePlanData(
             401, // planId
-            daiUnits('10'), // price
+            usdcUnits('10'), // price
             month, // period
             7 * day, // freeTrial
             0, // maxActive
@@ -152,7 +152,7 @@ async function onePlanWithDiscountsFixture() {
         planId: 501,
         planData: CaskSDK.utils.encodePlanData(
             501, // planId
-            daiUnits('10'), // price
+            usdcUnits('10'), // price
             month, // period
             7 * day, // freeTrial
             0, // maxActive

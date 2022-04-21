@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
-    daiUnits,
+    usdcUnits,
     day,
     month,
 } = require("../utils/units");
@@ -37,7 +37,7 @@ describe("CaskSubscriptions Change", function () {
 
 
         // deposit to vault
-        await consumerAVault.deposit(networkAddresses.DAI, daiUnits('150'));
+        await consumerAVault.deposit(networkAddresses.USDC, usdcUnits('150'));
 
         let result;
 
@@ -65,12 +65,12 @@ describe("CaskSubscriptions Change", function () {
         await advanceTimeRunSubscriptionKeeper(8, day); // trial end
 
         // normal trial end
-        expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('140'));
+        expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(usdcUnits('140'));
 
         await advanceTimeRunSubscriptionKeeper(31, day); // next month
 
         // normal renewal pre-upgrade
-        expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(daiUnits('130'));
+        expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(usdcUnits('130'));
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
         expect(result.subscription.planId).to.equal(plan.planId);
@@ -90,12 +90,12 @@ describe("CaskSubscriptions Change", function () {
         )).to.emit(consumerASubscriptions, "SubscriptionChangedPlan");
 
         // upgrade used some funds
-        expect(await consumerAVault.currentValueOf(consumerA.address)).to.lt(daiUnits('130'));
+        expect(await consumerAVault.currentValueOf(consumerA.address)).to.lt(usdcUnits('130'));
 
         await advanceTimeRunSubscriptionKeeper(31, day); // next month
 
         // upgrade used some funds and new plan is 20, so should have less than 110
-        expect(await consumerAVault.currentValueOf(consumerA.address)).to.lt(daiUnits('110'));
+        expect(await consumerAVault.currentValueOf(consumerA.address)).to.lt(usdcUnits('110'));
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
         expect(result.subscription.planId).to.equal(newPlan.planId);
