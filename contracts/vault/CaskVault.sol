@@ -99,6 +99,10 @@ ReentrancyGuardUpgradeable
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
+    function decimals() public view override(ERC20Upgradeable, IERC20MetadataUpgradeable) returns (uint8) {
+        return IERC20Metadata(baseAsset).decimals();
+    }
+
     function versionRecipient() public pure override returns(string memory) { return "2.2.0"; }
 
     function _msgSender() internal view override(ContextUpgradeable, BaseRelayRecipient)
