@@ -72,8 +72,8 @@ addresses.production_fantom.FRAX_USD = "0xBaC409D670d996Ef852056f6d45eCA41A8D57F
 
 /* mumbai testnet addresses */
 addresses.testnet_mumbai = {};
-// addresses.testnet_mumbai.DAI_USD = "0x0FCAa9c899EC5A91eBc3D5Dd869De833b06fB046";
-// addresses.testnet_mumbai.USDC_USD = "0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0";
+addresses.testnet_mumbai.DAI_USD = "0x0FCAa9c899EC5A91eBc3D5Dd869De833b06fB046";
+addresses.testnet_mumbai.USDC_USD = "0x572dDec9087154dC5dfBB1546Bb62713147e0Ab0";
 addresses.testnet_mumbai.USDT_USD = "0x92C09849638959196E976289418e5973CC96d645";
 
 /* fantom testnet addresses */
