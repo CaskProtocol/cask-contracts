@@ -31,21 +31,19 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@caskprotocol/sdk@^1.0.32":
-  version "1.0.32"
-  resolved "https://registry.yarnpkg.com/@caskprotocol/sdk/-/sdk-1.0.32.tgz#b6066204d3130c970cc5afbec147103782a498c6"
-  integrity sha512-rWL9Q+Fctk9NdckvxY2sTwd4ZWBo7P15NMzFk1Jd6Vo+vdbbRDyM6xVEUk4DHRv+Vuw2fDmjAtNYy+cotD+M1Q==
+"@caskprotocol/sdk@^1.0.42":
+  version "1.0.42"
+  resolved "https://registry.yarnpkg.com/@caskprotocol/sdk/-/sdk-1.0.42.tgz#a8f423438ac65074bd805057ef291b16bc67088b"
+  integrity sha512-bvHYScD4vgPTE1Y3XEDEd1QWBwiN8BlOrQisHcDXAwOmhpONrhi9iAOQe/AERAqOLioheh50eq97WUROKxNNTA==
   dependencies:
     "@alch/alchemy-web3" "^1.3.0"
     "@peculiar/webcrypto" "^1.3.3"
     "@pinata/sdk" "^1.1.23"
-    blob-polyfill "^7.0.20220408"
     cross-fetch "^3.1.5"
     ethers "^5.5.4"
     keccak256 "^1.0.6"
     lit-js-sdk "^1.1.155"
     merkletreejs "^0.2.27"
-    node-fetch "2"
     numeral "^2.0.6"
     uuid "^8.3.2"
     yarn "^1.22.18"
@@ -2548,11 +2546,6 @@ blob-polyfill@^6.0.20211015:
   version "6.0.20211015"
   resolved "https://registry.yarnpkg.com/blob-polyfill/-/blob-polyfill-6.0.20211015.tgz#7c47e62347e302e8d1d1ee5e140b881f74bdb23e"
   integrity sha512-OGL4bm6ZNpdFAvQugRlQy5MNly8gk15aWi/ZhQHimQsrx9WKD05r+v+xNgHCChLER3MH+9KLAhzuFlwFKrH1Yw==
-
-blob-polyfill@^7.0.20220408:
-  version "7.0.20220408"
-  resolved "https://registry.yarnpkg.com/blob-polyfill/-/blob-polyfill-7.0.20220408.tgz#38bf5e046c41a21bb13654d9d19f303233b8218c"
-  integrity sha512-oD8Ydw+5lNoqq+en24iuPt1QixdPpe/nUF8azTHnviCZYu9zUC+TwdzIp5orpblJosNlgNbVmmAb//c6d6ImUQ==
 
 bluebird@^3.5.0, bluebird@^3.5.2:
   version "3.7.2"
@@ -6754,17 +6747,17 @@ node-environment-flags@1.0.6:
     object.getownpropertydescriptors "^2.0.3"
     semver "^5.7.0"
 
-node-fetch@2, node-fetch@2.6.7, node-fetch@^2.6.0, node-fetch@^2.6.1, node-fetch@~2.6.0:
+node-fetch@2.6.1:
+  version "2.6.1"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
+  integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
+
+node-fetch@2.6.7, node-fetch@^2.6.0, node-fetch@^2.6.1, node-fetch@~2.6.0:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"
   integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
   dependencies:
     whatwg-url "^5.0.0"
-
-node-fetch@2.6.1:
-  version "2.6.1"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
-  integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
 
 node-fetch@^3.2.3:
   version "3.2.3"
