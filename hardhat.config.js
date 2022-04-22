@@ -170,6 +170,13 @@ module.exports = {
       ],
       timeout: 300000,
     },
+    testnet_aurora: {
+      url: `${process.env.AURORATESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.AURORATESTNET_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+    },
     internal_fuji: {
       url: `${process.env.FUJI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
@@ -195,6 +202,7 @@ module.exports = {
       testnet_fuji: TESTNET_DEPLOYER,
       testnet_alfajores: TESTNET_DEPLOYER,
       testnet_evmos: TESTNET_DEPLOYER,
+      testnet_aurora: TESTNET_DEPLOYER,
     },
     governorAddr: {
       mainnet: MAINNET_GOVERNOR,
@@ -212,6 +220,7 @@ module.exports = {
       testnet_fuji: TESTNET_GOVERNOR,
       testnet_alfajores: TESTNET_GOVERNOR,
       testnet_evmos: TESTNET_GOVERNOR,
+      testnet_aurora: TESTNET_GOVERNOR,
     },
     strategistAddr: {
       production_polygon: POLYGON_STRATEGIST,
@@ -228,6 +237,7 @@ module.exports = {
       testnet_fuji: TESTNET_STRATEGIST,
       testnet_alfajores: TESTNET_STRATEGIST,
       testnet_evmos: TESTNET_STRATEGIST,
+      testnet_aurora: TESTNET_STRATEGIST,
     },
     consumerA: {
       default: 4
@@ -258,6 +268,7 @@ module.exports = {
       testnet_fuji: TESTNET_FAUCET_ADMIN,
       testnet_alfajores: TESTNET_FAUCET_ADMIN,
       testnet_evmos: TESTNET_FAUCET_ADMIN,
+      testnet_aurora: TESTNET_FAUCET_ADMIN,
     },
     keeperAddr: {
       production_polygon: POLYGON_KEEPER,
@@ -274,6 +285,7 @@ module.exports = {
       testnet_fuji: TESTNET_KEEPER,
       testnet_alfajores: TESTNET_KEEPER,
       testnet_evmos: TESTNET_KEEPER,
+      testnet_aurora: TESTNET_KEEPER,
     },
   },
   etherscan: {
