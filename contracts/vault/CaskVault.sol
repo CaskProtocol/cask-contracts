@@ -70,6 +70,9 @@ ReentrancyGuardUpgradeable
 
     address[] public protocols;
 
+    // require deposit of at least this amount denominated in the baseAsset
+    uint256 public minDeposit;
+
     function initialize(
         address _vaultManager,
         address _baseAsset,
@@ -95,6 +98,7 @@ ReentrancyGuardUpgradeable
         vaultManager = _vaultManager;
         baseAsset = _baseAsset;
         feeDistributor = _feeDistributor;
+        minDeposit = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -270,6 +274,8 @@ ReentrancyGuardUpgradeable
             baseAssetAmount = _convertPrice(_asset, baseAsset, (_assetAmount - slippage));
         }
 
+        require(baseAssetAmount >= minDeposit, "!MIN_DEPOSIT");
+
         // calculate shares before transferring new asset into vault
         uint256 shares = _sharesForValue(baseAssetAmount);
 
@@ -358,7 +364,8 @@ ReentrancyGuardUpgradeable
         uint256 _value
     ) internal view returns(uint256) {
         if (totalSupply() > 0) {
-            return (_value * totalSupply()) / _totalValue();
+            // use round up integer division so that deposits are not short changed
+            return ((_value * totalSupply()) - 1) / _totalValue() + 1;
         } else {
             return _value;
         }
@@ -452,6 +459,12 @@ ReentrancyGuardUpgradeable
         address _feeDistributor
     ) external onlyOwner {
         feeDistributor = _feeDistributor;
+    }
+
+    function setMinDeposit(
+        uint256 _minDeposit
+    ) external onlyOwner {
+        minDeposit = _minDeposit;
     }
 
     function setManager(
