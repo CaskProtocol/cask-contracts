@@ -110,6 +110,12 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     const subscriptions = await ethers.getContract("CaskSubscriptions");
     const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
 
+    await withConfirmation(
+        vault.connect(sDeployer).setMinDeposit(usdcUnits('0.01'))
+    );
+    log("set minDeposit to 0.01 USDC");
+
+
     // add supported assets to vault
 
     await withConfirmation(
