@@ -1,5 +1,5 @@
 const {
-    daiUnits,
+    usdcUnits,
     month,
     day
 } = require("../utils/units");
@@ -24,11 +24,11 @@ async function fixtures(taskArguments, hre) {
 
     // fund consumers and deposit to vault
 
-    const dai = await ethers.getContract("MockDAI");
-    await dai.connect(deployer).mint(consumerA.address, daiUnits('10000.0'));
-    await dai.connect(consumerA).approve(caskVault.address, daiUnits('10000.0'));
+    const usdc = await ethers.getContract("MockUSDC");
+    await usdc.connect(deployer).mint(consumerA.address, usdcUnits('10000.0'));
+    await usdc.connect(consumerA).approve(caskVault.address, usdcUnits('10000.0'));
 
-    await caskVault.connect(consumerA).deposit(dai.address, daiUnits('25'));
+    await caskVault.connect(consumerA).deposit(usdc.address, usdcUnits('25'));
 
 
 
@@ -37,10 +37,10 @@ async function fixtures(taskArguments, hre) {
     const plans = [];
     const discounts = [];
 
-    plans.push(_createProviderPlan(100, daiUnits('10'), month,
+    plans.push(_createProviderPlan(100, usdcUnits('10'), month,
         7 * day, 0, 0, 7, true, true));
 
-    plans.push(_createProviderPlan(101, daiUnits('20'), day,
+    plans.push(_createProviderPlan(101, usdcUnits('20'), day,
         0, 0, 0, 7, true, true));
 
     discounts.push(_createProviderDiscount('CODE10', 1000, 0,

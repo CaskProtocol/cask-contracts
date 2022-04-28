@@ -39,4 +39,26 @@ describe("CaskVault", function () {
 
     });
 
+    it("Min deposit enforced", async function() {
+
+        const {
+            networkAddresses,
+            vault,
+            consumerA,
+            governor,
+        } = await fundedFixture();
+
+        await vault.connect(consumerA).deposit(networkAddresses.USDC, usdcUnits('0.005'));
+
+        await vault.connect(governor).setMinDeposit(usdcUnits('0.01'));
+
+        await expect(vault.connect(consumerA).deposit(networkAddresses.USDC, usdcUnits('0.005')))
+            .to.be.revertedWith("!MIN_DEPOSIT");
+
+        await vault.connect(consumerA).deposit(networkAddresses.USDC, usdcUnits('0.01'));
+
+        await vault.connect(consumerA).deposit(networkAddresses.USDC, usdcUnits('10.01'));
+
+    });
+
 });
