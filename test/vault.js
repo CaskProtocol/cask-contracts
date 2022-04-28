@@ -48,6 +48,8 @@ describe("CaskVault", function () {
             governor,
         } = await fundedFixture();
 
+        await vault.connect(governor).setMinDeposit(usdcUnits('0'));
+
         await vault.connect(consumerA).deposit(networkAddresses.USDC, usdcUnits('0.005'));
 
         await vault.connect(governor).setMinDeposit(usdcUnits('0.01'));
