@@ -37,7 +37,7 @@ interface ICaskSubscriptionPlans {
 
     function enablePlan(uint32 _planId) external;
 
-    function killPlan(uint32 _planId, uint32 _eolAt) external;
+    function retirePlan(uint32 _planId, uint32 _retireAt) external;
 
     function verifyPlan(bytes32 _planData, bytes32 _merkleRoot,
         bytes32[] calldata _merkleProof) external view returns(bool);
@@ -62,6 +62,6 @@ interface ICaskSubscriptionPlans {
     event PlanEnabled(address indexed provider, uint32 indexed planId);
 
     /** @dev Emitted when `provider` end-of-lifes a subscription plan */
-    event PlanEOL(address indexed provider, uint32 indexed planId, uint32 eolAt);
+    event PlanRetired(address indexed provider, uint32 indexed planId, uint32 retireAt);
 
 }

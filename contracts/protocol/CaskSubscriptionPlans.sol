@@ -182,14 +182,14 @@ PausableUpgradeable
         emit PlanEnabled(_msgSender(), _planId);
     }
 
-    function killPlan(
+    function retirePlan(
         uint32 _planId,
-        uint32 _eolAt
+        uint32 _retireAt
     ) external override {
         planStatus[_msgSender()][_planId] = PlanStatus.EndOfLife;
-        planEol[_msgSender()][_planId] = _eolAt;
+        planEol[_msgSender()][_planId] = _retireAt;
 
-        emit PlanEOL(_msgSender(), _planId, _eolAt);
+        emit PlanRetired(_msgSender(), _planId, _retireAt);
     }
 
     /************************** ADMIN FUNCTIONS **************************/
