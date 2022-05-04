@@ -110,6 +110,7 @@ PausableUpgradeable
 
             // on transfer, set subscription to cancel at next renewal until new owner accepts subscription
             subscription.cancelAt = subscription.renewAt;
+            consumerSubscriptions[_to].push(_subscriptionId);
         }
     }
 

@@ -28,8 +28,8 @@ KeeperCompatibleInterface
     /** @dev vault to use for payments. */
     ICaskVault public vault;
 
-    /** @dev fixed fee to charge on payments, in baseAsset decimal units. */
-    uint256 public paymentFeeFixed;
+    /** @dev minimum total fee to charge, if rate fees do not add up to this amount */
+    uint256 public paymentFeeMin;
 
     /** @dev min and max percentage to charge on payments, in bps. 50% = 5000. */
     uint256 public paymentFeeRateMin; // floor if full discount applied
@@ -64,7 +64,7 @@ KeeperCompatibleInterface
         vault = ICaskVault(_vault);
 
         // parameter defaults
-        paymentFeeFixed = 0;
+        paymentFeeMin = 0;
         paymentFeeRateMin = 0;
         paymentFeeRateMax = 0;
         stakeTargetFactor = 0;
@@ -180,14 +180,16 @@ KeeperCompatibleInterface
         uint256 _value,
         uint256 _protocolFeeBps
     ) internal {
+        uint256 protocolFee = _value * _protocolFeeBps / 10000;
+        if (protocolFee < paymentFeeMin) {
+            protocolFee = paymentFeeMin;
+        }
         if (_subscription.networkData > 0) {
             ICaskSubscriptions.NetworkInfo memory networkData = _parseNetworkData(_subscription.networkData);
-            vault.protocolPayment(_consumer, _paymentAddress, _value,
-                paymentFeeFixed + (_value * _protocolFeeBps / 10000),
+            vault.protocolPayment(_consumer, _paymentAddress, _value, protocolFee,
                 networkData.network, _value * networkData.feeBps / 10000);
         } else {
-            vault.protocolPayment(_consumer, _paymentAddress, _value,
-                paymentFeeFixed + (_value * _protocolFeeBps / 10000));
+            vault.protocolPayment(_consumer, _paymentAddress, _value, protocolFee);
         }
     }
 
@@ -404,13 +406,13 @@ KeeperCompatibleInterface
     }
 
     function setParameters(
-        uint256 _paymentFeeFixed,
+        uint256 _paymentFeeMin,
         uint256 _paymentFeeRateMin,
         uint256 _paymentFeeRateMax,
         uint256 _stakeTargetFactor,
         uint32 _processBucketSize
     ) external onlyOwner {
-        paymentFeeFixed = _paymentFeeFixed;
+        paymentFeeMin = _paymentFeeMin;
         paymentFeeRateMin = _paymentFeeRateMin;
         paymentFeeRateMax = _paymentFeeRateMax;
         stakeTargetFactor = _stakeTargetFactor;
