@@ -315,8 +315,11 @@ KeeperCompatibleInterface
 
         uint32 timestamp = uint32(block.timestamp);
 
-        // will be re-queued when resumed
-        if (subscription.status == ICaskSubscriptions.SubscriptionStatus.Paused) {
+        // paused subscriptions will be re-queued when resumed
+        if (subscription.status == ICaskSubscriptions.SubscriptionStatus.Paused ||
+            subscription.status == ICaskSubscriptions.SubscriptionStatus.Canceled ||
+            subscription.status == ICaskSubscriptions.SubscriptionStatus.None)
+        {
             return;
         }
 
