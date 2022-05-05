@@ -277,7 +277,11 @@ ReentrancyGuardUpgradeable
         require(baseAssetAmount >= minDeposit, "!MIN_DEPOSIT");
 
         // calculate shares before transferring new asset into vault
-        uint256 shares = _sharesForValue(baseAssetAmount);
+        uint256 shares = baseAssetAmount;
+        if (totalSupply() > 0) {
+            // use round up integer division so that deposits are not short changed
+            shares = ((baseAssetAmount * totalSupply()) - 1) / _totalValue() + 1;
+        }
 
         IERC20(_asset).safeTransferFrom(_msgSender(), address(this), _assetAmount);
 
@@ -364,8 +368,7 @@ ReentrancyGuardUpgradeable
         uint256 _value
     ) internal view returns(uint256) {
         if (totalSupply() > 0) {
-            // use round up integer division so that deposits are not short changed
-            return ((_value * totalSupply()) - 1) / _totalValue() + 1;
+            return (_value * totalSupply()) / _totalValue();
         } else {
             return _value;
         }
