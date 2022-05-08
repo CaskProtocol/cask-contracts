@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
@@ -111,41 +112,115 @@ PausableUpgradeable
     }
 
     function verifyDiscount(
+        address _consumer,
         address _provider,
         uint32 _planId,
-        bytes32 _discountId,
-        bytes32 _discountData,
-        bytes32 _merkleRoot,
-        bytes32[] calldata _merkleProof
-    ) public view override returns(bool) {
-        if (MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_discountId, _discountData)))) {
-            Discount memory discountInfo = _parseDiscountData(_discountData);
-            require(discountInfo.planId == 0 || discountInfo.planId == _planId, "!INVALID(planId)");
+        bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
+    ) public view override returns(bytes32) {
+        DiscountType discountType = _parseDiscountType(_discountProof[1]);
 
-            if ( (discountInfo.maxRedemptions == 0 ||
-            discountRedemptions[_provider][discountInfo.planId][_discountId] < discountInfo.maxRedemptions) &&
-            (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
-                (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp)) )
-            {
-                return true;
-            }
+        if (discountType == DiscountType.Code) {
+            return _verifyCodeDiscount(_consumer, _provider, _planId, _discountProof);
+        } else if (discountType == DiscountType.ERC20) {
+            return _verifyErc20Discount(_consumer, _provider, _planId, _discountProof);
+        } else {
+            return 0;
         }
-        return false;
     }
 
     function verifyAndConsumeDiscount(
+        address _consumer,
         address _provider,
         uint32 _planId,
+        bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
+    ) external override returns(bytes32) {
+        bytes32 discountId = verifyDiscount(_consumer, _provider, _planId, _discountProof);
+        if (discountId > 0) {
+            discountRedemptions[_provider][_planId][discountId] += 1;
+        }
+        return discountId;
+    }
+
+    function _verifyCodeDiscount(
+        address _consumer,
+        address _provider,
+        uint32 _planId,
+        bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
+    ) internal view returns(bytes32) {
+        if (_discountProof.length < 4 || _discountProof[0] == 0) {
+            return 0;
+        }
+
+        bytes32 discountId = keccak256(abi.encode(_discountProof[0]));
+
+        if (_verifyDiscountProof(discountId, _discountProof[1], _discountProof[2], _discountProof[3:]) &&
+            _verifyDiscountData(discountId, _provider, _planId, _discountProof[1]))
+        {
+            return discountId;
+        }
+        return 0;
+    }
+
+    function _verifyErc20Discount(
+        address _consumer,
+        address _provider,
+        uint32 _planId,
+        bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
+    ) internal view returns(bytes32) {
+        if (_discountProof.length < 4 || _discountProof[0] == 0) {
+            return 0;
+        }
+
+        bytes32 discountId = _discountProof[0];
+
+        if (_verifyDiscountProof(discountId, _discountProof[1], _discountProof[2], _discountProof[3:]) &&
+            erc20DiscountCurrentlyApplies(_consumer, discountId) &&
+            _verifyDiscountData(discountId, _provider, _planId, _discountProof[1]))
+        {
+            return discountId;
+        }
+        return 0;
+    }
+
+    function _verifyDiscountProof(
         bytes32 _discountId,
         bytes32 _discountData,
         bytes32 _merkleRoot,
         bytes32[] calldata _merkleProof
-    ) external override returns(bool) {
-        if (verifyDiscount(_provider, _planId, _discountId, _discountData, _merkleRoot, _merkleProof)) {
-            discountRedemptions[_provider][_planId][_discountId] += 1;
-            return true;
+    ) internal view returns(bool) {
+        return MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_discountId, _discountData)));
+    }
+
+    function _verifyDiscountData(
+        bytes32 _discountId,
+        address _provider,
+        uint32 _planId,
+        bytes32 _discountData
+    ) internal view returns(bool) {
+        Discount memory discountInfo = _parseDiscountData(_discountData);
+
+        return
+            (discountInfo.planId == 0 || discountInfo.planId == _planId) &&
+            (discountInfo.maxRedemptions == 0 ||
+                discountRedemptions[_provider][discountInfo.planId][_discountId] < discountInfo.maxRedemptions) &&
+            (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
+            (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp));
+    }
+
+    function erc20DiscountCurrentlyApplies(
+        address _consumer,
+        bytes32 _discountValidator
+    ) public view override returns(bool) {
+        address token = address(bytes20(_discountValidator));
+        uint8 decimals = uint8(bytes1(_discountValidator << 160)); // TODO: scale for decimals
+
+        uint256 consumerBalance = IERC20(token).balanceOf(_consumer);
+        if (decimals > 1) {
+            consumerBalance = consumerBalance / uint256(10 ** decimals);
         }
-        return false;
+        uint64 minBalance = uint64(bytes8(_discountValidator << 192));
+
+         return consumerBalance >= minBalance;
     }
 
     function getPlanStatus(
@@ -214,11 +289,16 @@ PausableUpgradeable
         _setTrustedForwarder(_forwarder);
     }
 
+    function _parseDiscountType(
+        bytes32 _discountData
+    ) internal pure returns(DiscountType) {
+        return DiscountType(uint8(bytes1(_discountData << 248)));
+    }
 
     function _parseDiscountData(
         bytes32 _discountData
     ) internal pure returns(Discount memory) {
-        bytes2 options = bytes2(_discountData << 240);
+        bytes1 options = bytes1(_discountData << 240);
         return Discount({
             value: uint256(_discountData >> 160),
             validAfter: uint32(bytes4(_discountData << 96)),
@@ -226,7 +306,8 @@ PausableUpgradeable
             maxRedemptions: uint32(bytes4(_discountData << 160)),
             planId: uint32(bytes4(_discountData << 192)),
             applyPeriods: uint16(bytes2(_discountData << 224)),
-            isFixed: options & 0x0001 == 0x0001
+            discountType: DiscountType(uint8(bytes1(_discountData << 248))),
+            isFixed: options & 0x01 == 0x01
         });
     }
 

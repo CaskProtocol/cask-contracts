@@ -50,11 +50,11 @@ describe("CaskSubscriptions Discount", function () {
         const plansProof = CaskSDK.utils.generatePlanProof(plan.provider, ref, plan.planData, plansRoot,
             CaskSDK.utils.plansMerkleProof(plans, plan));
 
-        const discountCodeProof = CaskSDK.utils.generateDiscountCodeProof("discount1");
-        const discount = CaskSDK.utils.lookupDiscount(discountCodeProof, discounts);
+        const discountCodeValidator = CaskSDK.utils.generateDiscountCodeValidator("discount1");
+        const discount = CaskSDK.utils.lookupCodeDiscount(discountCodeValidator, discounts);
         let discountProof = [];
         if (discount) {
-            discountProof = CaskSDK.utils.generateDiscountProof(discountCodeProof, discount.discountData, discountsRoot,
+            discountProof = CaskSDK.utils.generateDiscountProof(discountCodeValidator, discount.discountData, discountsRoot,
                 CaskSDK.utils.discountsMerkleProof(discounts, discount));
         } else {
             discountProof = CaskSDK.utils.generateDiscountProof(0, 0, discountsRoot)

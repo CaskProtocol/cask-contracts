@@ -111,7 +111,7 @@ KeeperCompatibleInterface
     function _parseDiscountData(
         bytes32 _discountData
     ) internal pure returns(ICaskSubscriptionPlans.Discount memory) {
-        bytes2 options = bytes2(_discountData << 240);
+        bytes1 options = bytes1(_discountData << 240);
         return ICaskSubscriptionPlans.Discount({
             value: uint256(_discountData >> 160),
             validAfter: uint32(bytes4(_discountData << 96)),
@@ -119,7 +119,8 @@ KeeperCompatibleInterface
             maxRedemptions: uint32(bytes4(_discountData << 160)),
             planId: uint32(bytes4(_discountData << 192)),
             applyPeriods: uint16(bytes2(_discountData << 224)),
-            isFixed: options & 0x0001 == 0x0001
+            discountType: ICaskSubscriptionPlans.DiscountType(uint8(bytes1(_discountData << 248))),
+            isFixed: options & 0x01 == 0x01
         });
     }
 
@@ -352,16 +353,18 @@ KeeperCompatibleInterface
         if (subscription.discountId > 0) {
             ICaskSubscriptionPlans.Discount memory discountInfo = _parseDiscountData(subscription.discountData);
 
-            if(discountInfo.applyPeriods == 0 || subscription.createdAt +
-                (planInfo.period * discountInfo.applyPeriods) < timestamp)
-            {
-                if (discountInfo.isFixed) {
-                    chargePrice = chargePrice - discountInfo.value;
+            if (_discountCurrentlyApplies(consumer, subscription.discountId, discountInfo)) {
+                if(discountInfo.applyPeriods == 0 ||
+                    subscription.createdAt + (planInfo.period * discountInfo.applyPeriods) < timestamp)
+                {
+                    if (discountInfo.isFixed) {
+                        chargePrice = chargePrice - discountInfo.value;
+                    } else {
+                        chargePrice = chargePrice - (chargePrice * discountInfo.value / 10000);
+                    }
                 } else {
-                    chargePrice = chargePrice - (chargePrice * discountInfo.value / 10000);
+                    subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
                 }
-            } else {
-                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
             }
         }
 
@@ -396,6 +399,18 @@ KeeperCompatibleInterface
 
     }
 
+    function _discountCurrentlyApplies(
+        address _consumer,
+        bytes32 _discountId,
+        ICaskSubscriptionPlans.Discount memory _discountInfo
+    ) internal returns(bool) {
+        if (_discountInfo.discountType == ICaskSubscriptionPlans.DiscountType.Code) {
+            return true;
+        } else if (_discountInfo.discountType == ICaskSubscriptionPlans.DiscountType.ERC20) {
+            return subscriptionPlans.erc20DiscountCurrentlyApplies(_consumer, _discountId);
+        }
+        return false;
+    }
 
 
     /************************** ADMIN FUNCTIONS **************************/
