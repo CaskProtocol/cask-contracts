@@ -220,7 +220,7 @@ PausableUpgradeable
         }
         uint64 minBalance = uint64(bytes8(_discountValidator << 192));
 
-         return consumerBalance >= minBalance;
+        return consumerBalance >= minBalance;
     }
 
     function getPlanStatus(
