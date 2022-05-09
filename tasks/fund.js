@@ -5,7 +5,6 @@ const {
     ustUnits,
     fraxUnits,
 } = require("../utils/units");
-const {fr} = require("yarn/lib/cli");
 
 async function fund(taskArguments, hre) {
 
