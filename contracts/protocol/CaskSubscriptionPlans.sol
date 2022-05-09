@@ -212,7 +212,7 @@ PausableUpgradeable
         bytes32 _discountValidator
     ) public view override returns(bool) {
         address token = address(bytes20(_discountValidator));
-        uint8 decimals = uint8(bytes1(_discountValidator << 160)); // TODO: scale for decimals
+        uint8 decimals = uint8(bytes1(_discountValidator << 160));
 
         uint256 consumerBalance = IERC20(token).balanceOf(_consumer);
         if (decimals > 1) {
