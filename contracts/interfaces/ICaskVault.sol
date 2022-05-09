@@ -19,6 +19,18 @@ interface ICaskVault is IERC20MetadataUpgradeable {
         bool allowed;
     }
 
+    enum FundingSource {
+        None,
+        Cask,
+        Personal
+    }
+
+    struct FundingProfile {
+        FundingSource primarySource;
+        FundingSource backupSource;
+        address primaryToken;
+        address backupToken;
+    }
 
     /**
       * @dev Get base asset of vault.
@@ -139,6 +151,12 @@ interface ICaskVault is IERC20MetadataUpgradeable {
      * @param _shares Amount of shares to withdraw
      */
     function withdrawTo(address _recipient, address _asset, uint256 _shares) external;
+
+
+    function fundingSource(address _consumer) external view returns(FundingProfile memory);
+
+    function valueAvailable(address _consumer, uint256 _value) external view returns(bool);
+
 
     /**
      * @dev Get total shares of vault

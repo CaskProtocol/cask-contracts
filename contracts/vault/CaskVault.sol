@@ -68,10 +68,14 @@ ReentrancyGuardUpgradeable
     mapping(address => Asset) internal assets;
     address[] internal allAssets;
 
+    // list of approved protocols that can perform payments
     address[] public protocols;
 
     // require deposit of at least this amount denominated in the baseAsset
     uint256 public minDeposit;
+
+    // consumer funding profile
+    mapping(address => FundingProfile) internal fundingProfiles;
 
     function initialize(
         address _vaultManager,
@@ -207,9 +211,9 @@ ReentrancyGuardUpgradeable
         address _recipient,
         uint256 _value
     ) external override nonReentrant returns (bool) {
-        uint256 amount = _sharesForValue(_value);
-        _transfer(_msgSender(), _recipient, amount);
-        emit TransferValue(_msgSender(), _recipient, _value, amount);
+        uint256 shares = _sharesForValue(_value);
+        _transfer(_msgSender(), _recipient, shares);
+        emit TransferValue(_msgSender(), _recipient, _value, shares);
         return true;
     }
 
@@ -218,15 +222,15 @@ ReentrancyGuardUpgradeable
         address _recipient,
         uint256 _value
     ) external override nonReentrant returns (bool) {
-        uint256 amount = _sharesForValue(_value);
-        _transfer(_sender, _recipient, amount);
+        uint256 shares = _sharesForValue(_value);
+        _transfer(_sender, _recipient, shares);
 
         uint256 currentAllowance = allowance(_sender, _msgSender());
-        require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
+        require(currentAllowance >= shares, "ERC20: transfer amount exceeds allowance");
         unchecked {
-            _approve(_sender, _msgSender(), currentAllowance - amount);
+            _approve(_sender, _msgSender(), currentAllowance - shares);
         }
-        emit TransferValue(_sender, _recipient, _value, amount);
+        emit TransferValue(_sender, _recipient, _value, shares);
         return true;
     }
 
@@ -482,6 +486,59 @@ ReentrancyGuardUpgradeable
         _setTrustedForwarder(_forwarder);
     }
 
+    /************************** FUNDING SOURCE FUNCTIONS **************************/
+
+    function fundingSource(
+        address _address
+    ) external view override returns(FundingProfile memory) {
+        return fundingProfiles[_address];
+    }
+
+    function valueAvailable(
+        address _address,
+        uint256 _value
+    ) external view override returns(bool) {
+        bool enough = false;
+        FundingProfile memory fundingProfile = fundingProfiles[_address];
+        if (fundingProfile.primarySource == FundingSource.Cask) {
+            enough = _valueAvailableFromCask(_address, _value);
+        } else if (fundingProfile.primarySource == FundingSource.Personal) {
+            enough = _valueAvailableFromToken(_address, fundingProfile.primaryToken, _value);
+        }
+        if (!enough) {
+            if (fundingProfile.backupSource == FundingSource.Cask) {
+                enough = _valueAvailableFromCask(_address, _value);
+            } else if (fundingProfile.backupSource == FundingSource.Personal) {
+                enough = _valueAvailableFromToken(_address, fundingProfile.backupToken, _value);
+            }
+        }
+        return enough;
+    }
+
+    function _valueAvailableFromCask(
+        address _address,
+        uint256 _value
+    ) internal view returns(bool) {
+        return _shareValue(balanceOf(_address)) >= _value;
+    }
+
+    function _valueAvailableFromToken(
+        address _address,
+        address _token,
+        uint256 _value
+    ) internal view returns(bool) {
+        Asset memory sourceAsset = assets[_token];
+        require(sourceAsset.allowed, "!ASSET_NOT_ALLOWED");
+
+        uint256 baseAssetValue = _convertPrice(_token, baseAsset, IERC20(_token).balanceOf(_address));
+        uint256 tokenAmount = _convertPrice(baseAsset, _token, _value);
+
+        bool enough = baseAssetValue >= _value;
+        if (enough) {
+            enough = IERC20(_token).allowance(_address, address(this)) >= tokenAmount;
+        }
+        return enough;
+    }
 
     /************************** ASSET FUNCTIONS **************************/
 

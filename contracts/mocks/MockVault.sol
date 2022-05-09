@@ -106,5 +106,22 @@ contract MockVault is ICaskVault, ERC20Upgradeable {
 
     }
 
+    function fundingSource(
+        address _address
+    ) external view override returns(FundingProfile memory) {
+        return FundingProfile({
+            primarySource: FundingSource.None,
+            backupSource: FundingSource.None,
+            primaryToken: address(0),
+            backupToken: address(0)
+        });
+    }
+
+    function valueAvailable(
+        address _address,
+        uint256 _value
+    ) external view override returns(bool) {
+        return false;
+    }
 
 }
