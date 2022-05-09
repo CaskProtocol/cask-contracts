@@ -9,6 +9,12 @@ interface ICaskSubscriptionPlans {
         EndOfLife
     }
 
+    enum DiscountType {
+        None,
+        Code,
+        ERC20
+    }
+
     struct Discount {
         uint256 value;
         uint32 validAfter;
@@ -16,6 +22,7 @@ interface ICaskSubscriptionPlans {
         uint32 maxRedemptions;
         uint32 planId;
         uint16 applyPeriods;
+        DiscountType discountType;
         bool isFixed;
     }
 
@@ -45,11 +52,13 @@ interface ICaskSubscriptionPlans {
     function getDiscountRedemptions(address _provider, uint32 _planId,
         bytes32 _discountId) external view returns(uint256);
 
-    function verifyDiscount(address _provider, uint32 _planId, bytes32 _discountId, bytes32 _discountData,
-        bytes32 _merkleRoot, bytes32[] calldata _merkleProof) external view returns(bool);
+    function verifyAndConsumeDiscount(address _consumer, address _provider, uint32 _planId,
+        bytes32[] calldata _discountProof) external returns(bytes32);
 
-    function verifyAndConsumeDiscount(address _provider, uint32 _planId, bytes32 _discountId, bytes32 _discountData,
-        bytes32 _merkleRoot, bytes32[] calldata _merkleProof) external returns(bool);
+    function verifyDiscount(address _consumer, address _provider, uint32 _planId,
+        bytes32[] calldata _discountProof) external returns(bytes32);
+
+    function erc20DiscountCurrentlyApplies(address _consumer, bytes32 _discountValidator) external returns(bool);
 
 
     /** @dev Emitted when `provider` sets their profile info */

@@ -459,7 +459,7 @@ PausableUpgradeable
         (
         subscription.discountId,
         subscription.discountData
-        ) = _verifyDiscountProof(subscription.provider, planInfo.planId, _discountProof);
+        ) = _verifyDiscountProof(ownerOf(subscriptionId), subscription.provider, planInfo.planId, _discountProof);
 
         subscriptionManager.renewSubscription(subscriptionId); // registers subscription with manager
 
@@ -516,7 +516,7 @@ PausableUpgradeable
             (
             subscription.discountId,
             subscription.discountData
-            ) = _verifyDiscountProof(subscription.provider, newPlanInfo.planId, _discountProof);
+            ) = _verifyDiscountProof(ownerOf(_subscriptionId), subscription.provider, newPlanInfo.planId, _discountProof);
         }
 
         if (subscription.planId != newPlanInfo.planId) {
@@ -567,14 +567,14 @@ PausableUpgradeable
     }
 
     function _verifyDiscountProof(
+        address _consumer,
         address _provider,
         uint32 _planId,
-        bytes32[] calldata _discountProof // [discountCodeProof, discountData, merkleRoot, merkleProof...]
+        bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
     ) internal returns(bytes32, bytes32) {
-        if (_discountProof.length > 3 && _discountProof[0] > 0) {
-            bytes32 discountId = keccak256(abi.encode(_discountProof[0]));
-            if (subscriptionPlans.verifyAndConsumeDiscount(_provider, _planId, discountId,
-                _discountProof[1], _discountProof[2], _discountProof[3:]))
+        if (_discountProof[0] > 0) {
+            bytes32 discountId = subscriptionPlans.verifyAndConsumeDiscount(_consumer, _provider, _planId, _discountProof);
+            if (discountId > 0)
             {
                 return (discountId, _discountProof[1]);
             }

@@ -172,6 +172,7 @@ async function onePlanWithDiscountsFixture() {
             0, // maxRedemptions
             501, // planId
             0, // applyPeriods
+            1, // discountType (1=code)
             false) // isFixed
     });
 
@@ -184,6 +185,7 @@ async function onePlanWithDiscountsFixture() {
             0, // maxRedemptions
             501, // planId
             0, // applyPeriods
+            1, // discountType (1=code)
             false) // isFixed
     });
 
