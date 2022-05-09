@@ -72,7 +72,6 @@ async function _debug_dao(taskArguments, hre) {
 
 async function _debug_protocol(taskArguments, hre) {
 
-    const vaultManager = await hre.ethers.getContract("CaskVaultManager");
     const vault = await hre.ethers.getContract("CaskVault");
     const subscriptionPlans = await hre.ethers.getContract("CaskSubscriptionPlans");
     const subscriptions = await hre.ethers.getContract("CaskSubscriptions");
@@ -84,12 +83,6 @@ async function _debug_protocol(taskArguments, hre) {
     //
     console.log("\nProtocol Contract addresses");
     console.log("====================");
-
-    console.log(`CaskVaultManager:                               ${vaultManager.address}`);
-    console.log(`CaskVaultManager Proxy Admin:                   ${await hre.upgrades.erc1967.getAdminAddress(vaultManager.address)}`);
-    console.log(`CaskVaultManager Impl:                          ${await hre.upgrades.erc1967.getImplementationAddress(vaultManager.address)}`);
-    console.log(`CaskVaultManager Owner:                         ${await vaultManager.owner()}`);
-
     console.log(`CaskVault:                                      ${vault.address}`);
     console.log(`CaskVault Proxy Admin:                          ${await hre.upgrades.erc1967.getAdminAddress(vault.address)}`);
     console.log(`CaskVault Impl:                                 ${await hre.upgrades.erc1967.getImplementationAddress(vault.address)}`);
@@ -112,17 +105,9 @@ async function _debug_protocol(taskArguments, hre) {
     //
     // Vault Config
     //
-    const strategyAllocationRate = await vaultManager.strategyAllocationRate();
-    const yieldFeeBps = await vaultManager.yieldFeeBps();
-    const strategist = await vaultManager.strategist();
 
     console.log("\nVault Configuration");
     console.log("====================");
-    console.log(`CaskVaultManager strategyAllocationRate:        ${strategyAllocationRate}`);
-    console.log(`CaskVaultManager yieldFeeBps:                   ${yieldFeeBps}`);
-    console.log(`CaskVaultManager strategist:                    ${strategist}`);
-    console.log(`CaskVaultManager vault:                         ${await vaultManager.vault()}`);
-    console.log(`CaskVault vaultManager:                         ${await vault.vaultManager()}`);
     console.log(`CaskVault baseAsset:                            ${await vault.getBaseAsset()}`);
     const protocolCount = await vault.protocolCount();
     console.log(`CaskVault protocolCount:                        ${protocolCount}`);

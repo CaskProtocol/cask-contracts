@@ -15,20 +15,6 @@ import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
 
 import "../interfaces/ICaskVault.sol";
-import "../interfaces/ICaskVaultManager.sol";
-import "../interfaces/ICaskStrategy.sol";
-
-/**
-CaskVault is where:
-
-- the approved asset list lives
-- users deposit/withdraw approved assets which results in a mint/burn of the vault token
-- a minimum reserve rate is enforced
-- vault manager can tell the vault to send unallocated assets to strategies
-- approved protocols can process a payment between parties
-- one can query the value of all unallocated assets
-
-*/
 
 contract CaskVault is
 ICaskVault,
@@ -55,8 +41,7 @@ ReentrancyGuardUpgradeable
 
     /************************** STATE **************************/
 
-    // address of ICaskVaultManager that manages the vault
-    address public vaultManager;
+    address public reserved1;
 
     // base asset for vault - much is denominated in this
     address public baseAsset;
@@ -74,7 +59,6 @@ ReentrancyGuardUpgradeable
     uint256 public minDeposit;
 
     function initialize(
-        address _vaultManager,
         address _baseAsset,
         address _baseAssetPriceFeed,
         address _feeDistributor
@@ -95,7 +79,6 @@ ReentrancyGuardUpgradeable
         asset.allowed = true;
         allAssets.push(_baseAsset);
 
-        vaultManager = _vaultManager;
         baseAsset = _baseAsset;
         feeDistributor = _feeDistributor;
         minDeposit = 0;
@@ -136,7 +119,7 @@ ReentrancyGuardUpgradeable
         uint256 _protocolFee,
         address _network,
         uint256 _networkFee
-    ) external override nonReentrant onlyProtocol {
+    ) external override nonReentrant onlyProtocol whenNotPaused {
         _protocolPayment(_from, _to, _value, _protocolFee, _network, _networkFee);
     }
 
@@ -152,7 +135,7 @@ ReentrancyGuardUpgradeable
         address _to,
         uint256 _value,
         uint256 _protocolFee
-    ) external override nonReentrant onlyProtocol {
+    ) external override nonReentrant onlyProtocol whenNotPaused {
         _protocolPayment(_from, _to, _value, _protocolFee, address(0), 0);
     }
 
@@ -166,7 +149,7 @@ ReentrancyGuardUpgradeable
         address _from,
         address _to,
         uint256 _value
-    ) external override nonReentrant onlyProtocol {
+    ) external override nonReentrant onlyProtocol whenNotPaused {
         _protocolPayment(_from, _to, _value, 0, address(0), 0);
     }
 
@@ -206,7 +189,7 @@ ReentrancyGuardUpgradeable
     function transferValue(
         address _recipient,
         uint256 _value
-    ) external override nonReentrant returns (bool) {
+    ) external override nonReentrant whenNotPaused returns (bool) {
         uint256 amount = _sharesForValue(_value);
         _transfer(_msgSender(), _recipient, amount);
         emit TransferValue(_msgSender(), _recipient, _value, amount);
@@ -217,7 +200,7 @@ ReentrancyGuardUpgradeable
         address _sender,
         address _recipient,
         uint256 _value
-    ) external override nonReentrant returns (bool) {
+    ) external override nonReentrant whenNotPaused returns (bool) {
         uint256 amount = _sharesForValue(_value);
         _transfer(_sender, _recipient, amount);
 
@@ -238,7 +221,7 @@ ReentrancyGuardUpgradeable
     function deposit(
         address _asset,
         uint256 _assetAmount
-    ) external override nonReentrant {
+    ) external override nonReentrant whenNotPaused {
         _depositTo(_msgSender(), _asset, _assetAmount);
     }
 
@@ -252,7 +235,7 @@ ReentrancyGuardUpgradeable
         address _to,
         address _asset,
         uint256 _assetAmount
-    ) external override nonReentrant {
+    ) external override nonReentrant whenNotPaused {
         _depositTo(_to, _asset, _assetAmount);
     }
 
@@ -298,7 +281,7 @@ ReentrancyGuardUpgradeable
     function withdraw(
         address _asset,
         uint256 _shares
-    ) external override nonReentrant {
+    ) external override nonReentrant whenNotPaused {
         _withdrawTo(_msgSender(), _asset, _shares);
     }
 
@@ -312,7 +295,7 @@ ReentrancyGuardUpgradeable
         address _recipient,
         address _asset,
         uint256 _shares
-    ) external override nonReentrant {
+    ) external override nonReentrant whenNotPaused {
         _withdrawTo(_recipient, _asset, _shares);
     }
 
@@ -408,17 +391,7 @@ ReentrancyGuardUpgradeable
     function _totalAssetBalance(
         address _asset
     ) internal view returns(uint256) {
-        return IERC20(_asset).balanceOf(address(this)) + ICaskVaultManager(vaultManager).assetBalanceManaged(_asset);
-    }
-
-    function allocateToStrategy(
-        address _strategy,
-        address _asset,
-        uint256 _assetAmount
-    ) external override onlyProtocol {
-        require(assets[_asset].allowed, "!NOT_ALLOWED(asset)");
-        IERC20(_asset).safeTransfer(_strategy, _assetAmount);
-        emit AllocatedToStrategy(_strategy, _asset, _assetAmount);
+        return IERC20(_asset).balanceOf(address(this));
     }
 
 
@@ -468,12 +441,6 @@ ReentrancyGuardUpgradeable
         uint256 _minDeposit
     ) external onlyOwner {
         minDeposit = _minDeposit;
-    }
-
-    function setManager(
-        address _vaultManager
-    ) external onlyOwner {
-        vaultManager = _vaultManager;
     }
 
     function setTrustedForwarder(

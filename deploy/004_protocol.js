@@ -30,28 +30,16 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
     const networkAddresses = await getNetworkAddresses(deployments);
     log(`Deploying protocol contracts using network addresses: ${JSON.stringify(networkAddresses, null, 2)}`);
 
-    await deployProxyWithConfirmation('CaskVaultManager');
     await deployProxyWithConfirmation('CaskVault');
     await deployProxyWithConfirmation('CaskSubscriptionPlans');
     await deployProxyWithConfirmation('CaskSubscriptions');
     await deployProxyWithConfirmation('CaskSubscriptionManager');
 
-    const vaultManager = await ethers.getContract("CaskVaultManager");
-    await withConfirmation(
-        vaultManager.initialize(0, 0)
-    );
-    log("Initialized CaskVaultManager");
-
     const vault = await ethers.getContract("CaskVault");
     await withConfirmation(
-        vault.initialize(vaultManager.address, networkAddresses.USDC, networkAddresses.USDC_USD, governorAddr)
+        vault.initialize(networkAddresses.USDC, networkAddresses.USDC_USD, governorAddr)
     );
     log("Initialized CaskVault");
-
-    await withConfirmation(
-        vaultManager.connect(sDeployer).setVault(vault.address)
-    );
-    log("Connected CaskVault to CaskVaultManager");
 
     const subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
     await withConfirmation(
@@ -109,7 +97,6 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     const {deployerAddr, governorAddr} = await getNamedAccounts();
     const sDeployer = await ethers.provider.getSigner(deployerAddr);
 
-    const vaultManager = await ethers.getContract("CaskVaultManager");
     const vault = await ethers.getContract("CaskVault");
     const subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
     const subscriptions = await ethers.getContract("CaskSubscriptions");
@@ -160,9 +147,6 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     log("Allowed FRAX in vault");
 
 
-    await withConfirmation(
-        vaultManager.transferOwnership(governorAddr)
-    );
     await withConfirmation(
         vault.transferOwnership(governorAddr)
     );

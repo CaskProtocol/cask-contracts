@@ -18,7 +18,6 @@ const {
 
 const deployProtocolUpgrade = async () => {
 
-    await upgradeProxyWithConfirmation('CaskVaultManager');
     await upgradeProxyWithConfirmation('CaskVault');
     await upgradeProxyWithConfirmation('CaskSubscriptionPlans');
     await upgradeProxyWithConfirmation('CaskSubscriptions');

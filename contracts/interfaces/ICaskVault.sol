@@ -179,14 +179,6 @@ interface ICaskVault is IERC20MetadataUpgradeable {
      */
     function totalAssetBalance(address _asset) external view returns(uint256);
 
-    /**
-     * @dev Send an amount of asset to a strategy
-     * @param _strategy Address of strategy
-     * @param _asset Address of asset
-     * @param _assetAmount Amount of asset to send
-     */
-    function allocateToStrategy(address _strategy, address _asset, uint256 _assetAmount) external;
-
 
     /************************** EVENTS **************************/
 
@@ -211,8 +203,5 @@ interface ICaskVault is IERC20MetadataUpgradeable {
     /** @dev Emitted when `participant` withdraws `asset` */
     event AssetWithdrawn(address indexed participant, address indexed asset, uint256 assetAmount,
         uint256 baseAssetAmount, uint256 shares);
-
-    /** @dev Emitted when `asset` is allocated to strategy `strategy` */
-    event AllocatedToStrategy(address indexed strategy, address indexed asset, uint256 assetAmount);
 
 }
