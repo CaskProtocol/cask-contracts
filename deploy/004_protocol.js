@@ -65,6 +65,11 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
     );
     log("Initialized CaskSubscriptions");
 
+    await withConfirmation(
+        subscriptionPlans.setSubscriptions(subscriptions.address)
+    );
+    log("Set CaskSubscriptions address in CaskSubscriptionPlans");
+
     const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
     await withConfirmation(
         subscriptionManager.initialize(vault.address, subscriptionPlans.address, subscriptions.address)

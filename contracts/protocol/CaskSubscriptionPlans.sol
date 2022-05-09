@@ -132,7 +132,7 @@ PausableUpgradeable
         DiscountType discountType = _parseDiscountType(_discountProof[1]);
 
         if (discountType == DiscountType.Code) {
-            return _verifyCodeDiscount(_consumer, _provider, _planId, _discountProof);
+            return _verifyCodeDiscount(_provider, _planId, _discountProof);
         } else if (discountType == DiscountType.ERC20) {
             return _verifyErc20Discount(_consumer, _provider, _planId, _discountProof);
         } else {
@@ -154,7 +154,6 @@ PausableUpgradeable
     }
 
     function _verifyCodeDiscount(
-        address _consumer,
         address _provider,
         uint32 _planId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
@@ -197,7 +196,7 @@ PausableUpgradeable
     function _verifyDiscountProof(
         bytes32 _discountId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
-    ) internal view returns(bool) {
+    ) internal pure returns(bool) {
         if (_discountProof.length < 3 || _discountProof[0] == 0) {
             return false;
         }
