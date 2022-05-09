@@ -14,7 +14,6 @@ const {
 async function protocolFixture() {
     const fixture = await fundedFixture();
 
-    fixture.vaultManager = await ethers.getContract("CaskVaultManager");
     fixture.vault = await ethers.getContract("CaskVault");
     fixture.subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
     fixture.subscriptions = await ethers.getContract("CaskSubscriptions");

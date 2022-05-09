@@ -76,6 +76,9 @@ task("keeper", "Run a keeper")
     .setAction(keeper);
 
 module.exports = {
+  mocha: {
+    timeout: 600000
+  },
   solidity: {
     version: "0.8.9",
     settings: {
