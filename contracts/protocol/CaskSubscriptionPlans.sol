@@ -35,9 +35,16 @@ PausableUpgradeable
     ICaskPrivateBeta public privateBeta;
     bool public privateBetaOnly;
 
+    /** @dev Address of subscriptions contract. */
+    address public subscriptions;
 
     modifier onlyManager() {
         require(_msgSender() == subscriptionManager, "!AUTH");
+        _;
+    }
+
+    modifier onlySubscriptions() {
+        require(_msgSender() == subscriptions, "!AUTH");
         _;
     }
 
@@ -46,6 +53,7 @@ PausableUpgradeable
         __Pausable_init();
 
         privateBetaOnly = false;
+        subscriptions = address(0);
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -117,6 +125,10 @@ PausableUpgradeable
         uint32 _planId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
     ) public view override returns(bytes32) {
+        if (_discountProof.length < 3 || _discountProof[0] == 0) {
+            return 0;
+        }
+
         DiscountType discountType = _parseDiscountType(_discountProof[1]);
 
         if (discountType == DiscountType.Code) {
@@ -133,7 +145,7 @@ PausableUpgradeable
         address _provider,
         uint32 _planId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
-    ) external override returns(bytes32) {
+    ) external override onlySubscriptions returns(bytes32) {
         bytes32 discountId = verifyDiscount(_consumer, _provider, _planId, _discountProof);
         if (discountId > 0) {
             discountRedemptions[_provider][_planId][discountId] += 1;
@@ -147,13 +159,13 @@ PausableUpgradeable
         uint32 _planId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
     ) internal view returns(bytes32) {
-        if (_discountProof.length < 4 || _discountProof[0] == 0) {
+        if (_discountProof.length < 3 || _discountProof[0] == 0) {
             return 0;
         }
 
         bytes32 discountId = keccak256(abi.encode(_discountProof[0]));
 
-        if (_verifyDiscountProof(discountId, _discountProof[1], _discountProof[2], _discountProof[3:]) &&
+        if (_verifyDiscountProof(discountId, _discountProof) &&
             _verifyDiscountData(discountId, _provider, _planId, _discountProof[1]))
         {
             return discountId;
@@ -167,13 +179,13 @@ PausableUpgradeable
         uint32 _planId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
     ) internal view returns(bytes32) {
-        if (_discountProof.length < 4 || _discountProof[0] == 0) {
+        if (_discountProof.length < 3 || _discountProof[0] == 0) {
             return 0;
         }
 
         bytes32 discountId = _discountProof[0];
 
-        if (_verifyDiscountProof(discountId, _discountProof[1], _discountProof[2], _discountProof[3:]) &&
+        if (_verifyDiscountProof(discountId, _discountProof) &&
             erc20DiscountCurrentlyApplies(_consumer, discountId) &&
             _verifyDiscountData(discountId, _provider, _planId, _discountProof[1]))
         {
@@ -184,11 +196,20 @@ PausableUpgradeable
 
     function _verifyDiscountProof(
         bytes32 _discountId,
-        bytes32 _discountData,
-        bytes32 _merkleRoot,
-        bytes32[] calldata _merkleProof
+        bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
     ) internal view returns(bool) {
-        return MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_discountId, _discountData)));
+        if (_discountProof.length < 3 || _discountProof[0] == 0) {
+            return false;
+        }
+
+        // its possible to have an empty merkleProof if the merkleRoot IS the leaf
+        bytes32[] memory merkleProof = new bytes32[](0);
+        if (_discountProof.length >= 4) {
+            merkleProof = _discountProof[3:];
+        }
+
+        return MerkleProof.verify(merkleProof, _discountProof[2],
+            keccak256(abi.encode(_discountId, _discountProof[1])));
     }
 
     function _verifyDiscountData(
@@ -267,6 +288,29 @@ PausableUpgradeable
         emit PlanRetired(_msgSender(), _planId, _retireAt);
     }
 
+    function _parseDiscountType(
+        bytes32 _discountData
+    ) internal pure returns(DiscountType) {
+        return DiscountType(uint8(bytes1(_discountData << 248)));
+    }
+
+    function _parseDiscountData(
+        bytes32 _discountData
+    ) internal pure returns(Discount memory) {
+        bytes1 options = bytes1(_discountData << 240);
+        return Discount({
+        value: uint256(_discountData >> 160),
+        validAfter: uint32(bytes4(_discountData << 96)),
+        expiresAt: uint32(bytes4(_discountData << 128)),
+        maxRedemptions: uint32(bytes4(_discountData << 160)),
+        planId: uint32(bytes4(_discountData << 192)),
+        applyPeriods: uint16(bytes2(_discountData << 224)),
+        discountType: DiscountType(uint8(bytes1(_discountData << 248))),
+        isFixed: options & 0x01 == 0x01
+        });
+    }
+
+
     /************************** ADMIN FUNCTIONS **************************/
 
     function pause() external onlyOwner {
@@ -283,32 +327,16 @@ PausableUpgradeable
         subscriptionManager = _subscriptionManager;
     }
 
+    function setSubscriptions(
+        address _subscriptions
+    ) external onlyOwner {
+        subscriptions = _subscriptions;
+    }
+
     function setTrustedForwarder(
         address _forwarder
     ) external onlyOwner {
         _setTrustedForwarder(_forwarder);
-    }
-
-    function _parseDiscountType(
-        bytes32 _discountData
-    ) internal pure returns(DiscountType) {
-        return DiscountType(uint8(bytes1(_discountData << 248)));
-    }
-
-    function _parseDiscountData(
-        bytes32 _discountData
-    ) internal pure returns(Discount memory) {
-        bytes1 options = bytes1(_discountData << 240);
-        return Discount({
-            value: uint256(_discountData >> 160),
-            validAfter: uint32(bytes4(_discountData << 96)),
-            expiresAt: uint32(bytes4(_discountData << 128)),
-            maxRedemptions: uint32(bytes4(_discountData << 160)),
-            planId: uint32(bytes4(_discountData << 192)),
-            applyPeriods: uint16(bytes2(_discountData << 224)),
-            discountType: DiscountType(uint8(bytes1(_discountData << 248))),
-            isFixed: options & 0x01 == 0x01
-        });
     }
 
 }
