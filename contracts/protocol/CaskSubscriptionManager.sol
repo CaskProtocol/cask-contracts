@@ -358,7 +358,11 @@ KeeperCompatibleInterface
                     subscription.createdAt + (planInfo.period * discountInfo.applyPeriods) < timestamp)
                 {
                     if (discountInfo.isFixed) {
-                        chargePrice = chargePrice - discountInfo.value;
+                        if (chargePrice > discountInfo.value) {
+                            chargePrice = chargePrice - discountInfo.value;
+                        } else {
+                            chargePrice = 0;
+                        }
                     } else {
                         chargePrice = chargePrice - (chargePrice * discountInfo.value / 10000);
                     }
