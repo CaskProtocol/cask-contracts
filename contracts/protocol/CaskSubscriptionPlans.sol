@@ -180,11 +180,7 @@ PausableUpgradeable
     function _verifyDiscountProof(
         bytes32 _discountId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
-<<<<<<< HEAD
     ) internal pure returns(bool) {
-=======
-    ) internal view returns(bool) {
->>>>>>> 3090b4d (limit discount redemption to subscriptions contract)
         if (_discountProof.length < 3 || _discountProof[0] == 0) {
             return false;
         }
