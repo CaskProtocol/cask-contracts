@@ -13,6 +13,7 @@
     "local": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat --network localhost",
     "export": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat deploy --export '../p-cask-frontend/src/abi/network.json'",
     "test": "NODE_OPTIONS=--openssl-legacy-provider IS_TEST=true npx hardhat test",
+    "solhint": "solhint contracts/**/*.sol",
     "clean": "rm -rf artifacts cache deployments/local*",
     "keeper:polygon": "npx hardhat keeper --network production_polygon",
     "keeper:avalanche": "npx hardhat keeper --network production_avalanche",

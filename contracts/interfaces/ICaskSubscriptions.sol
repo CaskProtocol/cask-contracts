@@ -153,7 +153,9 @@ interface ICaskSubscriptions is IERC721Upgradeable {
     event SubscriptionRenewed(address indexed consumer, address indexed provider,
         uint256 indexed subscriptionId, bytes32 ref, uint32 planId);
 
-    /** @dev Emitted when `consumer` subscription trial ends and goes active to `provider` on subscription `subscriptionId` */
+    /** @dev Emitted when `consumer` subscription trial ends and goes active to `provider`
+     * on subscription `subscriptionId`
+     */
     event SubscriptionTrialEnded(address indexed consumer, address indexed provider,
         uint256 indexed subscriptionId, bytes32 ref, uint32 planId);
 

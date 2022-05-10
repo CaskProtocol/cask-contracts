@@ -516,7 +516,8 @@ PausableUpgradeable
             (
             subscription.discountId,
             subscription.discountData
-            ) = _verifyDiscountProof(ownerOf(_subscriptionId), subscription.provider, newPlanInfo.planId, _discountProof);
+            ) = _verifyDiscountProof(ownerOf(_subscriptionId), subscription.provider,
+                newPlanInfo.planId, _discountProof);
         }
 
         if (subscription.planId != newPlanInfo.planId) {
@@ -573,7 +574,8 @@ PausableUpgradeable
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
     ) internal returns(bytes32, bytes32) {
         if (_discountProof[0] > 0) {
-            bytes32 discountId = subscriptionPlans.verifyAndConsumeDiscount(_consumer, _provider, _planId, _discountProof);
+            bytes32 discountId = subscriptionPlans.verifyAndConsumeDiscount(_consumer, _provider,
+                _planId, _discountProof);
             if (discountId > 0)
             {
                 return (discountId, _discountProof[1]);
