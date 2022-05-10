@@ -75,6 +75,7 @@ ReentrancyGuardUpgradeable
         asset.priceFeed = _baseAssetPriceFeed;
         asset.assetDecimals = IERC20Metadata(_baseAsset).decimals();
         asset.priceFeedDecimals = AggregatorV3Interface(_baseAssetPriceFeed).decimals();
+        asset.depositLimit = type(uint256).max;
         asset.slippageBps = 0;
         asset.allowed = true;
         allAssets.push(_baseAsset);
@@ -246,6 +247,7 @@ ReentrancyGuardUpgradeable
     ) internal {
         require(assets[_asset].allowed, "!NOT_ALLOWED(asset)");
         require(_assetAmount > 0, "!INVALID(assetAmount)");
+        require(_totalAssetBalance(_asset) + _assetAmount <= assets[_asset].depositLimit, "!DEPOSIT_LIMIT(asset)");
 
         uint256 baseAssetAmount = _assetAmount;
         if (_asset != baseAsset) {
