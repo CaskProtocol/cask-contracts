@@ -18,23 +18,21 @@ const { fixtures } = require("./tasks/fixtures");
 const { keeper } = require("./tasks/keeper");
 
 
-// production deployer
+// production
 const DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
+const KEEPER = "0xa942e8a09dF292Ef66F3d02755E5B5AB04b90709";
 
 // production networks - each chain has their own governor/strategist (multisigs)
 const MAINNET_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
 
 const POLYGON_GOVERNOR = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
 const POLYGON_STRATEGIST = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
-const POLYGON_KEEPER = "0x";
 
 const AVALANCHE_GOVERNOR = "";
 const AVALANCHE_STRATEGIST = "";
-const AVALANCHE_KEEPER = "0x";
 
 const FANTOM_GOVERNOR = "";
 const FANTOM_STRATEGIST = "";
-const FANTOM_KEEPER = "0x";
 
 
 // testnet networks - common across all testnets
@@ -111,6 +109,7 @@ module.exports = {
       accounts: [
         process.env.POLYGON_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
+      gasPrice: 110000000000, // make sure to set to appropriate gwei!
       timeout: 300000,
     },
     production_avalanche: {
@@ -274,13 +273,13 @@ module.exports = {
       testnet_aurora: TESTNET_FAUCET_ADMIN,
     },
     keeperAddr: {
-      production_polygon: POLYGON_KEEPER,
-      production_avalanche: AVALANCHE_KEEPER,
-      production_fantom: FANTOM_KEEPER,
+      production_polygon: KEEPER,
+      production_avalanche: KEEPER,
+      production_fantom: KEEPER,
 
       default: 11,
-      localhost: process.env.FORK === "true" ? POLYGON_KEEPER : 11,
-      hardhat: process.env.FORK === "true" ? POLYGON_KEEPER : 11,
+      localhost: process.env.FORK === "true" ? KEEPER : 11,
+      hardhat: process.env.FORK === "true" ? KEEPER : 11,
       internal_mumbai: TESTNET_KEEPER,
       internal_fuji: TESTNET_KEEPER,
       testnet_mumbai: TESTNET_KEEPER,
