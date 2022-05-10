@@ -63,4 +63,36 @@ describe("CaskVault", function () {
 
     });
 
+    it("Deposit limit enforced", async function() {
+
+        const {
+            networkAddresses,
+            vault,
+            consumerA,
+            governor,
+        } = await fundedFixture();
+
+        // set DAI deposit limit to 1000
+        await vault.connect(governor).allowAsset(
+            networkAddresses.DAI,
+            networkAddresses.DAI_USD,
+            daiUnits('1000'),
+            0);
+
+        await vault.connect(consumerA).deposit(networkAddresses.DAI, daiUnits('990'));
+
+        await expect(vault.connect(consumerA).deposit(networkAddresses.DAI, daiUnits('15')))
+            .to.be.revertedWith("!DEPOSIT_LIMIT(asset)");
+
+        // set DAI deposit limit to 2000
+        await vault.connect(governor).allowAsset(
+            networkAddresses.DAI,
+            networkAddresses.DAI_USD,
+            daiUnits('2000'),
+            0);
+
+        await vault.connect(consumerA).deposit(networkAddresses.DAI, daiUnits('1010'));
+
+    });
+
 });
