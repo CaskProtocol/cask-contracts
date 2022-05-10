@@ -130,15 +130,6 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
 
     await withConfirmation(
         vault.connect(sDeployer).allowAsset(
-            networkAddresses.UST, // address
-            networkAddresses.UST_USD, //priceFeed
-            ustUnits('100000000'), // depositLimit - 100M
-            10) // slippageBps - 0.1%
-    );
-    log("Allowed UST in vault");
-
-    await withConfirmation(
-        vault.connect(sDeployer).allowAsset(
             networkAddresses.FRAX, // address
             networkAddresses.FRAX_USD, //priceFeed
             fraxUnits('100000000'), // depositLimit - 100M

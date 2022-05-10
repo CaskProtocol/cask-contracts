@@ -23,7 +23,7 @@ const DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
 const KEEPER = "0xa942e8a09dF292Ef66F3d02755E5B5AB04b90709";
 
 // production networks - each chain has their own governor/strategist (multisigs)
-const MAINNET_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
+const ETHEREUM_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
 
 const POLYGON_GOVERNOR = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
 const POLYGON_STRATEGIST = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
@@ -96,15 +96,15 @@ module.exports = {
     localhost: {
       timeout: 60000,
     },
-    mainnet: {
-      url: `${process.env.MAINNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
+    ethereum: {
+      url: `${process.env.ETHEREUM_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
-        process.env.MAINNET_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+        process.env.ETHEREUM_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
       gasPrice: 55000000000, // TODO: make sure to set to appropriate gwei!
       timeout: 900000,
     },
-    production_polygon: {
+    mainnet_polygon: {
       url: `${process.env.POLYGON_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.POLYGON_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
@@ -112,14 +112,14 @@ module.exports = {
       gasPrice: 110000000000, // make sure to set to appropriate gwei!
       timeout: 300000,
     },
-    production_avalanche: {
+    mainnet_avalanche: {
       url: `${process.env.AVALANCHE_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.AVALANCHE_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
     },
-    production_fantom: {
+    mainnet_fantom: {
       url: `${process.env.FANTOM_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.FANTOM_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
@@ -190,10 +190,10 @@ module.exports = {
   },
   namedAccounts: {
     deployerAddr: {
-      mainnet: DEPLOYER,
-      production_polygon: DEPLOYER,
-      production_avalanche: DEPLOYER,
-      production_fantom: DEPLOYER,
+      ethereum: DEPLOYER,
+      mainnet_polygon: DEPLOYER,
+      mainnet_avalanche: DEPLOYER,
+      mainnet_fantom: DEPLOYER,
 
       default: 0,
       localhost: 0,
@@ -207,10 +207,10 @@ module.exports = {
       testnet_aurora: TESTNET_DEPLOYER,
     },
     governorAddr: {
-      mainnet: MAINNET_GOVERNOR,
-      production_polygon: POLYGON_GOVERNOR,
-      production_avalanche: AVALANCHE_GOVERNOR,
-      production_fantom: FANTOM_GOVERNOR,
+      ethereum: ETHEREUM_GOVERNOR,
+      mainnet_polygon: POLYGON_GOVERNOR,
+      mainnet_avalanche: AVALANCHE_GOVERNOR,
+      mainnet_fantom: FANTOM_GOVERNOR,
 
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
@@ -225,9 +225,9 @@ module.exports = {
       testnet_aurora: TESTNET_GOVERNOR,
     },
     strategistAddr: {
-      production_polygon: POLYGON_STRATEGIST,
-      production_avalanche: AVALANCHE_STRATEGIST,
-      production_fantom: FANTOM_STRATEGIST,
+      mainnet_polygon: POLYGON_STRATEGIST,
+      mainnet_avalanche: AVALANCHE_STRATEGIST,
+      mainnet_fantom: FANTOM_STRATEGIST,
 
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
@@ -273,9 +273,9 @@ module.exports = {
       testnet_aurora: TESTNET_FAUCET_ADMIN,
     },
     keeperAddr: {
-      production_polygon: KEEPER,
-      production_avalanche: KEEPER,
-      production_fantom: KEEPER,
+      mainnet_polygon: KEEPER,
+      mainnet_avalanche: KEEPER,
+      mainnet_fantom: KEEPER,
 
       default: 11,
       localhost: process.env.FORK === "true" ? KEEPER : 11,
