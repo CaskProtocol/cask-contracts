@@ -113,7 +113,8 @@ async function _debug_protocol(taskArguments, hre) {
 
     console.log("\nVault Configuration");
     console.log("====================");
-    console.log(`CaskVault baseAsset:                            ${baseAsset}`);
+    console.log(`paused:                                         ${await vault.paused()}`);
+    console.log(`CaskVault baseAsset:                            ${baseAsset} (${baseAssetSymbol})`);
     console.log(`CaskVault baseAsset decimals:                   ${baseAssetInfo.assetDecimals}`);
     const protocolCount = await vault.protocolCount();
     console.log(`CaskVault protocolCount:                        ${protocolCount}`);
@@ -121,8 +122,10 @@ async function _debug_protocol(taskArguments, hre) {
         console.log(`   protocol ${i}:                                  ${await vault.protocols(i)}`);
     }
 
-    console.log(`paused:                                         ${await vault.paused()}`);
     console.log(`totalSupply:                                    ${await vault.totalSupply()}`);
+    console.log(`totalValue:                                     ${formatUnits(await vault.totalValue(), baseAssetInfo.assetDecimals)}`);
+    console.log(`pricePerShare:                                  ${await vault.pricePerShare()}`);
+
     const allAssets = await vault.getAllAssets();
     console.log(`allowedAssets count:                            ${allAssets.length}`);
     for (let i = 0; i < allAssets.length; i++) {
