@@ -145,6 +145,7 @@ async function _debug_protocol(taskArguments, hre) {
             console.log(`   Deposit Limit:                               ${formatUnits(assetInfo.depositLimit, assetInfo.assetDecimals)}`);
         }
         console.log(`   Oracle:                                      ${assetInfo.priceFeed}`);
+        console.log(`   Slippage:                                    ${assetInfo.slippageBps} bps (${assetInfo.slippageBps / 100}%)`);
     }
 
 
