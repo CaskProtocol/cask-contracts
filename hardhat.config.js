@@ -110,7 +110,7 @@ module.exports = {
         process.env.POLYGON_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
       gasPrice: 110000000000, // make sure to set to appropriate gwei!
-      timeout: 300000,
+      timeout: 900000,
     },
     mainnet_avalanche: {
       url: `${process.env.AVALANCHE_PROVIDER_URL || process.env.PROVIDER_URL}`,
