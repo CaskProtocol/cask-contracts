@@ -132,15 +132,16 @@ async function _debug_protocol(taskArguments, hre) {
         const assetContract = CaskSDK.contracts.ERC20({tokenAddress: allAssets[i], provider: hre.ethers.provider});
         const symbol = await assetContract.symbol();
 
-        console.log(`Asset ${allAssets[i]} (${symbol})`);
-        console.log(`                                                    Allowed: ${assetInfo.allowed}`);
-        console.log(`                                                    Balance: ${formatUnits(assetBalance, assetInfo.assetDecimals)}`);
+        console.log(`Asset ${allAssets[i]}`);
+        console.log(`   Symbol                                       ${symbol}`);
+        console.log(`   Allowed:                                     ${assetInfo.allowed}`);
+        console.log(`   Balance:                                     ${formatUnits(assetBalance, assetInfo.assetDecimals)}`);
         if (assetInfo.depositLimit.toHexString() === '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff') {
-            console.log(`                                                    Deposit Limit: Unlimited`);
+            console.log(`   Deposit Limit:                               Unlimited`);
         } else {
-            console.log(`                                                    Deposit Limit: ${formatUnits(assetInfo.depositLimit, assetInfo.assetDecimals)}`);
+            console.log(`   Deposit Limit:                               ${formatUnits(assetInfo.depositLimit, assetInfo.assetDecimals)}`);
         }
-        console.log(`                                                    Oracle: ${assetInfo.priceFeed}`);
+        console.log(`   Oracle:                                      ${assetInfo.priceFeed}`);
     }
 
 
