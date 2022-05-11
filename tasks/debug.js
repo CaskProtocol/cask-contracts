@@ -108,6 +108,8 @@ async function _debug_protocol(taskArguments, hre) {
     //
     const baseAsset = await vault.getBaseAsset();
     const baseAssetInfo = await vault.getAsset(baseAsset);
+    const baseAssetContract = CaskSDK.contracts.ERC20({tokenAddress: baseAsset, provider: hre.ethers.provider});
+    const baseAssetSymbol = await baseAssetContract.symbol();
 
     console.log("\nVault Configuration");
     console.log("====================");
@@ -160,7 +162,7 @@ async function _debug_protocol(taskArguments, hre) {
     console.log(`CaskSubscriptionManagers vault:                 ${await subscriptionManager.vault()}`);
     console.log(`CaskSubscriptionManagers subscriptionPlans:     ${await subscriptionManager.subscriptionPlans()}`);
     console.log(`CaskSubscriptionManagers subscriptions:         ${await subscriptionManager.subscriptions()}`);
-    console.log(`CaskSubscriptionManagers paymentFeeMin:         ${paymentFeeMin} ($${formatUnits(paymentFeeMin, baseAssetInfo.assetDecimals)})`);
+    console.log(`CaskSubscriptionManagers paymentFeeMin:         ${paymentFeeMin} (${formatUnits(paymentFeeMin, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
     console.log(`CaskSubscriptionManagers paymentFeeRateMin:     ${paymentFeeRateMin} bps (${paymentFeeRateMin / 100}%)`);
     console.log(`CaskSubscriptionManagers paymentFeeRateMax:     ${paymentFeeRateMax} bps (${paymentFeeRateMax / 100}%)`);
     console.log(`CaskSubscriptionManagers stakeTargetFactor:     ${await subscriptionManager.stakeTargetFactor()}`);
