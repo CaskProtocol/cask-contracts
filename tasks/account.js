@@ -3,8 +3,7 @@ async function accounts(taskArguments, hre, privateKeys) {
     const roles = ["Deployer", "Governor","Strategist","-",
         "consumerA","consumerB","consumerC","providerA","providerB","providerC","FaucetAdmin","Keeper"];
 
-    const isMainnetOrRinkeby = ["mainnet", "rinkeby"].includes(hre.network.name);
-    if (isMainnetOrRinkeby) {
+    if (hre.network.name.startsWith("mainnet_")) {
         privateKeys = [process.env.DEPLOYER_PK, process.env.STRATEGIST_PK];
     }
 

@@ -5,7 +5,7 @@ const { parseUnits, formatUnits } = require("ethers").utils;
 const {
     isLocalhost,
     isInternal,
-    isProduction,
+    isMainnet,
 } = require("./_networks");
 
 
@@ -66,7 +66,7 @@ const setOracleTokenPriceUsd = async (tokenSymbol, usdPrice) => {
 };
 
 const getNetworkAddresses = async (deployments) => {
-    if (isProduction) {
+    if (isMainnet) {
         return addresses[hre.network.name];
     } else {
         if (!addresses[hre.network.name]) {
