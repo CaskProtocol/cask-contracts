@@ -71,6 +71,7 @@ task("keeper", "Run a keeper")
     .addOptionalParam("queue", "comma separated list of queues - 1 for active queue, 2 for past due queue", "1,2")
     .addOptionalParam("interval", "How often (in ms) to do keeper upkeep check", "30000")
     .addOptionalParam("gasLimit", "gasLimit for keeper transaction", "2500000")
+    .addOptionalParam("gasPrice", "gasPrice for keeper transaction", "100000000000")
     .setAction(keeper);
 
 module.exports = {

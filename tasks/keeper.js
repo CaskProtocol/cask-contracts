@@ -39,12 +39,18 @@ async function keeper(taskArguments, hre) {
             if (checkResult.upkeepNeeded) {
                 console.log(`Upkeep needed on queue ${queue}. Performing upkeep...`);
                 const performEstimatedGas = await keeperManager.estimateGas
-                    .performUpkeep(checkResult.performData, {gasLimit: parseInt(taskArguments.gasLimit)});
+                    .performUpkeep(checkResult.performData, {
+                        gasLimit: parseInt(taskArguments.gasLimit),
+                        gasPrice: parseInt(taskArguments.gasPrice)
+                    });
                 if (performEstimatedGas.gt(taskArguments.gasLimit)){
                     console.log(`Warning: estimatedGas for performUpkeep on queue ${queue} is above gasLimit ${taskArguments.gasLimit}`);
                 }
                 const tx = await keeperManager
-                    .performUpkeep(checkResult.performData, {gasLimit: parseInt(taskArguments.gasLimit)});
+                    .performUpkeep(checkResult.performData, {
+                        gasLimit: parseInt(taskArguments.gasLimit),
+                        gasPrice: parseInt(taskArguments.gasPrice)
+                    });
                 const events = (await tx.wait()).events || [];
                 const report = events.find((e) => e.event === "SubscriptionManagerReport");
                 if (report) {
