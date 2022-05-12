@@ -64,7 +64,7 @@ async function keeper(taskArguments, hre) {
                     console.log(`No upkeep needed on queue ${queue}.`);
                 }
             } catch (err) {
-                console.log(`Keeper error: ${err.toString()}`);
+                console.error(`Keeper error: ${err.toString()}`);
             }
         }
 
