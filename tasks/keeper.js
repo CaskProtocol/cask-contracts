@@ -3,6 +3,8 @@ async function keeper(taskArguments, hre) {
     const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
     const queues = taskArguments.queue.split(/\s*,\s*/);
 
+    const gasPrice = taskArguments.gasPrice || hre.network.config.gasPrice;
+
     let keeperWallet;
 
     if (hre.network.name.includes('testnet_')) {
@@ -16,7 +18,7 @@ async function keeper(taskArguments, hre) {
 
     const keeperManager = subscriptionManager.connect(keeperWallet);
 
-    console.log(`Keeper ${keeperWallet.address} running with limit ${taskArguments.limit} on queue(s) ${queues}`)
+    console.log(`Keeper ${keeperWallet.address} running with limit ${taskArguments.limit} on queue(s) ${queues} using gasPrice ${gasPrice}`)
 
     while(true) {
 
@@ -42,7 +44,7 @@ async function keeper(taskArguments, hre) {
                     const performEstimatedGas = await keeperManager.estimateGas
                         .performUpkeep(checkResult.performData, {
                             gasLimit: parseInt(taskArguments.gasLimit),
-                            gasPrice: parseInt(taskArguments.gasPrice)
+                            gasPrice: parseInt(gasPrice)
                         });
                     if (performEstimatedGas.gt(taskArguments.gasLimit)) {
                         console.log(`Warning: estimatedGas for performUpkeep on queue ${queue} is above gasLimit ${taskArguments.gasLimit}`);
@@ -50,7 +52,7 @@ async function keeper(taskArguments, hre) {
                     const tx = await keeperManager
                         .performUpkeep(checkResult.performData, {
                             gasLimit: parseInt(taskArguments.gasLimit),
-                            gasPrice: parseInt(taskArguments.gasPrice)
+                            gasPrice: parseInt(gasPrice)
                         });
                     const events = (await tx.wait()).events || [];
                     const report = events.find((e) => e.event === "SubscriptionManagerReport");
