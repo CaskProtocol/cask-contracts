@@ -95,4 +95,33 @@ describe("CaskVault", function () {
 
     });
 
+    it("Old feed price rejects deposit", async function() {
+
+        const {
+            networkAddresses,
+            vault,
+            consumerA,
+            governor,
+        } = await fundedFixture();
+
+        // require max age of 30 seconds
+        await vault.connect(governor).setMaxPriceFeedAge(ethers.BigNumber.from('30'));
+
+        const daiPriceFeed = await ethers.getContract("MockChainlinkOracleFeedDAI");
+
+        // set dai price age to 5 minutes
+        await daiPriceFeed.setAge(ethers.BigNumber.from('300'));
+
+        // confirm deposit rejected
+        await expect(vault.connect(consumerA).deposit(networkAddresses.DAI, daiUnits('100')))
+            .to.be.revertedWith("!PRICE_FEED_TOO_OLD");
+
+        // set dai price age to 10 seconds
+        await daiPriceFeed.setAge(ethers.BigNumber.from('10'));
+
+        // confirm deposit is fine with current price
+        await vault.connect(consumerA).deposit(networkAddresses.DAI, daiUnits('100'));
+
+    });
+
 });

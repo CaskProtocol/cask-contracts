@@ -36,7 +36,10 @@ const deployMocks = async ({getNamedAccounts}) => {
         log(`Granted MINTER_ROLE on ${contract} at ${deployedContract.address} to faucetAdmin ${faucetAdmin}`);
 
         await deployWithConfirmation("MockChainlinkOracleFeed"+mockToken,
-            [parseUnits("1", 8).toString(), 8],
+            [
+                parseUnits("1", 8).toString(), // price
+                8 // decimals
+            ],
             "MockChainlinkOracleFeed");
     }
 

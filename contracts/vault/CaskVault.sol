@@ -58,6 +58,9 @@ ReentrancyGuardUpgradeable
     // require deposit of at least this amount denominated in the baseAsset
     uint256 public minDeposit;
 
+    // revert if price feed age is older than this number of seconds. set to 0 to disable check.
+    uint256 public maxPriceFeedAge;
+
     function initialize(
         address _baseAsset,
         address _baseAssetPriceFeed,
@@ -83,6 +86,7 @@ ReentrancyGuardUpgradeable
         baseAsset = _baseAsset;
         feeDistributor = _feeDistributor;
         minDeposit = 0;
+        maxPriceFeedAge = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -447,6 +451,12 @@ ReentrancyGuardUpgradeable
         minDeposit = _minDeposit;
     }
 
+    function setMaxPriceFeedAge(
+        uint256 _maxPriceFeedAge
+    ) external onlyOwner {
+        maxPriceFeedAge = _maxPriceFeedAge;
+    }
+
     function setTrustedForwarder(
         address _forwarder
     ) external onlyOwner {
@@ -552,11 +562,14 @@ ReentrancyGuardUpgradeable
         }
 
         int256 oraclePrice;
+        uint256 updatedAt;
 
-        ( , oraclePrice, , , ) = AggregatorV3Interface(assets[_fromAsset].priceFeed).latestRoundData();
+        ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(assets[_fromAsset].priceFeed).latestRoundData();
         uint256 fromOraclePrice = uint256(oraclePrice);
-        ( , oraclePrice, , , ) = AggregatorV3Interface(assets[_toAsset].priceFeed).latestRoundData();
+        require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_FEED_TOO_OLD");
+        ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(assets[_toAsset].priceFeed).latestRoundData();
         uint256 toOraclePrice = uint256(oraclePrice);
+        require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_FEED_TOO_OLD");
 
         if (assets[_fromAsset].priceFeedDecimals != assets[_toAsset].priceFeedDecimals) {
             // since oracle precision is different, scale everything

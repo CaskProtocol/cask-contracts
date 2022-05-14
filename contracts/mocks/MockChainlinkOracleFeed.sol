@@ -6,10 +6,12 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 contract MockChainlinkOracleFeed is AggregatorV3Interface {
     int256 price;
     uint8 numDecimals;
+    uint256 age;
 
     constructor(int256 _price, uint8 _decimals) {
         price = _price;
         numDecimals = _decimals;
+        age = 30;
     }
 
     function decimals() external view override returns (uint8) {
@@ -32,6 +34,10 @@ contract MockChainlinkOracleFeed is AggregatorV3Interface {
         numDecimals = _decimals;
     }
 
+    function setAge(uint256 _age) public {
+        age = _age;
+    }
+
     // getRoundData and latestRoundData should both raise "No data present"
     // if they do not have data to report, instead of returning unset values
     // which could be misinterpreted as actual reported values.
@@ -49,8 +55,8 @@ contract MockChainlinkOracleFeed is AggregatorV3Interface {
     {
         roundId = _roundId;
         answer = price;
-        startedAt = 0;
-        updatedAt = 0;
+        startedAt = block.timestamp - age;
+        updatedAt = block.timestamp - age;
         answeredInRound = 0;
     }
 
@@ -68,8 +74,8 @@ contract MockChainlinkOracleFeed is AggregatorV3Interface {
     {
         roundId = 0;
         answer = price;
-        startedAt = 0;
-        updatedAt = 0;
+        startedAt = block.timestamp - age;
+        updatedAt = block.timestamp - age;
         answeredInRound = 0;
     }
 }
