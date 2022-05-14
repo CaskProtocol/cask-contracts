@@ -456,6 +456,11 @@ PausableUpgradeable
             subscription.renewAt = timestamp;
         }
 
+        consumerSubscriptions[_msgSender()].push(subscriptionId);
+        providerSubscriptions[provider].push(subscriptionId);
+        providerActiveSubscriptionCount[provider] += 1;
+        planActiveSubscriptionCount[provider][planInfo.planId] += 1;
+
         (
         subscription.discountId,
         subscription.discountData
@@ -463,17 +468,11 @@ PausableUpgradeable
 
         subscriptionManager.renewSubscription(subscriptionId); // registers subscription with manager
 
-        if (planInfo.freeTrial == 0) {
-            require(subscription.status == SubscriptionStatus.Active, "!INSUFFICIENT_FUNDS");
-        }
+        require(subscription.status == SubscriptionStatus.Active ||
+                subscription.status == SubscriptionStatus.Trialing, "!UNPROCESSABLE");
 
         emit SubscriptionCreated(ownerOf(subscriptionId), subscription.provider, subscriptionId,
             subscription.ref, subscription.planId, subscription.discountId);
-
-        consumerSubscriptions[_msgSender()].push(subscriptionId);
-        providerSubscriptions[provider].push(subscriptionId);
-        providerActiveSubscriptionCount[provider] += 1;
-        planActiveSubscriptionCount[provider][planInfo.planId] += 1;
 
         return subscriptionId;
     }

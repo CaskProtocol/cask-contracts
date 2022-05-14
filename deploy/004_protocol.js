@@ -65,7 +65,14 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
     log("Initialized CaskSubscriptionManager");
     if (isMemnet) {
         await withConfirmation(
-            subscriptionManager.setParameters(0, 0, 0, 0, 6 * hour)
+            subscriptionManager.setParameters(
+                usdcUnits('0.50'), // paymentMinValue
+                usdcUnits('0.05'), // paymentFeeMin
+                ethers.BigNumber.from('100'), // paymentFeeRateMin
+                ethers.BigNumber.from('100'), // paymentFeeRateMax
+                ethers.BigNumber.from('100'), // stakeTargetFactor
+                6 * hour // processBucketSize
+            )
         );
         log("Set CaskSubscriptionManager parameters for memnet");
     }

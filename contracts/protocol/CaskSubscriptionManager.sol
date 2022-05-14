@@ -45,6 +45,8 @@ KeeperCompatibleInterface
     mapping(CheckType => mapping(uint32 => uint256[])) private processQueue; // renewal bucket => subscriptionId[]
     mapping(CheckType => uint32) private processingBucket; // current bucket being processed
 
+    /** @dev min value for a payment. */
+    uint256 public paymentMinValue;
 
     modifier onlySubscriptions() {
         require(_msgSender() == address(subscriptions), "!AUTH");
@@ -64,6 +66,7 @@ KeeperCompatibleInterface
         vault = ICaskVault(_vault);
 
         // parameter defaults
+        paymentMinValue = 0;
         paymentFeeMin = 0;
         paymentFeeRateMin = 0;
         paymentFeeRateMax = 0;
@@ -185,10 +188,13 @@ KeeperCompatibleInterface
         if (protocolFee < paymentFeeMin) {
             protocolFee = paymentFeeMin;
         }
+        require(_value > protocolFee, "!VALUE_TOO_LOW");
+
         if (_subscription.networkData > 0) {
             ICaskSubscriptions.NetworkInfo memory networkData = _parseNetworkData(_subscription.networkData);
-            vault.protocolPayment(_consumer, _paymentAddress, _value, protocolFee,
-                networkData.network, _value * networkData.feeBps / 10000);
+            uint256 networkFee = _value * networkData.feeBps / 10000;
+            require(_value > protocolFee + networkFee, "!VALUE_TOO_LOW");
+            vault.protocolPayment(_consumer, _paymentAddress, _value, protocolFee, networkData.network, networkFee);
         } else {
             vault.protocolPayment(_consumer, _paymentAddress, _value, protocolFee);
         }
@@ -372,8 +378,11 @@ KeeperCompatibleInterface
             }
         }
 
-        // consumer does not have enough balance to cover payment
-        if (chargePrice > 0 && vault.currentValueOf(consumer) < chargePrice) {
+        if (chargePrice < paymentMinValue || chargePrice <= paymentFeeMin) {
+            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
+
+            // consumer does not have enough balance to cover payment
+        } else if (chargePrice > 0 && vault.currentValueOf(consumer) < chargePrice) {
             // if have not been able to renew for up to `gracePeriod` days, cancel subscription
             if (subscription.renewAt < timestamp - (planInfo.gracePeriod * 1 days)) {
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
@@ -384,8 +393,11 @@ KeeperCompatibleInterface
                 processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
             }
 
-        } else if (chargePrice > 0) {
-            _processPayment(consumer, subscription.provider, _subscriptionId, chargePrice);
+            // normal payment processing
+        } else {
+            if (chargePrice > 0) {
+                _processPayment(consumer, subscription.provider, _subscriptionId, chargePrice);
+            }
 
             if (subscription.renewAt + planInfo.period < timestamp) {
                 // subscription is still behind, put in next queue bucket
@@ -394,10 +406,6 @@ KeeperCompatibleInterface
                 processQueue[CheckType.Active][_bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
             }
 
-            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
-
-        } else { // no charge, move along now
-            processQueue[CheckType.Active][_bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
             subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
         }
 
@@ -428,12 +436,14 @@ KeeperCompatibleInterface
     }
 
     function setParameters(
+        uint256 _paymentMinValue,
         uint256 _paymentFeeMin,
         uint256 _paymentFeeRateMin,
         uint256 _paymentFeeRateMax,
         uint256 _stakeTargetFactor,
         uint32 _processBucketSize
     ) external onlyOwner {
+        paymentMinValue = _paymentMinValue;
         paymentFeeMin = _paymentFeeMin;
         paymentFeeRateMin = _paymentFeeRateMin;
         paymentFeeRateMax = _paymentFeeRateMax;
