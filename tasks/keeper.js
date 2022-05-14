@@ -44,7 +44,7 @@ async function keeper(taskArguments, hre) {
                     const performEstimatedGas = await keeperManager.estimateGas
                         .performUpkeep(checkResult.performData, {
                             gasLimit: parseInt(taskArguments.gasLimit),
-                            gasPrice: gasPrice
+                            gasPrice: typeof(gasPrice) === 'number' ? gasPrice : undefined
                         });
                     if (performEstimatedGas.gt(taskArguments.gasLimit)) {
                         console.log(`Warning: estimatedGas for performUpkeep on queue ${queue} is above gasLimit ${taskArguments.gasLimit}`);
@@ -52,7 +52,7 @@ async function keeper(taskArguments, hre) {
                     const tx = await keeperManager
                         .performUpkeep(checkResult.performData, {
                             gasLimit: parseInt(taskArguments.gasLimit),
-                            gasPrice: gasPrice
+                            gasPrice: typeof(gasPrice) === 'number' ? gasPrice : undefined
                         });
                     const events = (await tx.wait()).events || [];
                     const report = events.find((e) => e.event === "SubscriptionManagerReport");
