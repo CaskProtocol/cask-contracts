@@ -162,6 +162,8 @@ ReentrancyGuardUpgradeable
         address _network,
         uint256 _networkFee
     ) internal {
+        require(_value > _protocolFee + _networkFee, "!VALUE_TOO_LOW");
+
         uint256 shares = _sharesForValue(_value);
 
         uint256 protocolFeeShares = 0;
