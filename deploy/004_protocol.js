@@ -70,7 +70,7 @@ const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
                 usdcUnits('0.05'), // paymentFeeMin
                 ethers.BigNumber.from('100'), // paymentFeeRateMin
                 ethers.BigNumber.from('100'), // paymentFeeRateMax
-                ethers.BigNumber.from('100'), // stakeTargetFactor
+                ethers.BigNumber.from('0'), // stakeTargetFactor
                 6 * hour // processBucketSize
             )
         );
