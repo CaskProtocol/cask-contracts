@@ -135,15 +135,6 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     );
     log("Allowed DAI in vault");
 
-    await withConfirmation(
-        vault.connect(sDeployer).allowAsset(
-            networkAddresses.FRAX, // address
-            networkAddresses.FRAX_USD, //priceFeed
-            fraxUnits('100000000'), // depositLimit - 100M
-            10) // slippageBps - 0.1%
-    );
-    log("Allowed FRAX in vault");
-
 
     await withConfirmation(
         vault.transferOwnership(governorAddr)
