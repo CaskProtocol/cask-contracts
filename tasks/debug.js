@@ -152,6 +152,7 @@ async function _debug_protocol(taskArguments, hre) {
     //
     // Protocol Config
     //
+    const paymentMinValue = await subscriptionManager.paymentMinValue();
     const paymentFeeMin = await subscriptionManager.paymentFeeMin();
     const paymentFeeRateMin = await subscriptionManager.paymentFeeRateMin();
     const paymentFeeRateMax = await subscriptionManager.paymentFeeRateMax();
@@ -167,6 +168,7 @@ async function _debug_protocol(taskArguments, hre) {
     console.log(`CaskSubscriptionManagers vault:                 ${await subscriptionManager.vault()}`);
     console.log(`CaskSubscriptionManagers subscriptionPlans:     ${await subscriptionManager.subscriptionPlans()}`);
     console.log(`CaskSubscriptionManagers subscriptions:         ${await subscriptionManager.subscriptions()}`);
+    console.log(`CaskSubscriptionManagers paymentMinValue:       ${paymentMinValue} (${formatUnits(paymentMinValue, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
     console.log(`CaskSubscriptionManagers paymentFeeMin:         ${paymentFeeMin} (${formatUnits(paymentFeeMin, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
     console.log(`CaskSubscriptionManagers paymentFeeRateMin:     ${paymentFeeRateMin} bps (${paymentFeeRateMin / 100}%)`);
     console.log(`CaskSubscriptionManagers paymentFeeRateMax:     ${paymentFeeRateMax} bps (${paymentFeeRateMax / 100}%)`);
