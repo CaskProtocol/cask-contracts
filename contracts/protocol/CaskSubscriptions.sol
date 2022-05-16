@@ -202,6 +202,7 @@ PausableUpgradeable
 
         subscription.status = SubscriptionStatus.Active;
 
+        providerActiveSubscriptionCount[subscription.provider] += 1;
         planActiveSubscriptionCount[subscription.provider][subscription.planId] += 1;
 
         // if renewal date has already passed, set it to now so consumer is not charged for the time it was paused
@@ -291,6 +292,7 @@ PausableUpgradeable
         } else if (_command == ManagerCommand.Pause) {
             subscription.status = SubscriptionStatus.Paused;
 
+            providerActiveSubscriptionCount[subscription.provider] -= 1;
             planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
 
             emit SubscriptionPaused(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
