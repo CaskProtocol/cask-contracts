@@ -197,6 +197,92 @@ async function onePlanWithDiscountsFixture() {
     return fixture;
 }
 
+async function onePlanWithNFTDiscountFixture() {
+    const fixture = await protocolFixture();
+
+    fixture.nft = await ethers.getContract("MockNFT");
+
+    fixture.plans.push({
+        provider: fixture.providerA.address,
+        planId: 601,
+        planData: CaskSDK.utils.encodePlanData(
+            601, // planId
+            usdcUnits('10'), // price
+            month, // period
+            7 * day, // freeTrial
+            0, // maxActive
+            0, // minPeriods
+            7, // gracePeriod
+            false, // canPause
+            true) // canTransfer
+    });
+
+
+    fixture.discounts.push({
+        token: fixture.nft.address,
+        discountId: CaskSDK.utils.generateERC20DiscountValidator(fixture.nft.address),
+        discountData: CaskSDK.utils.encodeDiscountData(
+            5000, // value
+            0,  // validAfter
+            0, // expiresAt
+            0, // maxRedemptions
+            601, // planId
+            0, // applyPeriods
+            2, // discountType (2=token)
+            false) // isFixed
+    });
+
+    fixture.plansRoot = CaskSDK.utils.plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = CaskSDK.utils.discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await CaskSDK.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
+        fixture.discountsRoot);
+
+    return fixture;
+}
+
+async function onePlanWithERC20DiscountFixture() {
+    const fixture = await protocolFixture();
+
+    fixture.erc20 = await ethers.getContract("MockERC20");
+
+    fixture.plans.push({
+        provider: fixture.providerA.address,
+        planId: 701,
+        planData: CaskSDK.utils.encodePlanData(
+            701, // planId
+            usdcUnits('10'), // price
+            month, // period
+            7 * day, // freeTrial
+            0, // maxActive
+            0, // minPeriods
+            7, // gracePeriod
+            false, // canPause
+            true) // canTransfer
+    });
+
+
+    fixture.discounts.push({
+        token: fixture.erc20.address,
+        discountId: CaskSDK.utils.generateERC20DiscountValidator(fixture.erc20.address, 18, 500),
+        discountData: CaskSDK.utils.encodeDiscountData(
+            5000, // value
+            0,  // validAfter
+            0, // expiresAt
+            0, // maxRedemptions
+            701, // planId
+            0, // applyPeriods
+            2, // discountType (2=token)
+            false) // isFixed
+    });
+
+    fixture.plansRoot = CaskSDK.utils.plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = CaskSDK.utils.discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await CaskSDK.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
+        fixture.discountsRoot);
+
+    return fixture;
+}
+
 
 
 module.exports = {
@@ -206,4 +292,6 @@ module.exports = {
     unpausablePlanFixture,
     minTermPlanFixture,
     onePlanWithDiscountsFixture,
+    onePlanWithNFTDiscountFixture,
+    onePlanWithERC20DiscountFixture,
 }

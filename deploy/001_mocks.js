@@ -20,7 +20,6 @@ const deployMocks = async ({getNamedAccounts}) => {
         "USDT",
         "USDC",
         "DAI",
-        "UST",
         "FRAX",
     ];
     for (const mockToken of mockTokens) {
@@ -42,12 +41,26 @@ const deployMocks = async ({getNamedAccounts}) => {
             ],
             "MockChainlinkOracleFeed");
     }
+};
 
+const deployMockDiscountTokens = async () => {
+
+    // Deploy mock contracts for token based discounts
+    const mockTokens = [
+        "ERC20",
+        "NFT",
+    ];
+    for (const mockToken of mockTokens) {
+        const contract = "Mock"+mockToken;
+
+        await deployWithConfirmation(contract);
+    }
 };
 
 const main = async (hre) => {
     console.log("Running 001_mocks deployment...");
     await deployMocks(hre);
+    await deployMockDiscountTokens(hre);
     console.log("001_mocks deploy done.");
     return true;
 };

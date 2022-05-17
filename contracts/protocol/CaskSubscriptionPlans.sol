@@ -219,7 +219,7 @@ PausableUpgradeable
         uint8 decimals = uint8(bytes1(_discountValidator << 160));
 
         uint256 consumerBalance = IERC20(token).balanceOf(_consumer);
-        if (decimals > 1) {
+        if (decimals > 0) {
             consumerBalance = consumerBalance / uint256(10 ** decimals);
         }
         uint64 minBalance = uint64(bytes8(_discountValidator << 192));

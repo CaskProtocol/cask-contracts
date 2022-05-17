@@ -365,10 +365,10 @@ KeeperCompatibleInterface
         if (subscription.discountId > 0) {
             ICaskSubscriptionPlans.Discount memory discountInfo = _parseDiscountData(subscription.discountData);
 
-            if (_discountCurrentlyApplies(consumer, subscription.discountId, discountInfo)) {
-                if(discountInfo.applyPeriods == 0 ||
-                    subscription.createdAt + (planInfo.period * discountInfo.applyPeriods) < timestamp)
-                {
+            if(discountInfo.applyPeriods == 0 ||
+                subscription.createdAt + (planInfo.period * discountInfo.applyPeriods) < timestamp)
+            {
+                if (_discountCurrentlyApplies(consumer, subscription.discountId, discountInfo)) {
                     if (discountInfo.isFixed) {
                         if (chargePrice > discountInfo.value) {
                             chargePrice = chargePrice - discountInfo.value;
@@ -378,9 +378,9 @@ KeeperCompatibleInterface
                     } else {
                         chargePrice = chargePrice - (chargePrice * discountInfo.value / 10000);
                     }
-                } else {
-                    subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
                 }
+            } else {
+                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
             }
         }
 
@@ -419,13 +419,13 @@ KeeperCompatibleInterface
 
     function _discountCurrentlyApplies(
         address _consumer,
-        bytes32 _discountId,
+        bytes32 _discountValidator,
         ICaskSubscriptionPlans.Discount memory _discountInfo
     ) internal returns(bool) {
         if (_discountInfo.discountType == ICaskSubscriptionPlans.DiscountType.Code) {
             return true;
         } else if (_discountInfo.discountType == ICaskSubscriptionPlans.DiscountType.ERC20) {
-            return subscriptionPlans.erc20DiscountCurrentlyApplies(_consumer, _discountId);
+            return subscriptionPlans.erc20DiscountCurrentlyApplies(_consumer, _discountValidator);
         }
         return false;
     }

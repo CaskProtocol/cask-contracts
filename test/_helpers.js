@@ -80,8 +80,6 @@ const getNetworkAddresses = async (deployments) => {
                 (await deployments.get("MockUSDC")).address,
             USDT: addresses[hre.network.name].USDT ||
                 (await deployments.get("MockUSDT")).address,
-            UST: addresses[hre.network.name].UST ||
-                (await deployments.get("MockUST")).address,
             FRAX: addresses[hre.network.name].FRAX ||
                 (await deployments.get("MockFRAX")).address,
 
@@ -91,8 +89,6 @@ const getNetworkAddresses = async (deployments) => {
                 (await deployments.get("MockChainlinkOracleFeedUSDC")).address,
             USDT_USD: addresses[hre.network.name].USDT_USD ||
                 (await deployments.get("MockChainlinkOracleFeedUSDT")).address,
-            UST_USD: addresses[hre.network.name].UST_USD ||
-                (await deployments.get("MockChainlinkOracleFeedUST")).address,
             FRAX_USD: addresses[hre.network.name].FRAX_USD ||
                 (await deployments.get("MockChainlinkOracleFeedFRAX")).address,
         };
