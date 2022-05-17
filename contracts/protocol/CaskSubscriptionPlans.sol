@@ -218,13 +218,16 @@ PausableUpgradeable
         address token = address(bytes20(_discountValidator));
         uint8 decimals = uint8(bytes1(_discountValidator << 160));
 
-        uint256 consumerBalance = IERC20(token).balanceOf(_consumer);
-        if (decimals > 0) {
-            consumerBalance = consumerBalance / uint256(10 ** decimals);
-        }
-        uint64 minBalance = uint64(bytes8(_discountValidator << 192));
+        try IERC20(token).balanceOf(_consumer) returns (uint256 balance) {
+            if (decimals > 0) {
+                balance = balance / uint256(10 ** decimals);
+            }
+            uint64 minBalance = uint64(bytes8(_discountValidator << 192));
 
-        return consumerBalance >= minBalance;
+            return balance >= minBalance;
+        } catch (bytes memory) {
+            return false;
+        }
     }
 
     function getPlanStatus(
