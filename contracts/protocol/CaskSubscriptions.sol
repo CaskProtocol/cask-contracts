@@ -193,7 +193,14 @@ PausableUpgradeable
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
 
         Subscription storage subscription = subscriptions[_subscriptionId];
-        require(subscription.status == SubscriptionStatus.Paused, "!NOT_PAUSED");
+
+        require(subscription.status == SubscriptionStatus.Paused ||
+                subscription.status == SubscriptionStatus.PendingPause, "!NOT_PAUSED");
+
+        if (subscription.status == SubscriptionStatus.PendingPause) {
+            subscription.status = SubscriptionStatus.Active;
+            return;
+        }
 
         PlanInfo memory planInfo = _parsePlanData(subscription.planData);
 
