@@ -182,11 +182,9 @@ PausableUpgradeable
         PlanInfo memory planInfo = _parsePlanData(subscription.planData);
         require(planInfo.canPause, "!NOT_PAUSABLE");
 
-        subscription.status = SubscriptionStatus.Paused;
+        subscription.status = SubscriptionStatus.PendingPause;
 
-        planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
-
-        emit SubscriptionPaused(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+        emit SubscriptionPendingPause(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
             subscription.ref, subscription.planId);
     }
 
@@ -195,7 +193,14 @@ PausableUpgradeable
     ) external override onlySubscriber(_subscriptionId) whenNotPaused {
 
         Subscription storage subscription = subscriptions[_subscriptionId];
-        require(subscription.status == SubscriptionStatus.Paused, "!NOT_PAUSED");
+
+        require(subscription.status == SubscriptionStatus.Paused ||
+                subscription.status == SubscriptionStatus.PendingPause, "!NOT_PAUSED");
+
+        if (subscription.status == SubscriptionStatus.PendingPause) {
+            subscription.status = SubscriptionStatus.Active;
+            return;
+        }
 
         PlanInfo memory planInfo = _parsePlanData(subscription.planData);
 
@@ -204,6 +209,7 @@ PausableUpgradeable
 
         subscription.status = SubscriptionStatus.Active;
 
+        providerActiveSubscriptionCount[subscription.provider] += 1;
         planActiveSubscriptionCount[subscription.provider][subscription.planId] += 1;
 
         // if renewal date has already passed, set it to now so consumer is not charged for the time it was paused
@@ -289,6 +295,15 @@ PausableUpgradeable
                 subscription.ref, subscription.planId);
 
             _burn(_subscriptionId);
+
+        } else if (_command == ManagerCommand.Pause) {
+            subscription.status = SubscriptionStatus.Paused;
+
+            providerActiveSubscriptionCount[subscription.provider] -= 1;
+            planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
+
+            emit SubscriptionPaused(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+                subscription.ref, subscription.planId);
 
         } else if (_command == ManagerCommand.PastDue) {
             subscription.status = SubscriptionStatus.PastDue;
@@ -456,6 +471,11 @@ PausableUpgradeable
             subscription.renewAt = timestamp;
         }
 
+        consumerSubscriptions[_msgSender()].push(subscriptionId);
+        providerSubscriptions[provider].push(subscriptionId);
+        providerActiveSubscriptionCount[provider] += 1;
+        planActiveSubscriptionCount[provider][planInfo.planId] += 1;
+
         (
         subscription.discountId,
         subscription.discountData
@@ -463,17 +483,11 @@ PausableUpgradeable
 
         subscriptionManager.renewSubscription(subscriptionId); // registers subscription with manager
 
-        if (planInfo.freeTrial == 0) {
-            require(subscription.status == SubscriptionStatus.Active, "!INSUFFICIENT_FUNDS");
-        }
+        require(subscription.status == SubscriptionStatus.Active ||
+                subscription.status == SubscriptionStatus.Trialing, "!UNPROCESSABLE");
 
         emit SubscriptionCreated(ownerOf(subscriptionId), subscription.provider, subscriptionId,
             subscription.ref, subscription.planId, subscription.discountId);
-
-        consumerSubscriptions[_msgSender()].push(subscriptionId);
-        providerSubscriptions[provider].push(subscriptionId);
-        providerActiveSubscriptionCount[provider] += 1;
-        planActiveSubscriptionCount[provider][planInfo.planId] += 1;
 
         return subscriptionId;
     }
@@ -516,7 +530,8 @@ PausableUpgradeable
             (
             subscription.discountId,
             subscription.discountData
-            ) = _verifyDiscountProof(ownerOf(_subscriptionId), subscription.provider, newPlanInfo.planId, _discountProof);
+            ) = _verifyDiscountProof(ownerOf(_subscriptionId), subscription.provider,
+                newPlanInfo.planId, _discountProof);
         }
 
         if (subscription.planId != newPlanInfo.planId) {
@@ -573,7 +588,8 @@ PausableUpgradeable
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
     ) internal returns(bytes32, bytes32) {
         if (_discountProof[0] > 0) {
-            bytes32 discountId = subscriptionPlans.verifyAndConsumeDiscount(_consumer, _provider, _planId, _discountProof);
+            bytes32 discountId = subscriptionPlans.verifyAndConsumeDiscount(_consumer, _provider,
+                _planId, _discountProof);
             if (discountId > 0)
             {
                 return (discountId, _discountProof[1]);

@@ -1,4 +1,5 @@
 const { parseUnits, formatUnits } = require("ethers").utils;
+const { CaskSDK } = require('@caskprotocol/sdk');
 
 function caskUnits(amount) {
     return parseUnits(amount, 18);
@@ -72,7 +73,6 @@ async function _debug_dao(taskArguments, hre) {
 
 async function _debug_protocol(taskArguments, hre) {
 
-    const vaultManager = await hre.ethers.getContract("CaskVaultManager");
     const vault = await hre.ethers.getContract("CaskVault");
     const subscriptionPlans = await hre.ethers.getContract("CaskSubscriptionPlans");
     const subscriptions = await hre.ethers.getContract("CaskSubscriptions");
@@ -84,12 +84,6 @@ async function _debug_protocol(taskArguments, hre) {
     //
     console.log("\nProtocol Contract addresses");
     console.log("====================");
-
-    console.log(`CaskVaultManager:                               ${vaultManager.address}`);
-    console.log(`CaskVaultManager Proxy Admin:                   ${await hre.upgrades.erc1967.getAdminAddress(vaultManager.address)}`);
-    console.log(`CaskVaultManager Impl:                          ${await hre.upgrades.erc1967.getImplementationAddress(vaultManager.address)}`);
-    console.log(`CaskVaultManager Owner:                         ${await vaultManager.owner()}`);
-
     console.log(`CaskVault:                                      ${vault.address}`);
     console.log(`CaskVault Proxy Admin:                          ${await hre.upgrades.erc1967.getAdminAddress(vault.address)}`);
     console.log(`CaskVault Impl:                                 ${await hre.upgrades.erc1967.getImplementationAddress(vault.address)}`);
@@ -112,39 +106,54 @@ async function _debug_protocol(taskArguments, hre) {
     //
     // Vault Config
     //
-    const strategyAllocationRate = await vaultManager.strategyAllocationRate();
-    const yieldFeeBps = await vaultManager.yieldFeeBps();
-    const strategist = await vaultManager.strategist();
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
+    const baseAssetContract = CaskSDK.contracts.ERC20({tokenAddress: baseAsset, provider: hre.ethers.provider});
+    const baseAssetSymbol = await baseAssetContract.symbol();
 
     console.log("\nVault Configuration");
     console.log("====================");
-    console.log(`CaskVaultManager strategyAllocationRate:        ${strategyAllocationRate}`);
-    console.log(`CaskVaultManager yieldFeeBps:                   ${yieldFeeBps}`);
-    console.log(`CaskVaultManager strategist:                    ${strategist}`);
-    console.log(`CaskVaultManager vault:                         ${await vaultManager.vault()}`);
-    console.log(`CaskVault vaultManager:                         ${await vault.vaultManager()}`);
-    console.log(`CaskVault baseAsset:                            ${await vault.getBaseAsset()}`);
+    console.log(`paused:                                         ${await vault.paused()}`);
+    console.log(`CaskVault baseAsset:                            ${baseAsset} (${baseAssetSymbol})`);
+    console.log(`CaskVault baseAsset decimals:                   ${baseAssetInfo.assetDecimals}`);
     const protocolCount = await vault.protocolCount();
     console.log(`CaskVault protocolCount:                        ${protocolCount}`);
     for (let i = 0; i < protocolCount; i++) {
         console.log(`   protocol ${i}:                                  ${await vault.protocols(i)}`);
     }
 
-    console.log(`paused:                                         ${await vault.paused()}`);
     console.log(`totalSupply:                                    ${await vault.totalSupply()}`);
+    console.log(`totalValue:                                     ${formatUnits(await vault.totalValue(), baseAssetInfo.assetDecimals)}`);
+    console.log(`pricePerShare:                                  ${await vault.pricePerShare()}`);
+
     const allAssets = await vault.getAllAssets();
     console.log(`allowedAssets count:                            ${allAssets.length}`);
     for (let i = 0; i < allAssets.length; i++) {
         const assetInfo = await vault.getAsset(allAssets[i]);
         const assetBalance = await vault.totalAssetBalance(allAssets[i]);
-        console.log(`Asset ${allAssets[i]}:             Balance: ${formatUnits(assetBalance, assetInfo.assetDecimals)}`)
+
+        const assetContract = CaskSDK.contracts.ERC20({tokenAddress: allAssets[i], provider: hre.ethers.provider});
+        const symbol = await assetContract.symbol();
+
+        console.log(`Asset ${allAssets[i]}`);
+        console.log(`   Symbol                                       ${symbol}`);
+        console.log(`   Allowed:                                     ${assetInfo.allowed}`);
+        console.log(`   Balance:                                     ${formatUnits(assetBalance, assetInfo.assetDecimals)}`);
+        if (assetInfo.depositLimit.toHexString() === '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff') {
+            console.log(`   Deposit Limit:                               Unlimited`);
+        } else {
+            console.log(`   Deposit Limit:                               ${formatUnits(assetInfo.depositLimit, assetInfo.assetDecimals)}`);
+        }
+        console.log(`   Oracle:                                      ${assetInfo.priceFeed}`);
+        console.log(`   Slippage:                                    ${assetInfo.slippageBps} bps (${assetInfo.slippageBps / 100}%)`);
     }
 
 
     //
     // Protocol Config
     //
-    const paymentFeeFixed = await subscriptionManager.paymentFeeFixed();
+    const paymentMinValue = await subscriptionManager.paymentMinValue();
+    const paymentFeeMin = await subscriptionManager.paymentFeeMin();
     const paymentFeeRateMin = await subscriptionManager.paymentFeeRateMin();
     const paymentFeeRateMax = await subscriptionManager.paymentFeeRateMax();
 
@@ -154,13 +163,15 @@ async function _debug_protocol(taskArguments, hre) {
     console.log(`CaskSubscriptions subscriptionPlans:            ${await subscriptions.subscriptionPlans()}`);
 
     console.log(`CaskSubscriptionPlans subscriptionManager:      ${await subscriptionPlans.subscriptionManager()}`);
+    console.log(`CaskSubscriptionPlans subscriptions:            ${await subscriptionPlans.subscriptions()}`);
 
     console.log(`CaskSubscriptionManagers vault:                 ${await subscriptionManager.vault()}`);
     console.log(`CaskSubscriptionManagers subscriptionPlans:     ${await subscriptionManager.subscriptionPlans()}`);
     console.log(`CaskSubscriptionManagers subscriptions:         ${await subscriptionManager.subscriptions()}`);
-    console.log(`CaskSubscriptionManagers paymentFeeFixed:       ${paymentFeeFixed} (${paymentFeeFixed / 100}%)`);
-    console.log(`CaskSubscriptionManagers paymentFeeRateMin:     ${paymentFeeRateMin} (${paymentFeeRateMin / 100}%)`);
-    console.log(`CaskSubscriptionManagers paymentFeeRateMax:     ${paymentFeeRateMax} (${paymentFeeRateMax / 100}%)`);
+    console.log(`CaskSubscriptionManagers paymentMinValue:       ${paymentMinValue} (${formatUnits(paymentMinValue, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskSubscriptionManagers paymentFeeMin:         ${paymentFeeMin} (${formatUnits(paymentFeeMin, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskSubscriptionManagers paymentFeeRateMin:     ${paymentFeeRateMin} bps (${paymentFeeRateMin / 100}%)`);
+    console.log(`CaskSubscriptionManagers paymentFeeRateMax:     ${paymentFeeRateMax} bps (${paymentFeeRateMax / 100}%)`);
     console.log(`CaskSubscriptionManagers stakeTargetFactor:     ${await subscriptionManager.stakeTargetFactor()}`);
 
 }
@@ -175,9 +186,9 @@ async function debug(taskArguments, hre) {
     const isLocalhost = !isFork && hre.network.name === "localhost";
     const isMemnet = hre.network.name === "hardhat";
 
-    const isMainnet = hre.network.name === "mainnet";
+    const isEthereum = hre.network.name === "ethereum";
 
-    const isProduction = hre.network.name.startsWith('production_');
+    const isMainnet = hre.network.name.startsWith('mainnet_');
     const isTestnet = hre.network.name.startsWith('testnet_');
     const isInternal = hre.network.name.startsWith('internal_');
 
@@ -185,8 +196,8 @@ async function debug(taskArguments, hre) {
 
     const isDevnet = isLocalhost || isMemnet;
     const isRealChain = !isLocalhost && !isMemnet;
-    const isDaoChain = isMemnet || isFork || isLocalhost || isMainnet;
-    const isProtocolChain = isMemnet || isFork || isLocalhost || isProduction || isTestnet || isInternal;
+    const isDaoChain = isMemnet || isFork || isLocalhost || isEthereum;
+    const isProtocolChain = isMemnet || isFork || isLocalhost || isMainnet || isTestnet || isInternal;
 
 
     if (isDaoChain) {

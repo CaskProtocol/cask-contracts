@@ -13,10 +13,11 @@
     "local": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat --network localhost",
     "export": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat deploy --export '../p-cask-frontend/src/abi/network.json'",
     "test": "NODE_OPTIONS=--openssl-legacy-provider IS_TEST=true npx hardhat test",
+    "solhint": "solhint contracts/**/*.sol",
     "clean": "rm -rf artifacts cache deployments/local*",
-    "keeper:polygon": "npx hardhat keeper --network production_polygon",
-    "keeper:avalanche": "npx hardhat keeper --network production_avalanche",
-    "keeper:fantom": "npx hardhat keeper --network production_fantom",
+    "keeper:polygon": "npx hardhat keeper --network mainnet_polygon",
+    "keeper:avalanche": "npx hardhat keeper --network mainnet_avalanche",
+    "keeper:fantom": "npx hardhat keeper --network mainnet_fantom",
     "keeper:internal:mumbai": "npx hardhat keeper --network internal_mumbai",
     "keeper:internal:fuji": "npx hardhat keeper --network internal_fuji",
     "keeper:testnet:mumbai": "npx hardhat keeper --network testnet_mumbai",
@@ -51,7 +52,7 @@
     "merkletreejs": "^0.2.27"
   },
   "dependencies": {
-    "@caskprotocol/sdk": "^1.1.0",
+    "@caskprotocol/sdk": "^1.1.7",
     "@opengsn/contracts": "^2.2.6",
     "dotenv": "^10.0.0",
     "yarn": "^1.22.17"

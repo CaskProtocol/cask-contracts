@@ -15,20 +15,6 @@ import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
 
 import "../interfaces/ICaskVault.sol";
-import "../interfaces/ICaskVaultManager.sol";
-import "../interfaces/ICaskStrategy.sol";
-
-/**
-CaskVault is where:
-
-- the approved asset list lives
-- users deposit/withdraw approved assets which results in a mint/burn of the vault token
-- a minimum reserve rate is enforced
-- vault manager can tell the vault to send unallocated assets to strategies
-- approved protocols can process a payment between parties
-- one can query the value of all unallocated assets
-
-*/
 
 contract CaskVault is
 ICaskVault,
@@ -55,8 +41,7 @@ ReentrancyGuardUpgradeable
 
     /************************** STATE **************************/
 
-    // address of ICaskVaultManager that manages the vault
-    address public vaultManager;
+    address public reserved1;
 
     // base asset for vault - much is denominated in this
     address public baseAsset;
@@ -74,11 +59,13 @@ ReentrancyGuardUpgradeable
     // require deposit of at least this amount denominated in the baseAsset
     uint256 public minDeposit;
 
+    // revert if price feed age is older than this number of seconds. set to 0 to disable check.
+    uint256 public maxPriceFeedAge;
+
     // consumer funding profile
     mapping(address => FundingProfile) internal fundingProfiles;
 
     function initialize(
-        address _vaultManager,
         address _baseAsset,
         address _baseAssetPriceFeed,
         address _feeDistributor
@@ -95,14 +82,15 @@ ReentrancyGuardUpgradeable
         asset.priceFeed = _baseAssetPriceFeed;
         asset.assetDecimals = IERC20Metadata(_baseAsset).decimals();
         asset.priceFeedDecimals = AggregatorV3Interface(_baseAssetPriceFeed).decimals();
+        asset.depositLimit = type(uint256).max;
         asset.slippageBps = 0;
         asset.allowed = true;
         allAssets.push(_baseAsset);
 
-        vaultManager = _vaultManager;
         baseAsset = _baseAsset;
         feeDistributor = _feeDistributor;
         minDeposit = 0;
+        maxPriceFeedAge = 0;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -140,7 +128,7 @@ ReentrancyGuardUpgradeable
         uint256 _protocolFee,
         address _network,
         uint256 _networkFee
-    ) external override nonReentrant onlyProtocol {
+    ) external override nonReentrant onlyProtocol whenNotPaused {
         _protocolPayment(_from, _to, _value, _protocolFee, _network, _networkFee);
     }
 
@@ -156,7 +144,7 @@ ReentrancyGuardUpgradeable
         address _to,
         uint256 _value,
         uint256 _protocolFee
-    ) external override nonReentrant onlyProtocol {
+    ) external override nonReentrant onlyProtocol whenNotPaused {
         _protocolPayment(_from, _to, _value, _protocolFee, address(0), 0);
     }
 
@@ -170,7 +158,7 @@ ReentrancyGuardUpgradeable
         address _from,
         address _to,
         uint256 _value
-    ) external override nonReentrant onlyProtocol {
+    ) external override nonReentrant onlyProtocol whenNotPaused {
         _protocolPayment(_from, _to, _value, 0, address(0), 0);
     }
 
@@ -182,6 +170,8 @@ ReentrancyGuardUpgradeable
         address _network,
         uint256 _networkFee
     ) internal {
+        require(_value > _protocolFee + _networkFee, "!VALUE_TOO_LOW");
+
         uint256 shares = _sharesForValue(_value);
 
         uint256 protocolFeeShares = 0;
@@ -210,10 +200,10 @@ ReentrancyGuardUpgradeable
     function transferValue(
         address _recipient,
         uint256 _value
-    ) external override nonReentrant returns (bool) {
-        uint256 shares = _sharesForValue(_value);
-        _transfer(_msgSender(), _recipient, shares);
-        emit TransferValue(_msgSender(), _recipient, _value, shares);
+    ) external override nonReentrant whenNotPaused returns (bool) {
+        uint256 amount = _sharesForValue(_value);
+        _transfer(_msgSender(), _recipient, amount);
+        emit TransferValue(_msgSender(), _recipient, _value, amount);
         return true;
     }
 
@@ -221,16 +211,16 @@ ReentrancyGuardUpgradeable
         address _sender,
         address _recipient,
         uint256 _value
-    ) external override nonReentrant returns (bool) {
-        uint256 shares = _sharesForValue(_value);
-        _transfer(_sender, _recipient, shares);
+    ) external override nonReentrant whenNotPaused returns (bool) {
+        uint256 amount = _sharesForValue(_value);
+        _transfer(_sender, _recipient, amount);
 
         uint256 currentAllowance = allowance(_sender, _msgSender());
-        require(currentAllowance >= shares, "ERC20: transfer amount exceeds allowance");
+        require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
         unchecked {
-            _approve(_sender, _msgSender(), currentAllowance - shares);
+            _approve(_sender, _msgSender(), currentAllowance - amount);
         }
-        emit TransferValue(_sender, _recipient, _value, shares);
+        emit TransferValue(_sender, _recipient, _value, amount);
         return true;
     }
 
@@ -242,7 +232,7 @@ ReentrancyGuardUpgradeable
     function deposit(
         address _asset,
         uint256 _assetAmount
-    ) external override nonReentrant {
+    ) external override nonReentrant whenNotPaused {
         _depositTo(_msgSender(), _asset, _assetAmount);
     }
 
@@ -256,7 +246,7 @@ ReentrancyGuardUpgradeable
         address _to,
         address _asset,
         uint256 _assetAmount
-    ) external override nonReentrant {
+    ) external override nonReentrant whenNotPaused {
         _depositTo(_to, _asset, _assetAmount);
     }
 
@@ -267,6 +257,7 @@ ReentrancyGuardUpgradeable
     ) internal {
         require(assets[_asset].allowed, "!NOT_ALLOWED(asset)");
         require(_assetAmount > 0, "!INVALID(assetAmount)");
+        require(_totalAssetBalance(_asset) + _assetAmount <= assets[_asset].depositLimit, "!DEPOSIT_LIMIT(asset)");
 
         uint256 baseAssetAmount = _assetAmount;
         if (_asset != baseAsset) {
@@ -302,7 +293,7 @@ ReentrancyGuardUpgradeable
     function withdraw(
         address _asset,
         uint256 _shares
-    ) external override nonReentrant {
+    ) external override nonReentrant whenNotPaused {
         _withdrawTo(_msgSender(), _asset, _shares);
     }
 
@@ -316,7 +307,7 @@ ReentrancyGuardUpgradeable
         address _recipient,
         address _asset,
         uint256 _shares
-    ) external override nonReentrant {
+    ) external override nonReentrant whenNotPaused {
         _withdrawTo(_recipient, _asset, _shares);
     }
 
@@ -412,17 +403,7 @@ ReentrancyGuardUpgradeable
     function _totalAssetBalance(
         address _asset
     ) internal view returns(uint256) {
-        return IERC20(_asset).balanceOf(address(this)) + ICaskVaultManager(vaultManager).assetBalanceManaged(_asset);
-    }
-
-    function allocateToStrategy(
-        address _strategy,
-        address _asset,
-        uint256 _assetAmount
-    ) external override onlyProtocol {
-        require(assets[_asset].allowed, "!NOT_ALLOWED(asset)");
-        IERC20(_asset).safeTransfer(_strategy, _assetAmount);
-        emit AllocatedToStrategy(_strategy, _asset, _assetAmount);
+        return IERC20(_asset).balanceOf(address(this));
     }
 
 
@@ -474,10 +455,10 @@ ReentrancyGuardUpgradeable
         minDeposit = _minDeposit;
     }
 
-    function setManager(
-        address _vaultManager
+    function setMaxPriceFeedAge(
+        uint256 _maxPriceFeedAge
     ) external onlyOwner {
-        vaultManager = _vaultManager;
+        maxPriceFeedAge = _maxPriceFeedAge;
     }
 
     function setTrustedForwarder(
@@ -486,59 +467,6 @@ ReentrancyGuardUpgradeable
         _setTrustedForwarder(_forwarder);
     }
 
-    /************************** FUNDING SOURCE FUNCTIONS **************************/
-
-    function fundingSource(
-        address _address
-    ) external view override returns(FundingProfile memory) {
-        return fundingProfiles[_address];
-    }
-
-    function valueAvailable(
-        address _address,
-        uint256 _value
-    ) external view override returns(bool) {
-        bool enough = false;
-        FundingProfile memory fundingProfile = fundingProfiles[_address];
-        if (fundingProfile.primarySource == FundingSource.Cask) {
-            enough = _valueAvailableFromCask(_address, _value);
-        } else if (fundingProfile.primarySource == FundingSource.Personal) {
-            enough = _valueAvailableFromToken(_address, fundingProfile.primaryToken, _value);
-        }
-        if (!enough) {
-            if (fundingProfile.backupSource == FundingSource.Cask) {
-                enough = _valueAvailableFromCask(_address, _value);
-            } else if (fundingProfile.backupSource == FundingSource.Personal) {
-                enough = _valueAvailableFromToken(_address, fundingProfile.backupToken, _value);
-            }
-        }
-        return enough;
-    }
-
-    function _valueAvailableFromCask(
-        address _address,
-        uint256 _value
-    ) internal view returns(bool) {
-        return _shareValue(balanceOf(_address)) >= _value;
-    }
-
-    function _valueAvailableFromToken(
-        address _address,
-        address _token,
-        uint256 _value
-    ) internal view returns(bool) {
-        Asset memory sourceAsset = assets[_token];
-        require(sourceAsset.allowed, "!ASSET_NOT_ALLOWED");
-
-        uint256 baseAssetValue = _convertPrice(_token, baseAsset, IERC20(_token).balanceOf(_address));
-        uint256 tokenAmount = _convertPrice(baseAsset, _token, _value);
-
-        bool enough = baseAssetValue >= _value;
-        if (enough) {
-            enough = IERC20(_token).allowance(_address, address(this)) >= tokenAmount;
-        }
-        return enough;
-    }
 
     /************************** ASSET FUNCTIONS **************************/
 
@@ -638,11 +566,14 @@ ReentrancyGuardUpgradeable
         }
 
         int256 oraclePrice;
+        uint256 updatedAt;
 
-        ( , oraclePrice, , , ) = AggregatorV3Interface(assets[_fromAsset].priceFeed).latestRoundData();
+        ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(assets[_fromAsset].priceFeed).latestRoundData();
         uint256 fromOraclePrice = uint256(oraclePrice);
-        ( , oraclePrice, , , ) = AggregatorV3Interface(assets[_toAsset].priceFeed).latestRoundData();
+        require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_FEED_TOO_OLD");
+        ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(assets[_toAsset].priceFeed).latestRoundData();
         uint256 toOraclePrice = uint256(oraclePrice);
+        require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_FEED_TOO_OLD");
 
         if (assets[_fromAsset].priceFeedDecimals != assets[_toAsset].priceFeedDecimals) {
             // since oracle precision is different, scale everything

@@ -5,6 +5,7 @@
 const hre = require("hardhat");
 
 const {
+    isEthereum,
     isMainnet,
     isTestnet,
     isRealChain,
@@ -14,7 +15,7 @@ const {
 const { getTxOpts } = require("../utils/tx.js");
 
 // Wait for 3 blocks confirmation on Mainnet/Testnets.
-const NUM_CONFIRMATIONS = isMainnet || isTestnet || isInternal ? 2 : 0;
+const NUM_CONFIRMATIONS = isEthereum || isMainnet || isTestnet || isInternal ? 2 : 0;
 
 function log(msg, deployResult = null) {
     if (isRealChain || process.env.VERBOSE) {

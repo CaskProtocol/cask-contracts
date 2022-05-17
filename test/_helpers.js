@@ -5,7 +5,7 @@ const { parseUnits, formatUnits } = require("ethers").utils;
 const {
     isLocalhost,
     isInternal,
-    isProduction,
+    isMainnet,
 } = require("./_networks");
 
 
@@ -18,6 +18,7 @@ const SubscriptionStatus = {
     Paused: 3,
     Canceled: 4,
     PastDue: 5,
+    PendingPause: 6
 };
 
 // keep in sync with ICaskSubscriptionPlans.sol
@@ -66,7 +67,7 @@ const setOracleTokenPriceUsd = async (tokenSymbol, usdPrice) => {
 };
 
 const getNetworkAddresses = async (deployments) => {
-    if (isProduction) {
+    if (isMainnet) {
         return addresses[hre.network.name];
     } else {
         if (!addresses[hre.network.name]) {
@@ -79,8 +80,6 @@ const getNetworkAddresses = async (deployments) => {
                 (await deployments.get("MockUSDC")).address,
             USDT: addresses[hre.network.name].USDT ||
                 (await deployments.get("MockUSDT")).address,
-            UST: addresses[hre.network.name].UST ||
-                (await deployments.get("MockUST")).address,
             FRAX: addresses[hre.network.name].FRAX ||
                 (await deployments.get("MockFRAX")).address,
 
@@ -90,8 +89,6 @@ const getNetworkAddresses = async (deployments) => {
                 (await deployments.get("MockChainlinkOracleFeedUSDC")).address,
             USDT_USD: addresses[hre.network.name].USDT_USD ||
                 (await deployments.get("MockChainlinkOracleFeedUSDT")).address,
-            UST_USD: addresses[hre.network.name].UST_USD ||
-                (await deployments.get("MockChainlinkOracleFeedUST")).address,
             FRAX_USD: addresses[hre.network.name].FRAX_USD ||
                 (await deployments.get("MockChainlinkOracleFeedFRAX")).address,
         };

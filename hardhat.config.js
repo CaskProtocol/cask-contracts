@@ -18,23 +18,21 @@ const { fixtures } = require("./tasks/fixtures");
 const { keeper } = require("./tasks/keeper");
 
 
-// production deployer
+// production
 const DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
+const KEEPER = "0xa942e8a09dF292Ef66F3d02755E5B5AB04b90709";
 
 // production networks - each chain has their own governor/strategist (multisigs)
-const MAINNET_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
+const ETHEREUM_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
 
 const POLYGON_GOVERNOR = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
 const POLYGON_STRATEGIST = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
-const POLYGON_KEEPER = "0x";
 
 const AVALANCHE_GOVERNOR = "";
 const AVALANCHE_STRATEGIST = "";
-const AVALANCHE_KEEPER = "0x";
 
 const FANTOM_GOVERNOR = "";
 const FANTOM_STRATEGIST = "";
-const FANTOM_KEEPER = "0x";
 
 
 // testnet networks - common across all testnets
@@ -73,9 +71,13 @@ task("keeper", "Run a keeper")
     .addOptionalParam("queue", "comma separated list of queues - 1 for active queue, 2 for past due queue", "1,2")
     .addOptionalParam("interval", "How often (in ms) to do keeper upkeep check", "30000")
     .addOptionalParam("gasLimit", "gasLimit for keeper transaction", "2500000")
+    .addOptionalParam("gasPrice", "gasPrice for keeper transaction")
     .setAction(keeper);
 
 module.exports = {
+  mocha: {
+    timeout: 600000
+  },
   solidity: {
     version: "0.8.9",
     settings: {
@@ -95,34 +97,37 @@ module.exports = {
     localhost: {
       timeout: 60000,
     },
-    mainnet: {
-      url: `${process.env.MAINNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
+    ethereum: {
+      url: `${process.env.ETHEREUM_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
-        process.env.MAINNET_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+        process.env.ETHEREUM_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
-      gasPrice: 55000000000, // TODO: make sure to set to appropriate gwei!
+      gasPrice: parseInt(process.env.ETHEREUM_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
       timeout: 900000,
     },
-    production_polygon: {
+    mainnet_polygon: {
       url: `${process.env.POLYGON_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.POLYGON_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
-      timeout: 300000,
+      gasPrice: parseInt(process.env.POLYGON_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+      timeout: 900000,
     },
-    production_avalanche: {
+    mainnet_avalanche: {
       url: `${process.env.AVALANCHE_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.AVALANCHE_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
+      gasPrice: parseInt(process.env.AVALANCHE_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
-    production_fantom: {
+    mainnet_fantom: {
       url: `${process.env.FANTOM_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.FANTOM_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
+      gasPrice: parseInt(process.env.FANTOM_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
     internal_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -130,7 +135,8 @@ module.exports = {
         process.env.INTERNAL_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
-      gas: 2100000, gasPrice: 8500000000,
+      gas: 2100000,
+      gasPrice: parseInt(process.env.MUMBAI_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
     testnet_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -138,7 +144,8 @@ module.exports = {
         process.env.MUMBAI_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
-      gas: 2100000, gasPrice: 8500000000,
+      gas: 2100000,
+      gasPrice: parseInt(process.env.MUMBAI_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
     testnet_fantom: {
       url: `${process.env.FTMTESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -146,7 +153,8 @@ module.exports = {
         process.env.FTMTESTNET_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
-      gas: 2100000, gasPrice: 210000000000,
+      gas: 2100000,
+      gasPrice: parseInt(process.env.FTMTESTNET_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
     testnet_fuji: {
       url: `${process.env.FUJI_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -154,7 +162,8 @@ module.exports = {
         process.env.FUJI_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
-      gas: 2100000, gasPrice: 26000000000,
+      gas: 2100000,
+      gasPrice: parseInt(process.env.FUJI_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
     testnet_evmos: {
       url: `${process.env.EVMOSTESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -162,6 +171,7 @@ module.exports = {
         process.env.EVMOSTESTNET_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
+      gasPrice: parseInt(process.env.EVMOSTESTNET_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
     testnet_alfajores: {
       url: `${process.env.ALFAJORES_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -169,6 +179,7 @@ module.exports = {
         process.env.ALFAJORES_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
+      gasPrice: parseInt(process.env.ALFAJORES_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
     testnet_aurora: {
       url: `${process.env.AURORATESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -176,6 +187,7 @@ module.exports = {
         process.env.AURORATESTNET_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
+      gasPrice: parseInt(process.env.AURORA_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
     internal_fuji: {
       url: `${process.env.FUJI_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -183,15 +195,16 @@ module.exports = {
         process.env.INTERNAL_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
-      gas: 2100000, gasPrice: 26000000000,
+      gas: 2100000,
+      gasPrice: parseInt(process.env.FUJI_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
   },
   namedAccounts: {
     deployerAddr: {
-      mainnet: DEPLOYER,
-      production_polygon: DEPLOYER,
-      production_avalanche: DEPLOYER,
-      production_fantom: DEPLOYER,
+      ethereum: DEPLOYER,
+      mainnet_polygon: DEPLOYER,
+      mainnet_avalanche: DEPLOYER,
+      mainnet_fantom: DEPLOYER,
 
       default: 0,
       localhost: 0,
@@ -205,10 +218,10 @@ module.exports = {
       testnet_aurora: TESTNET_DEPLOYER,
     },
     governorAddr: {
-      mainnet: MAINNET_GOVERNOR,
-      production_polygon: POLYGON_GOVERNOR,
-      production_avalanche: AVALANCHE_GOVERNOR,
-      production_fantom: FANTOM_GOVERNOR,
+      ethereum: ETHEREUM_GOVERNOR,
+      mainnet_polygon: POLYGON_GOVERNOR,
+      mainnet_avalanche: AVALANCHE_GOVERNOR,
+      mainnet_fantom: FANTOM_GOVERNOR,
 
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
@@ -223,9 +236,9 @@ module.exports = {
       testnet_aurora: TESTNET_GOVERNOR,
     },
     strategistAddr: {
-      production_polygon: POLYGON_STRATEGIST,
-      production_avalanche: AVALANCHE_STRATEGIST,
-      production_fantom: FANTOM_STRATEGIST,
+      mainnet_polygon: POLYGON_STRATEGIST,
+      mainnet_avalanche: AVALANCHE_STRATEGIST,
+      mainnet_fantom: FANTOM_STRATEGIST,
 
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
@@ -271,13 +284,13 @@ module.exports = {
       testnet_aurora: TESTNET_FAUCET_ADMIN,
     },
     keeperAddr: {
-      production_polygon: POLYGON_KEEPER,
-      production_avalanche: AVALANCHE_KEEPER,
-      production_fantom: FANTOM_KEEPER,
+      mainnet_polygon: KEEPER,
+      mainnet_avalanche: KEEPER,
+      mainnet_fantom: KEEPER,
 
       default: 11,
-      localhost: process.env.FORK === "true" ? POLYGON_KEEPER : 11,
-      hardhat: process.env.FORK === "true" ? POLYGON_KEEPER : 11,
+      localhost: process.env.FORK === "true" ? KEEPER : 11,
+      hardhat: process.env.FORK === "true" ? KEEPER : 11,
       internal_mumbai: TESTNET_KEEPER,
       internal_fuji: TESTNET_KEEPER,
       testnet_mumbai: TESTNET_KEEPER,

@@ -134,11 +134,31 @@ describe("CaskSubscriptions Pause", function () {
 
         // pause and confirm now that min term has elapsed
         expect(await consumerASubscriptions.pauseSubscription(subscriptionId))
-            .to.emit(consumerASubscriptions, "SubscriptionPaused");
+            .to.emit(consumerASubscriptions, "SubscriptionPendingPause");
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.PendingPause);
+
+        await advanceTimeRunSubscriptionKeeper(1, day);
+
+        // make sure we can change our mind
+        await consumerASubscriptions.resumeSubscription(subscriptionId);
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+
+        await advanceTimeRunSubscriptionKeeper(1, day);
+
+        // pause and confirm now that min term has elapsed
+        expect(await consumerASubscriptions.pauseSubscription(subscriptionId))
+            .to.emit(consumerASubscriptions, "SubscriptionPendingPause");
+        result = await consumerASubscriptions.getSubscription(subscriptionId);
+        expect(result.subscription.status).to.equal(SubscriptionStatus.PendingPause);
+
+        await advanceTimeRunSubscriptionKeeper(30, day);
+
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.status).to.equal(SubscriptionStatus.Paused);
 
-        await advanceTimeRunSubscriptionKeeper(31 * 2, day);
+        await advanceTimeRunSubscriptionKeeper(31, day);
 
         // resume subscription - confirm no payment while paused
         expect(await consumerASubscriptions.resumeSubscription(subscriptionId))

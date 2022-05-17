@@ -10,7 +10,6 @@ import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
 
 import "../interfaces/ICaskSubscriptionPlans.sol";
-import "../interfaces/ICaskPrivateBeta.sol";
 
 contract CaskSubscriptionPlans is
 ICaskSubscriptionPlans,
@@ -32,12 +31,16 @@ PausableUpgradeable
     /** @dev Maps for discounts. */
     mapping(address => mapping(uint32 => mapping(bytes32 => uint256))) internal discountRedemptions;
 
-    ICaskPrivateBeta public privateBeta;
-    bool public privateBetaOnly;
-
+    /** @dev Address of subscriptions contract. */
+    address public subscriptions;
 
     modifier onlyManager() {
         require(_msgSender() == subscriptionManager, "!AUTH");
+        _;
+    }
+
+    modifier onlySubscriptions() {
+        require(_msgSender() == subscriptions, "!AUTH");
         _;
     }
 
@@ -45,7 +48,7 @@ PausableUpgradeable
         __Ownable_init();
         __Pausable_init();
 
-        privateBetaOnly = false;
+        subscriptions = address(0);
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -62,22 +65,11 @@ PausableUpgradeable
         return BaseRelayRecipient._msgData();
     }
 
-    function setPrivateBeta(
-        bool enabled,
-        address _privateBeta
-    ) external onlyOwner {
-        privateBetaOnly = enabled;
-        privateBeta = ICaskPrivateBeta(_privateBeta);
-    }
-
     function setProviderProfile(
         address _paymentAddress,
         string calldata _cid,
         uint256 _nonce
     ) external override {
-        if (privateBetaOnly) {
-            require(privateBeta.betaProviders(_msgSender()) > 0, "!PRIVATE_BETA_ONLY");
-        }
         Provider storage profile = providerProfiles[_msgSender()];
         if (profile.nonce > 0) {
             require(_nonce > profile.nonce, "!NONCE");
@@ -117,10 +109,14 @@ PausableUpgradeable
         uint32 _planId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
     ) public view override returns(bytes32) {
+        if (_discountProof.length < 3 || _discountProof[0] == 0) {
+            return 0;
+        }
+
         DiscountType discountType = _parseDiscountType(_discountProof[1]);
 
         if (discountType == DiscountType.Code) {
-            return _verifyCodeDiscount(_consumer, _provider, _planId, _discountProof);
+            return _verifyCodeDiscount(_provider, _planId, _discountProof);
         } else if (discountType == DiscountType.ERC20) {
             return _verifyErc20Discount(_consumer, _provider, _planId, _discountProof);
         } else {
@@ -133,7 +129,7 @@ PausableUpgradeable
         address _provider,
         uint32 _planId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
-    ) external override returns(bytes32) {
+    ) external override onlySubscriptions returns(bytes32) {
         bytes32 discountId = verifyDiscount(_consumer, _provider, _planId, _discountProof);
         if (discountId > 0) {
             discountRedemptions[_provider][_planId][discountId] += 1;
@@ -142,18 +138,17 @@ PausableUpgradeable
     }
 
     function _verifyCodeDiscount(
-        address _consumer,
         address _provider,
         uint32 _planId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
     ) internal view returns(bytes32) {
-        if (_discountProof.length < 4 || _discountProof[0] == 0) {
+        if (_discountProof.length < 3 || _discountProof[0] == 0) {
             return 0;
         }
 
         bytes32 discountId = keccak256(abi.encode(_discountProof[0]));
 
-        if (_verifyDiscountProof(discountId, _discountProof[1], _discountProof[2], _discountProof[3:]) &&
+        if (_verifyDiscountProof(discountId, _discountProof) &&
             _verifyDiscountData(discountId, _provider, _planId, _discountProof[1]))
         {
             return discountId;
@@ -167,13 +162,13 @@ PausableUpgradeable
         uint32 _planId,
         bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
     ) internal view returns(bytes32) {
-        if (_discountProof.length < 4 || _discountProof[0] == 0) {
+        if (_discountProof.length < 3 || _discountProof[0] == 0) {
             return 0;
         }
 
         bytes32 discountId = _discountProof[0];
 
-        if (_verifyDiscountProof(discountId, _discountProof[1], _discountProof[2], _discountProof[3:]) &&
+        if (_verifyDiscountProof(discountId, _discountProof) &&
             erc20DiscountCurrentlyApplies(_consumer, discountId) &&
             _verifyDiscountData(discountId, _provider, _planId, _discountProof[1]))
         {
@@ -184,11 +179,20 @@ PausableUpgradeable
 
     function _verifyDiscountProof(
         bytes32 _discountId,
-        bytes32 _discountData,
-        bytes32 _merkleRoot,
-        bytes32[] calldata _merkleProof
-    ) internal view returns(bool) {
-        return MerkleProof.verify(_merkleProof, _merkleRoot, keccak256(abi.encode(_discountId, _discountData)));
+        bytes32[] calldata _discountProof // [discountValidator, discountData, merkleRoot, merkleProof...]
+    ) internal pure returns(bool) {
+        if (_discountProof.length < 3 || _discountProof[0] == 0) {
+            return false;
+        }
+
+        // its possible to have an empty merkleProof if the merkleRoot IS the leaf
+        bytes32[] memory merkleProof = new bytes32[](0);
+        if (_discountProof.length >= 4) {
+            merkleProof = _discountProof[3:];
+        }
+
+        return MerkleProof.verify(merkleProof, _discountProof[2],
+            keccak256(abi.encode(_discountId, _discountProof[1])));
     }
 
     function _verifyDiscountData(
@@ -212,15 +216,18 @@ PausableUpgradeable
         bytes32 _discountValidator
     ) public view override returns(bool) {
         address token = address(bytes20(_discountValidator));
-        uint8 decimals = uint8(bytes1(_discountValidator << 160)); // TODO: scale for decimals
+        uint8 decimals = uint8(bytes1(_discountValidator << 160));
 
-        uint256 consumerBalance = IERC20(token).balanceOf(_consumer);
-        if (decimals > 1) {
-            consumerBalance = consumerBalance / uint256(10 ** decimals);
+        try IERC20(token).balanceOf(_consumer) returns (uint256 balance) {
+            if (decimals > 0) {
+                balance = balance / uint256(10 ** decimals);
+            }
+            uint64 minBalance = uint64(bytes8(_discountValidator << 192));
+
+            return balance >= minBalance;
+        } catch (bytes memory) {
+            return false;
         }
-        uint64 minBalance = uint64(bytes8(_discountValidator << 192));
-
-         return consumerBalance >= minBalance;
     }
 
     function getPlanStatus(
@@ -267,6 +274,29 @@ PausableUpgradeable
         emit PlanRetired(_msgSender(), _planId, _retireAt);
     }
 
+    function _parseDiscountType(
+        bytes32 _discountData
+    ) internal pure returns(DiscountType) {
+        return DiscountType(uint8(bytes1(_discountData << 248)));
+    }
+
+    function _parseDiscountData(
+        bytes32 _discountData
+    ) internal pure returns(Discount memory) {
+        bytes1 options = bytes1(_discountData << 240);
+        return Discount({
+        value: uint256(_discountData >> 160),
+        validAfter: uint32(bytes4(_discountData << 96)),
+        expiresAt: uint32(bytes4(_discountData << 128)),
+        maxRedemptions: uint32(bytes4(_discountData << 160)),
+        planId: uint32(bytes4(_discountData << 192)),
+        applyPeriods: uint16(bytes2(_discountData << 224)),
+        discountType: DiscountType(uint8(bytes1(_discountData << 248))),
+        isFixed: options & 0x01 == 0x01
+        });
+    }
+
+
     /************************** ADMIN FUNCTIONS **************************/
 
     function pause() external onlyOwner {
@@ -283,32 +313,16 @@ PausableUpgradeable
         subscriptionManager = _subscriptionManager;
     }
 
+    function setSubscriptions(
+        address _subscriptions
+    ) external onlyOwner {
+        subscriptions = _subscriptions;
+    }
+
     function setTrustedForwarder(
         address _forwarder
     ) external onlyOwner {
         _setTrustedForwarder(_forwarder);
-    }
-
-    function _parseDiscountType(
-        bytes32 _discountData
-    ) internal pure returns(DiscountType) {
-        return DiscountType(uint8(bytes1(_discountData << 248)));
-    }
-
-    function _parseDiscountData(
-        bytes32 _discountData
-    ) internal pure returns(Discount memory) {
-        bytes1 options = bytes1(_discountData << 240);
-        return Discount({
-            value: uint256(_discountData >> 160),
-            validAfter: uint32(bytes4(_discountData << 96)),
-            expiresAt: uint32(bytes4(_discountData << 128)),
-            maxRedemptions: uint32(bytes4(_discountData << 160)),
-            planId: uint32(bytes4(_discountData << 192)),
-            applyPeriods: uint16(bytes2(_discountData << 224)),
-            discountType: DiscountType(uint8(bytes1(_discountData << 248))),
-            isFixed: options & 0x01 == 0x01
-        });
     }
 
 }
