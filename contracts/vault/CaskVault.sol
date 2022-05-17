@@ -512,14 +512,22 @@ ReentrancyGuardUpgradeable
         Asset memory sourceAsset = assets[_token];
         require(sourceAsset.allowed, "!ASSET_NOT_ALLOWED");
 
-        uint256 baseAssetValue = _convertPrice(_token, baseAsset, IERC20(_token).balanceOf(_address));
-        uint256 tokenAmount = _convertPrice(baseAsset, _token, _value);
+        try IERC20(_token).balanceOf(_address) returns (uint256 balance) {
+            uint256 baseAssetValue = _convertPrice(_token, baseAsset, balance);
+            uint256 tokenAmount = _convertPrice(baseAsset, _token, _value);
 
-        bool enough = baseAssetValue >= _value;
-        if (enough) {
-            enough = IERC20(_token).allowance(_address, address(this)) >= tokenAmount;
+            bool enough = baseAssetValue >= _value;
+            if (enough) {
+                try IERC20(_token).allowance(_address, address(this)) returns (uint256 allowance) {
+                    enough = allowance >= tokenAmount;
+                } catch (bytes memory) {
+                    enough = false;
+                }
+            }
+            return enough;
+        } catch (bytes memory) {
+            return false;
         }
-        return enough;
     }
 
     /************************** ASSET FUNCTIONS **************************/
