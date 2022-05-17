@@ -182,11 +182,9 @@ PausableUpgradeable
         PlanInfo memory planInfo = _parsePlanData(subscription.planData);
         require(planInfo.canPause, "!NOT_PAUSABLE");
 
-        subscription.status = SubscriptionStatus.Paused;
+        subscription.status = SubscriptionStatus.PendingPause;
 
-        planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
-
-        emit SubscriptionPaused(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+        emit SubscriptionPendingPause(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
             subscription.ref, subscription.planId);
     }
 
@@ -204,6 +202,7 @@ PausableUpgradeable
 
         subscription.status = SubscriptionStatus.Active;
 
+        providerActiveSubscriptionCount[subscription.provider] += 1;
         planActiveSubscriptionCount[subscription.provider][subscription.planId] += 1;
 
         // if renewal date has already passed, set it to now so consumer is not charged for the time it was paused
@@ -289,6 +288,15 @@ PausableUpgradeable
                 subscription.ref, subscription.planId);
 
             _burn(_subscriptionId);
+
+        } else if (_command == ManagerCommand.Pause) {
+            subscription.status = SubscriptionStatus.Paused;
+
+            providerActiveSubscriptionCount[subscription.provider] -= 1;
+            planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
+
+            emit SubscriptionPaused(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+                subscription.ref, subscription.planId);
 
         } else if (_command == ManagerCommand.PastDue) {
             subscription.status = SubscriptionStatus.PastDue;

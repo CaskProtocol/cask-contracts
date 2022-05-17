@@ -336,6 +336,12 @@ KeeperCompatibleInterface
             return;
         }
 
+        // paused subscription is time for renewal - change to Paused status
+        if (subscription.status == ICaskSubscriptions.SubscriptionStatus.PendingPause) {
+            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Pause);
+            return;
+        }
+
         // subscription scheduled to be canceled by consumer or has hit its cancelAt time
         if ((subscription.cancelAt > 0 && subscription.cancelAt <= timestamp) ||
             (subscriptionPlans.getPlanStatus(subscription.provider, subscription.planId) ==

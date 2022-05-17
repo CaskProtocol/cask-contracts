@@ -12,7 +12,8 @@ interface ICaskSubscriptions is IERC721Upgradeable {
         Active,
         Paused,
         Canceled,
-        PastDue
+        PastDue,
+        PendingPause
     }
 
     enum ManagerCommand {
@@ -21,7 +22,8 @@ interface ICaskSubscriptions is IERC721Upgradeable {
         Cancel,
         PastDue,
         Renew,
-        ClearDiscount
+        ClearDiscount,
+        Pause
     }
 
     struct Subscription {
@@ -133,7 +135,11 @@ interface ICaskSubscriptions is IERC721Upgradeable {
     event SubscriptionPendingChangePlan(address indexed consumer, address indexed provider,
         uint256 indexed subscriptionId, bytes32 ref, uint32 prevPlanId, uint32 planId);
 
-    /** @dev Emitted when `consumer` pauses the subscription to `provider` on subscription `subscriptionId` */
+    /** @dev Emitted when `consumer` initiates a pause of the subscription to `provider` on subscription `subscriptionId` */
+    event SubscriptionPendingPause(address indexed consumer, address indexed provider,
+        uint256 indexed subscriptionId, bytes32 ref, uint32 planId);
+
+    /** @dev Emitted when a pending pause subscription attempts to renew but is paused */
     event SubscriptionPaused(address indexed consumer, address indexed provider,
         uint256 indexed subscriptionId, bytes32 ref, uint32 planId);
 
