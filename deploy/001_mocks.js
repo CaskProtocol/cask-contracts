@@ -1,5 +1,3 @@
-const { parseUnits } = require("ethers").utils;
-
 const {
     isDevnet,
     isTestnet,
@@ -12,7 +10,7 @@ const {
     log
 } = require("../utils/deploy");
 
-const deployMocks = async ({getNamedAccounts}) => {
+const deployMocks = async ({ethers, getNamedAccounts}) => {
     const {faucetAdmin} = await getNamedAccounts();
 
     // Deploy mock coins (assets)
@@ -36,7 +34,7 @@ const deployMocks = async ({getNamedAccounts}) => {
 
         await deployWithConfirmation("MockChainlinkOracleFeed"+mockToken,
             [
-                parseUnits("1", 8).toString(), // price
+                ethers.utils.parseUnits("1", 8).toString(), // price
                 8 // decimals
             ],
             "MockChainlinkOracleFeed");

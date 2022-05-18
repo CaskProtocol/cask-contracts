@@ -103,7 +103,7 @@ ReentrancyGuardUpgradeable
     }
 
     function _msgData() internal view override(ContextUpgradeable, BaseRelayRecipient)
-    returns (bytes memory) {
+    returns (bytes calldata) {
         return BaseRelayRecipient._msgData();
     }
 
