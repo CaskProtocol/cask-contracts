@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NPM_TOKEN: ${{secrets.NPM_TOKEN}}
-      NODE_OPTIONS:--openssl-legacy-provider
+      NODE_OPTIONS: --openssl-legacy-provider
     strategy:
       matrix:
         node-version: [17.x]
