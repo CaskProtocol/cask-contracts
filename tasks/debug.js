@@ -173,6 +173,7 @@ async function _debug_protocol(taskArguments, hre) {
     console.log(`CaskSubscriptionManagers paymentFeeRateMin:     ${paymentFeeRateMin} bps (${paymentFeeRateMin / 100}%)`);
     console.log(`CaskSubscriptionManagers paymentFeeRateMax:     ${paymentFeeRateMax} bps (${paymentFeeRateMax / 100}%)`);
     console.log(`CaskSubscriptionManagers stakeTargetFactor:     ${await subscriptionManager.stakeTargetFactor()}`);
+    console.log(`CaskSubscriptionManagers processBucketSize:     ${await subscriptionManager.processBucketSize()} seconds`);
 
 }
 
