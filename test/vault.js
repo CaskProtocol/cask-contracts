@@ -114,7 +114,7 @@ describe("CaskVault", function () {
 
         // confirm deposit rejected
         await expect(vault.connect(consumerA).deposit(networkAddresses.DAI, daiUnits('100')))
-            .to.be.revertedWith("!PRICE_FEED_TOO_OLD");
+            .to.be.revertedWith("!PRICE_OUTDATED");
 
         // set dai price age to 10 seconds
         await daiPriceFeed.setAge(ethers.BigNumber.from('10'));

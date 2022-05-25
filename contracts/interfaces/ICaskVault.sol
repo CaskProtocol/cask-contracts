@@ -19,17 +19,16 @@ interface ICaskVault is IERC20MetadataUpgradeable {
         bool allowed;
     }
 
+    // sources for payments
     enum FundingSource {
-        None,
         Cask,
         Personal
     }
 
+    // funding profile for a given address
     struct FundingProfile {
-        FundingSource primarySource;
-        FundingSource backupSource;
-        address primaryToken;
-        address backupToken;
+        FundingSource fundingSource;
+        address fundingAsset;
     }
 
     /**
@@ -152,22 +151,18 @@ interface ICaskVault is IERC20MetadataUpgradeable {
      */
     function withdrawTo(address _recipient, address _asset, uint256 _shares) external;
 
-
-    function fundingSource(address _consumer) external view returns(FundingProfile memory);
-
-    function valueAvailable(address _consumer, uint256 _value) external view returns(bool);
-
+    /**
+     * @dev Retrieve the funding source for an address
+     * @param _address Address for lookup
+     */
+    function fundingSource(address _address) external view returns(FundingProfile memory);
 
     /**
-     * @dev Get total shares of vault
+     * @dev Set the funding source and, if using a personal wallet, the asset to use for funding payments
+     * @param _fundingSource Funding source to use
+     * @param _fundingAsset Asset to use for payments (if using personal funding source)
      */
-//    function totalSupply() external view returns(uint256);
-
-    /**
-     * @dev Get current balance of shares for an address
-     * @param _address Address to check
-     */
-//    function balanceOf(address _address) external view returns(uint256);
+    function setFundingSource(FundingSource _fundingSource, address _fundingAsset) external;
 
     /**
      * @dev Get current vault value of `_address` denominated in `baseAsset`
@@ -221,5 +216,8 @@ interface ICaskVault is IERC20MetadataUpgradeable {
     /** @dev Emitted when `participant` withdraws `asset` */
     event AssetWithdrawn(address indexed participant, address indexed asset, uint256 assetAmount,
         uint256 baseAssetAmount, uint256 shares);
+
+    /** @dev Emitted when `participant` sets their funding source */
+    event SetFundingSource(address indexed participant, FundingSource fundingSource, address fundingAsset);
 
 }
