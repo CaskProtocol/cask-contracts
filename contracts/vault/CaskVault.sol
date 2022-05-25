@@ -53,6 +53,7 @@ ReentrancyGuardUpgradeable
     mapping(address => Asset) internal assets;
     address[] internal allAssets;
 
+    // list of approved protocols that can perform payments
     address[] public protocols;
 
     // require deposit of at least this amount denominated in the baseAsset
@@ -60,6 +61,9 @@ ReentrancyGuardUpgradeable
 
     // revert if price feed age is older than this number of seconds. set to 0 to disable check.
     uint256 public maxPriceFeedAge;
+
+    // consumer funding profile
+    mapping(address => FundingProfile) internal fundingProfiles;
 
     function initialize(
         address _baseAsset,
@@ -108,15 +112,6 @@ ReentrancyGuardUpgradeable
     }
 
 
-    /**
-     * @dev Pay `_value` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
-     * @param _from From address
-     * @param _to To address
-     * @param _value Amount of baseAsset value to transfer
-     * @param _protocolFee Protocol fee to deduct from `_value`
-     * @param _network Address of network fee collector
-     * @param _networkFee Network fee to deduct from `_value`
-     */
     function protocolPayment(
         address _from,
         address _to,
@@ -128,13 +123,6 @@ ReentrancyGuardUpgradeable
         _protocolPayment(_from, _to, _value, _protocolFee, _network, _networkFee);
     }
 
-    /**
-     * @dev Pay `_value` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
-     * @param _from From address
-     * @param _to To address
-     * @param _value Amount of baseAsset value to transfer
-     * @param _protocolFee Protocol fee to deduct from `_value`
-     */
     function protocolPayment(
         address _from,
         address _to,
@@ -144,12 +132,6 @@ ReentrancyGuardUpgradeable
         _protocolPayment(_from, _to, _value, _protocolFee, address(0), 0);
     }
 
-    /**
-     * @dev Pay `_value` of `baseAsset` from `_from` to `_to` initiated by an authorized protocol
-     * @param _from From address
-     * @param _to To address
-     * @param _value Amount of baseAsset value to transfer
-     */
     function protocolPayment(
         address _from,
         address _to,
@@ -168,6 +150,23 @@ ReentrancyGuardUpgradeable
     ) internal {
         require(_value > _protocolFee + _networkFee, "!VALUE_TOO_LOW");
 
+        FundingProfile memory profile = fundingProfiles[_from];
+
+        if (profile.fundingSource == FundingSource.Personal) {
+            uint256 assetAmount = _value;
+            if (profile.fundingAsset != baseAsset) {
+                Asset storage asset = assets[profile.fundingAsset];
+                require(asset.allowed, "!NOT_ALLOWED(fundingAsset)");
+
+                // convert to equivalent amount in specified asset and add slippage
+                assetAmount = _convertPrice(baseAsset, profile.fundingAsset, _value);
+                assetAmount += (assetAmount * asset.slippageBps) / 10000;
+            }
+            _depositTo(_from, _from, profile.fundingAsset, assetAmount);
+        } else {
+            require(profile.fundingSource == FundingSource.Cask, "!INVALID(fundingSource)");
+        }
+
         uint256 shares = _sharesForValue(_value);
 
         uint256 protocolFeeShares = 0;
@@ -183,10 +182,10 @@ ReentrancyGuardUpgradeable
         _transfer(_from, _to, shares); // payment from consumer to provider
 
         if (protocolFeeShares > 0) {
-            _transfer(_to, feeDistributor, protocolFeeShares); // fee from provider to fee distributor
+            _transfer(_to, feeDistributor, protocolFeeShares); // take back fee from provider to fee distributor
         }
         if (networkFeeShares > 0) {
-            _transfer(_to, _network, networkFeeShares); // network fee from provider to network
+            _transfer(_to, _network, networkFeeShares); // take network fee from provider to network
         }
 
         emit Payment(_from, _to, _value, shares, _protocolFee, protocolFeeShares, _network,
@@ -220,34 +219,24 @@ ReentrancyGuardUpgradeable
         return true;
     }
 
-    /**
-     * @dev Deposit an amount of `_asset` into the vault and credit the equal value of `baseAsset`
-     * @param _asset Address of incoming asset
-     * @param _assetAmount Amount of asset to deposit
-     */
     function deposit(
         address _asset,
         uint256 _assetAmount
     ) external override nonReentrant whenNotPaused {
-        _depositTo(_msgSender(), _asset, _assetAmount);
+        _depositTo(_msgSender(), _msgSender(), _asset, _assetAmount);
     }
 
-    /**
-     * @dev Deposit an amount of `_asset` into the vault and credit the equal value of `baseAsset`
-     * @param _to Recipient of funds
-     * @param _asset Address of incoming asset
-     * @param _assetAmount Amount of asset to deposit
-     */
     function depositTo(
         address _to,
         address _asset,
         uint256 _assetAmount
     ) external override nonReentrant whenNotPaused {
-        _depositTo(_to, _asset, _assetAmount);
+        _depositTo(_msgSender(), _to, _asset, _assetAmount);
     }
 
     function _depositTo(
-        address _to,
+        address _assetFrom,
+        address _sharesTo,
         address _asset,
         uint256 _assetAmount
     ) internal {
@@ -274,18 +263,13 @@ ReentrancyGuardUpgradeable
             shares = ((baseAssetAmount * totalSupply()) - 1) / _totalValue() + 1;
         }
 
-        IERC20(_asset).safeTransferFrom(_msgSender(), address(this), _assetAmount);
+        IERC20(_asset).safeTransferFrom(_assetFrom, address(this), _assetAmount);
 
-        _mint(_to, shares);
+        _mint(_sharesTo, shares);
 
-        emit AssetDeposited(_to, _asset, _assetAmount, baseAssetAmount, shares);
+        emit AssetDeposited(_sharesTo, _asset, _assetAmount, baseAssetAmount, shares);
     }
 
-    /**
-     * @dev Withdraw an amount of shares from the vault in the form of `_asset`
-     * @param _asset Address of outgoing asset
-     * @param _shares Amount of shares to withdraw
-     */
     function withdraw(
         address _asset,
         uint256 _shares
@@ -293,12 +277,6 @@ ReentrancyGuardUpgradeable
         _withdrawTo(_msgSender(), _asset, _shares);
     }
 
-    /**
-     * @dev Withdraw an amount of shares from the vault in the form of `_asset`
-     * @param _recipient Recipient who will receive the withdrawn assets
-     * @param _asset Address of outgoing asset
-     * @param _shares Amount of shares to withdraw
-     */
     function withdrawTo(
         address _recipient,
         address _asset,
@@ -345,6 +323,29 @@ ReentrancyGuardUpgradeable
 
     function pricePerShare() external override view returns(uint256) {
         return _shareValue(10 ** assets[baseAsset].assetDecimals);
+    }
+
+
+    /************************** FUNDING SOURCE FUNCTIONS **************************/
+
+    function fundingSource(
+        address _address
+    ) external view override returns(FundingProfile memory) {
+        return fundingProfiles[_address];
+    }
+
+    function setFundingSource(
+        FundingSource _fundingSource,
+        address _fundingAsset
+    ) external override {
+        require(assets[_fundingAsset].allowed, "!ASSET_NOT_ALLOWED");
+
+        FundingProfile storage profile = fundingProfiles[_msgSender()];
+
+        profile.fundingSource = _fundingSource;
+        profile.fundingAsset = _fundingAsset;
+
+        emit SetFundingSource(_msgSender(), _fundingSource, _fundingAsset);
     }
 
     /************************** SHARES FUNCTIONS **************************/
@@ -480,23 +481,12 @@ ReentrancyGuardUpgradeable
         return assets[_asset];
     }
 
-    /**
-     * @dev Check if the vault supports an asset
-     * @param _asset Asset address
-     * @return bool `true` if asset supported, `false` otherwise
-     */
     function supportsAsset(
         address _asset
     ) external view override returns (bool) {
         return assets[_asset].allowed;
     }
 
-    /**
-     * @dev Add an allowed asset to be deposited into the vault
-     * @param _asset Address of new ERC20 asset
-     * @param _priceFeed Address of a chainlink-compatible price oracle for the asset
-     * @param _slippageBps Slippage basis points to use when depositing/withdrawing this asset
-     */
     function allowAsset(
         address _asset,
         address _priceFeed,
@@ -523,10 +513,6 @@ ReentrancyGuardUpgradeable
         emit AllowedAsset(_asset);
     }
 
-    /**
-     * @dev Mark an already allowed asset to no longer be allowed for deposits/withdraws
-     * @param _asset Address of new ERC20 asset
-     */
     function disallowAsset(
         address _asset
     ) external onlyOwner {
@@ -545,9 +531,6 @@ ReentrancyGuardUpgradeable
         return _convertPrice(_fromAsset, _toAsset, _fromAmount);
     }
 
-    /**
-     * @dev Convert _amount from one asset price to another
-     */
     function _convertPrice(
         address _fromAsset,
         address _toAsset,
@@ -566,10 +549,10 @@ ReentrancyGuardUpgradeable
 
         ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(assets[_fromAsset].priceFeed).latestRoundData();
         uint256 fromOraclePrice = uint256(oraclePrice);
-        require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_FEED_TOO_OLD");
+        require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_OUTDATED");
         ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(assets[_toAsset].priceFeed).latestRoundData();
         uint256 toOraclePrice = uint256(oraclePrice);
-        require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_FEED_TOO_OLD");
+        require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_OUTDATED");
 
         if (assets[_fromAsset].priceFeedDecimals != assets[_toAsset].priceFeedDecimals) {
             // since oracle precision is different, scale everything

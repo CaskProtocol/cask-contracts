@@ -141,9 +141,7 @@ KeeperCompatibleInterface
         address _provider,
         uint256 _subscriptionId,
         uint256 _value
-    ) internal {
-        require(vault.currentValueOf(_consumer) >= _value, "!BALANCE");
-
+    ) internal returns(bool) {
         (ICaskSubscriptions.Subscription memory subscription,) = subscriptions.getSubscription(_subscriptionId);
 
         uint256 paymentFeeRateAdjusted = paymentFeeRateMax;
@@ -174,7 +172,7 @@ KeeperCompatibleInterface
             paymentAddress = providerProfile.paymentAddress;
         }
 
-        _sendPayment(subscription, _consumer, paymentAddress, _value, paymentFeeRateAdjusted);
+        return _sendPayment(subscription, _consumer, paymentAddress, _value, paymentFeeRateAdjusted);
     }
 
     function _sendPayment(
@@ -183,20 +181,28 @@ KeeperCompatibleInterface
         address _paymentAddress,
         uint256 _value,
         uint256 _protocolFeeBps
-    ) internal {
+    ) internal returns(bool) {
         uint256 protocolFee = _value * _protocolFeeBps / 10000;
         if (protocolFee < paymentFeeMin) {
             protocolFee = paymentFeeMin;
         }
-        require(_value > protocolFee, "!VALUE_TOO_LOW");
 
         if (_subscription.networkData > 0) {
             ICaskSubscriptions.NetworkInfo memory networkData = _parseNetworkData(_subscription.networkData);
             uint256 networkFee = _value * networkData.feeBps / 10000;
             require(_value > protocolFee + networkFee, "!VALUE_TOO_LOW");
-            vault.protocolPayment(_consumer, _paymentAddress, _value, protocolFee, networkData.network, networkFee);
+            try vault.protocolPayment(_consumer, _paymentAddress, _value, protocolFee, networkData.network, networkFee) {
+                return true;
+            } catch {
+                return false;
+            }
         } else {
-            vault.protocolPayment(_consumer, _paymentAddress, _value, protocolFee);
+            require(_value > protocolFee, "!VALUE_TOO_LOW");
+            try vault.protocolPayment(_consumer, _paymentAddress, _value, protocolFee) {
+                return true;
+            } catch {
+                return false;
+            }
         }
     }
 
@@ -387,34 +393,32 @@ KeeperCompatibleInterface
         if (chargePrice < paymentMinValue || chargePrice <= paymentFeeMin) {
             subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
 
-            // consumer does not have enough balance to cover payment
-        } else if (chargePrice > 0 && vault.currentValueOf(consumer) < chargePrice) {
-            // if have not been able to renew for up to `gracePeriod` days, cancel subscription
-            if (subscription.renewAt < timestamp - (planInfo.gracePeriod * 1 days)) {
-                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
-            } else if (subscription.status != ICaskSubscriptions.SubscriptionStatus.PastDue) {
-                processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
-                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PastDue);
-            } else {
-                processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
-            }
-
-            // normal payment processing
         } else {
-            if (chargePrice > 0) {
-                _processPayment(consumer, subscription.provider, _subscriptionId, chargePrice);
-            }
 
-            if (subscription.renewAt + planInfo.period < timestamp) {
-                // subscription is still behind, put in next queue bucket
-                processQueue[CheckType.PastDue][_bucketAt(timestamp)].push(_subscriptionId);
+            if (chargePrice == 0 || _processPayment(consumer, subscription.provider, _subscriptionId, chargePrice)) {
+
+                if (subscription.renewAt + planInfo.period < timestamp) {
+                    // subscription is still behind, put in next queue bucket
+                    processQueue[CheckType.PastDue][_bucketAt(timestamp)].push(_subscriptionId);
+                } else {
+                    processQueue[CheckType.Active][_bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
+                }
+
+                subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
+
             } else {
-                processQueue[CheckType.Active][_bucketAt(subscription.renewAt + planInfo.period)].push(_subscriptionId);
+
+                if (subscription.renewAt < timestamp - (planInfo.gracePeriod * 1 days)) {
+                    subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
+                } else if (subscription.status != ICaskSubscriptions.SubscriptionStatus.PastDue) {
+                    processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
+                    subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PastDue);
+                } else {
+                    processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
+                }
+
             }
-
-            subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Renew);
         }
-
     }
 
     function _discountCurrentlyApplies(
