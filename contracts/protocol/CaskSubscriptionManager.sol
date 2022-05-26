@@ -132,8 +132,8 @@ KeeperCompatibleInterface
         address _provider,
         uint256 _subscriptionId,
         uint256 _value
-    ) external onlySubscriptions {
-        _processPayment(_consumer, _provider, _subscriptionId, _value);
+    ) external onlySubscriptions returns(bool) {
+        return _processPayment(_consumer, _provider, _subscriptionId, _value);
     }
 
     function _processPayment(
@@ -366,6 +366,11 @@ KeeperCompatibleInterface
 
         ICaskSubscriptions.PlanInfo memory planInfo = _parsePlanData(subscription.planData);
         uint256 chargePrice = planInfo.price;
+
+        if (planInfo.price == 0) {
+            // free plan, skip. will be re-queued when they upgrade to a paid plan
+            return;
+        }
 
         // maybe apply discount
         if (subscription.discountId > 0) {
