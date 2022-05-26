@@ -248,7 +248,7 @@ PausableUpgradeable
             require(subscription.minTermAt == 0 || timestamp >= subscription.minTermAt, "!MIN_TERM");
             subscription.renewAt = timestamp;
             subscription.cancelAt = timestamp;
-            subscriptionManager.renewSubscription(_subscriptionId); // registers subscription with manager
+            subscriptionManager.renewSubscription(_subscriptionId); // force manager to process cancel
         } else {
             require(subscription.minTermAt == 0 || _cancelAt >= subscription.minTermAt, "!MIN_TERM");
             subscription.cancelAt = _cancelAt;
@@ -462,11 +462,16 @@ PausableUpgradeable
             subscription.minTermAt = timestamp + (planInfo.period * planInfo.minPeriods);
         }
 
-        // if no trial period, charge now. If trial period, charge will happen after trial is over
-        if (planInfo.freeTrial > 0) {
+        if (planInfo.price == 0) {
+            // free plan, never renew to save gas
+            subscription.status = SubscriptionStatus.Active;
+            subscription.renewAt = 0;
+        } else if (planInfo.freeTrial > 0) {
+            // if trial period, charge will happen after trial is over
             subscription.status = SubscriptionStatus.Trialing;
             subscription.renewAt = timestamp + planInfo.freeTrial;
         } else {
+            // if no trial period, charge now
             subscription.status = SubscriptionStatus.Active;
             subscription.renewAt = timestamp;
         }
@@ -678,14 +683,22 @@ PausableUpgradeable
     ) internal {
         Subscription storage subscription = subscriptions[_subscriptionId];
 
-        uint256 newAmount = ((_newPlanInfo.price / _newPlanInfo.period) -
-            (_currentPlanInfo.price / _currentPlanInfo.period)) *
-            (subscription.renewAt - uint32(block.timestamp));
-
-        subscriptionManager.processSinglePayment(ownerOf(_subscriptionId), subscription.provider,
-            _subscriptionId, newAmount);
-
         _swapPlan(_subscriptionId, _newPlanInfo, _newPlanData);
+
+        if (_currentPlanInfo.price == 0 && _newPlanInfo.price != 0) {
+            // coming from free plan, no prorate
+            subscription.renewAt = uint32(block.timestamp);
+            subscriptionManager.renewSubscription(_subscriptionId); // register paid plan with manager
+            require(subscription.status == SubscriptionStatus.Active, "!UNPROCESSABLE"); // make sure payment processed
+        } else {
+            // prorated payment now - next renewal will charge new price
+            uint256 newAmount = ((_newPlanInfo.price / _newPlanInfo.period) -
+                (_currentPlanInfo.price / _currentPlanInfo.period)) *
+                (subscription.renewAt - uint32(block.timestamp));
+            require(subscriptionManager.processSinglePayment(ownerOf(_subscriptionId), subscription.provider,
+                _subscriptionId, newAmount), "!UNPROCESSABLE");
+        }
+
     }
 
 
