@@ -207,8 +207,8 @@ PausableUpgradeable
             (discountInfo.planId == 0 || discountInfo.planId == _planId) &&
             (discountInfo.maxRedemptions == 0 ||
                 discountRedemptions[_provider][discountInfo.planId][_discountId] < discountInfo.maxRedemptions) &&
-            (discountInfo.validAfter == 0 || discountInfo.validAfter >= uint32(block.timestamp)) &&
-            (discountInfo.expiresAt == 0 || discountInfo.expiresAt < uint32(block.timestamp));
+            (discountInfo.validAfter == 0 || discountInfo.validAfter <= uint32(block.timestamp)) &&
+            (discountInfo.expiresAt == 0 || discountInfo.expiresAt > uint32(block.timestamp));
     }
 
     function erc20DiscountCurrentlyApplies(
