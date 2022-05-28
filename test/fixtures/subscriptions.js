@@ -283,6 +283,61 @@ async function onePlanWithERC20DiscountFixture() {
     return fixture;
 }
 
+async function onePlanWithInvalidTimeDiscountsFixture() {
+    const fixture = await protocolFixture();
+
+    fixture.plans.push({
+        provider: fixture.providerA.address,
+        planId: 801,
+        planData: CaskSDK.utils.encodePlanData(
+            801, // planId
+            usdcUnits('10'), // price
+            month, // period
+            7 * day, // freeTrial
+            0, // maxActive
+            0, // minPeriods
+            7, // gracePeriod
+            false, // canPause
+            true) // canTransfer
+    });
+
+    const now = parseInt(Date.now()/1000);
+
+    fixture.discounts.push({
+        discountId: CaskSDK.utils.generateDiscountId('discount801A'),
+        discountData: CaskSDK.utils.encodeDiscountData(
+            5000, // value
+            now + 3600,  // validAfter
+            0, // expiresAt
+            0, // maxRedemptions
+            801, // planId
+            0, // applyPeriods
+            1, // discountType (1=code)
+            false) // isFixed
+    });
+
+    fixture.discounts.push({
+        discountId: CaskSDK.utils.generateDiscountId('discount801B'),
+        discountData: CaskSDK.utils.encodeDiscountData(
+            5000, // value
+            0,  // validAfter
+            now + 3600, // expiresAt
+            0, // maxRedemptions
+            801, // planId
+            0, // applyPeriods
+            1, // discountType (1=code)
+            false) // isFixed
+    });
+
+
+    fixture.plansRoot = CaskSDK.utils.plansMerkleRoot(fixture.plans);
+    fixture.discountsRoot = CaskSDK.utils.discountsMerkleRoot(fixture.discounts);
+    fixture.signedRoots = await CaskSDK.utils.signMerkleRoots(fixture.providerA, 0, fixture.plansRoot,
+        fixture.discountsRoot);
+
+    return fixture;
+}
+
 
 
 module.exports = {
@@ -294,4 +349,5 @@ module.exports = {
     onePlanWithDiscountsFixture,
     onePlanWithNFTDiscountFixture,
     onePlanWithERC20DiscountFixture,
+    onePlanWithInvalidTimeDiscountsFixture,
 }
