@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
@@ -218,7 +218,15 @@ PausableUpgradeable
         address token = address(bytes20(_discountValidator));
         uint8 decimals = uint8(bytes1(_discountValidator << 160));
 
-        try IERC20(token).balanceOf(_consumer) returns (uint256 balance) {
+        if (decimals == 255) {
+            try IERC20Metadata(token).decimals() returns (uint8 detectedDecimals) {
+                decimals = detectedDecimals;
+            } catch (bytes memory) {
+                return false;
+            }
+        }
+
+        try IERC20Metadata(token).balanceOf(_consumer) returns (uint256 balance) {
             if (decimals > 0) {
                 balance = balance / uint256(10 ** decimals);
             }
