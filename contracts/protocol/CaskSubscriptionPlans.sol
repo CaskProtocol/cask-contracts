@@ -132,7 +132,8 @@ PausableUpgradeable
     ) external override onlySubscriptions returns(bytes32) {
         bytes32 discountId = verifyDiscount(_consumer, _provider, _planId, _discountProof);
         if (discountId > 0) {
-            discountRedemptions[_provider][_planId][discountId] += 1;
+            Discount memory discountInfo = _parseDiscountData(_discountProof[1]);
+            discountRedemptions[_provider][discountInfo.planId][discountId] += 1;
         }
         return discountId;
     }
