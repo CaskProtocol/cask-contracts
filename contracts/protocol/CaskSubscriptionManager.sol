@@ -380,15 +380,10 @@ KeeperCompatibleInterface
                 subscription.createdAt + (planInfo.period * discountInfo.applyPeriods) < timestamp)
             {
                 if (_discountCurrentlyApplies(consumer, subscription.discountId, discountInfo)) {
-                    if (discountInfo.isFixed) {
-                        if (chargePrice > discountInfo.value) {
-                            chargePrice = chargePrice - discountInfo.value;
-                        } else {
-                            chargePrice = 0;
-                        }
-                    } else {
-                        chargePrice = chargePrice - (chargePrice * discountInfo.value / 10000);
-                    }
+                    uint256 discountValue = discountInfo.isFixed ?
+                        discountInfo.value :
+                        chargePrice * discountInfo.value / 10000;
+                    chargePrice = chargePrice > discountValue ? chargePrice - discountValue : 0;
                 }
             } else {
                 subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.ClearDiscount);
