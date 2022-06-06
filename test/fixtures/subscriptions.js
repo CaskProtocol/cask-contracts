@@ -188,6 +188,19 @@ async function onePlanWithDiscountsFixture() {
             false) // isFixed
     });
 
+    fixture.discounts.push({
+        discountId: CaskSDK.utils.generateDiscountId('discount3'),
+        discountData: CaskSDK.utils.encodeDiscountData(
+            5000, // value
+            0,  // validAfter
+            0, // expiresAt
+            0, // maxRedemptions
+            501, // planId
+            1, // applyPeriods
+            1, // discountType (1=code)
+            false) // isFixed
+    });
+
 
     fixture.plansRoot = CaskSDK.utils.plansMerkleRoot(fixture.plans);
     fixture.discountsRoot = CaskSDK.utils.discountsMerkleRoot(fixture.discounts);

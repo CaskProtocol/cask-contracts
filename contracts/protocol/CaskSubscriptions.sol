@@ -330,6 +330,7 @@ PausableUpgradeable
                 subscription.ref, subscription.planId);
 
         } else if (_command == ManagerCommand.ClearDiscount) {
+                    subscription.discountId = 0;
                     subscription.discountData = 0;
         }
 
