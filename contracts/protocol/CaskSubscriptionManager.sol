@@ -377,7 +377,7 @@ KeeperCompatibleInterface
             ICaskSubscriptionPlans.Discount memory discountInfo = _parseDiscountData(subscription.discountData);
 
             if(discountInfo.applyPeriods == 0 ||
-                subscription.createdAt + (planInfo.period * discountInfo.applyPeriods) < timestamp)
+                subscription.createdAt + (planInfo.period * discountInfo.applyPeriods) > timestamp)
             {
                 if (_discountCurrentlyApplies(consumer, subscription.discountId, discountInfo)) {
                     uint256 discountValue = discountInfo.isFixed ?
