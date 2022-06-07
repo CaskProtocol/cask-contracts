@@ -99,6 +99,11 @@ async function _debug_protocol(taskArguments, hre) {
     console.log(`CaskSubscriptions Impl:                         ${await hre.upgrades.erc1967.getImplementationAddress(subscriptions.address)}`);
     console.log(`CaskSubscriptions Owner:                        ${await subscriptions.owner()}`);
 
+    console.log(`CaskSubscriptionManager:                        ${subscriptionManager.address}`);
+    console.log(`CaskSubscriptionManager Proxy Admin:            ${await hre.upgrades.erc1967.getAdminAddress(subscriptionManager.address)}`);
+    console.log(`CaskSubscriptionManager Impl:                   ${await hre.upgrades.erc1967.getImplementationAddress(subscriptionManager.address)}`);
+    console.log(`CaskSubscriptionManager Owner:                  ${await subscriptionManager.owner()}`);
+
     console.log(`DefaultProxyAdmin:                              ${defaultProxyAdmin.address}`);
     console.log(`DefaultProxyAdmin Owner:                        ${await defaultProxyAdmin.owner()}`);
 
