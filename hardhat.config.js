@@ -16,6 +16,7 @@ const { debug } = require("./tasks/debug");
 const { fund } = require("./tasks/fund");
 const { fixtures } = require("./tasks/fixtures");
 const { keeper } = require("./tasks/keeper");
+const { dcaMerkleRoot} = require("./tasks/dca");
 
 
 // production
@@ -73,6 +74,10 @@ task("keeper", "Run a keeper")
     .addOptionalParam("gasLimit", "gasLimit for keeper transaction", "2500000")
     .addOptionalParam("gasPrice", "gasPrice for keeper transaction")
     .setAction(keeper);
+
+task("dca:merkleroot", "Generate merkle root for DCA asset list")
+    .addOptionalParam("execute", "Update on-chain merkle root", "false")
+    .setAction(dcaMerkleRoot);
 
 module.exports = {
   mocha: {

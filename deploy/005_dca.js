@@ -29,7 +29,7 @@ const deployDCA = async ({ethers, getNamedAccounts}) => {
 
     const vault = await ethers.getContract("CaskVault");
 
-    const assetsMerkleRoot = ethers.utils.id('0');
+    const assetsMerkleRoot =  ethers.utils.hexZeroPad(0, 32);
 
     const dca = await ethers.getContract("CaskDCA");
     await withConfirmation(
