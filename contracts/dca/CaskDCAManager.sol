@@ -6,11 +6,11 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "../job_queue/CaskJobQueue.sol";
 import "../interfaces/ICaskDCAManager.sol";
 import "../interfaces/ICaskDCA.sol";
-import "../interfaces/IUniswapV2Router01.sol";
 import "../interfaces/ICaskVault.sol";
 
 contract CaskDCAManager is
@@ -147,7 +147,7 @@ ICaskDCAManager
         route[0] = _dca.inputAsset;
         route[1] = _dca.outputAsset;
 
-        try IUniswapV2Router01(_dca.router).swapExactTokensForTokens(
+        try IUniswapV2Router02(_dca.router).swapExactTokensForTokens(
             afterBalance - beforeBalance,
             minimumOutput,
             route,
