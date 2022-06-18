@@ -128,33 +128,35 @@ ICaskDCAManager
 
         // perform a 'payment' to this contract
         caskVault.protocolPayment(_dca.user, address(this), _dca.amount, protocolFee);
-        // withdraw MASH to vault base asset to fund swap
+
+        // then withdraw the MASH received above as input asset to fund swap
         caskVault.withdraw(_dca.inputAsset, caskVault.sharesForValue(_dca.amount - protocolFee));
 
-        uint256 afterBalance = IERC20(_dca.inputAsset).balanceOf(address(this));
+        // calculate actual amount of inputAsset that was received from payment/withdraw
+        uint256 amountIn = IERC20(_dca.inputAsset).balanceOf(address(this)) - beforeBalance;
 
-        IERC20(_dca.inputAsset).safeApprove(_dca.router, afterBalance - beforeBalance);
+        IERC20(_dca.inputAsset).safeIncreaseAllowance(_dca.router, amountIn);
 
-        // TODO: make sure minimumOutput is within allowed range
-        uint256 pricePerOutput = _convertPrice(fromAsset, _dca, uint256(10 ** fromAsset.assetDecimals));
-        require(_dca.minPrice == 0 || _dca.minPrice > pricePerOutput, "!MIN_PRICE");
-        require(_dca.maxPrice == 0 || _dca.maxPrice < pricePerOutput, "!MAX_PRICE");
+        uint256 inputAssetOneUnit = uint256(10 ** fromAsset.assetDecimals);
+        uint256 pricePerOutputUnit =  inputAssetOneUnit / _convertPrice(fromAsset, _dca, inputAssetOneUnit);
+        require(_dca.minPrice == 0 || _dca.minPrice > pricePerOutputUnit, "!MIN_PRICE");
+        require(_dca.maxPrice == 0 || _dca.maxPrice < pricePerOutputUnit, "!MAX_PRICE");
 
-        uint256 optimalOutput = _convertPrice(fromAsset, _dca, afterBalance - beforeBalance);
-        uint256 minimumOutput = optimalOutput - ((optimalOutput * _dca.slippageBps) / 10000);
+        uint256 optimalOutput = _convertPrice(fromAsset, _dca, amountIn);
+        uint256 amountOutMin = optimalOutput - ((optimalOutput * _dca.slippageBps) / 10000);
 
-        address[] memory route = new address[](2);
-        route[0] = _dca.inputAsset;
-        route[1] = _dca.outputAsset;
+        address[] memory path = new address[](2);
+        path[0] = _dca.inputAsset;
+        path[1] = _dca.outputAsset;
 
         try IUniswapV2Router02(_dca.router).swapExactTokensForTokens(
-            afterBalance - beforeBalance,
-            minimumOutput,
-            route,
+            amountIn,
+            amountOutMin,
+            path,
             _dca.user,
             block.timestamp + 1 hours
         ) returns (uint256[] memory amounts) {
-            return amounts[0];
+            return amounts[1];
         } catch (bytes memory) {
             return 0;
         }
@@ -192,8 +194,7 @@ ICaskDCAManager
             // oracles are already in same precision, so just scale _amount to oracle precision,
             // do the price conversion and convert back to _toAsset precision
             return _scalePrice(
-                _scalePrice(amount, _fromAsset.assetDecimals, _dca.priceFeedDecimals) *
-                    fromOraclePrice / toOraclePrice,
+                _scalePrice(amount, _fromAsset.assetDecimals, _dca.priceFeedDecimals) * fromOraclePrice / toOraclePrice,
                 _dca.priceFeedDecimals,
                 _dca.assetDecimals
             );

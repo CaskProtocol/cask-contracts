@@ -37,6 +37,9 @@ BaseRelayRecipient
     function initialize(
         bytes32 _assetsMerkleRoot
     ) public initializer {
+        __Ownable_init();
+        __Pausable_init();
+
         assetsMerkleRoot = _assetsMerkleRoot;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
