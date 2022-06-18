@@ -9,19 +9,19 @@
     "yarn": ">= 1.22"
   },
   "scripts": {
-    "hardhat": "npx hardhat",
-    "local": "npx hardhat --network localhost",
+    "hardhat": "NODE_OPTIONS=--openssl-legacy-provider npx hardhat",
+    "local": "yarn hardhat --network localhost",
     "test": "IS_TEST=true npx hardhat test",
     "solhint": "solhint contracts/**/*.sol",
     "clean": "rm -rf artifacts cache deployments/local*",
-    "keeper:polygon": "npx hardhat keeper --network mainnet_polygon",
-    "keeper:avalanche": "npx hardhat keeper --network mainnet_avalanche",
-    "keeper:fantom": "npx hardhat keeper --network mainnet_fantom",
-    "keeper:internal:mumbai": "npx hardhat keeper --network internal_mumbai",
-    "keeper:internal:fuji": "npx hardhat keeper --network internal_fuji",
-    "keeper:testnet:mumbai": "npx hardhat keeper --network testnet_mumbai",
-    "keeper:testnet:fantom": "npx hardhat keeper --network testnet_fantom",
-    "keeper:testnet:fuji": "npx hardhat keeper --network testnet_fuji"
+    "keeper:polygon": "yarn hardhat keeper --network mainnet_polygon",
+    "keeper:avalanche": "yarn hardhat keeper --network mainnet_avalanche",
+    "keeper:fantom": "yarn hardhat keeper --network mainnet_fantom",
+    "keeper:internal:mumbai": "yarn hardhat keeper --network internal_mumbai",
+    "keeper:internal:fuji": "yarn hardhat keeper --network internal_fuji",
+    "keeper:testnet:mumbai": "yarn hardhat keeper --network testnet_mumbai",
+    "keeper:testnet:fantom": "yarn hardhat keeper --network testnet_fantom",
+    "keeper:testnet:fuji": "yarn hardhat keeper --network testnet_fuji"
   },
   "mocha": {
     "require": "hardhat/register",

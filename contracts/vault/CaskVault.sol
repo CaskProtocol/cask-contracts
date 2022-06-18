@@ -160,7 +160,11 @@ ReentrancyGuardUpgradeable
 
                 // convert to equivalent amount in specified asset and add slippage
                 assetAmount = _convertPrice(baseAsset, profile.fundingAsset, _value);
-                assetAmount += (assetAmount * asset.slippageBps) / 10000;
+
+                if (asset.slippageBps > 0) {
+                    // add 1 to slippage bps to be sure deposit results in enough for payment after slippage fee
+                    assetAmount += (assetAmount * (asset.slippageBps + 1)) / 10000;
+                }
             }
             _depositTo(_from, _from, profile.fundingAsset, assetAmount);
         } else {
