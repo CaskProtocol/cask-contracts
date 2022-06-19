@@ -118,9 +118,12 @@ ICaskDCAManager
     ) internal returns(uint256) {
 
         address inputAsset = _dca.path[0];
+        address outputAsset = _dca.path[_dca.path.length-1];
 
         ICaskVault.Asset memory inputAssetInfo = caskVault.getAsset(inputAsset);
         require(inputAssetInfo.allowed, "!INVALID(inputAsset)");
+
+        _ensureMinMaxPrice(_dca, inputAssetInfo, outputAsset, _dca.priceFeed);
 
         // protocol fee for DCA buy (does not include fee charged by swap router)
         uint256 protocolFee = (_dca.amount * feeBps) / 10000;
@@ -140,12 +143,7 @@ ICaskDCAManager
         // let swap router spend the amount of newly acquired inputAsset
         IERC20Metadata(inputAsset).safeIncreaseAllowance(_dca.router, amountIn);
 
-        uint256 inputAssetOneUnit = uint256(10 ** inputAssetInfo.assetDecimals);
-        uint256 pricePerOutputUnit =  inputAssetOneUnit / _convertPrice(inputAssetInfo, _dca, inputAssetOneUnit);
-        require(_dca.minPrice == 0 || _dca.minPrice > pricePerOutputUnit, "!MIN_PRICE");
-        require(_dca.maxPrice == 0 || _dca.maxPrice < pricePerOutputUnit, "!MAX_PRICE");
-
-        uint256 optimalOutput = _convertPrice(inputAssetInfo, _dca, amountIn);
+        uint256 optimalOutput = _convertPrice(inputAssetInfo, outputAsset, _dca.priceFeed, amountIn);
         uint256 amountOutMin = optimalOutput - ((optimalOutput * _dca.slippageBps) / 10000);
 
         // perform swap
@@ -162,14 +160,25 @@ ICaskDCAManager
         }
     }
 
+    function _ensureMinMaxPrice(
+        ICaskDCA.DCA memory _dca,
+        ICaskVault.Asset memory _inputAssetInfo,
+        address _outputAsset,
+        address _outputPriceFeed
+    ) internal view {
+        uint256 inputAssetOneUnit = uint256(10 ** _inputAssetInfo.assetDecimals);
+        uint256 pricePerOutputUnit =  inputAssetOneUnit /
+                _convertPrice(_inputAssetInfo, _outputAsset, _outputPriceFeed, inputAssetOneUnit);
+        require(_dca.minPrice == 0 || _dca.minPrice > pricePerOutputUnit, "!MIN_PRICE");
+        require(_dca.maxPrice == 0 || _dca.maxPrice < pricePerOutputUnit, "!MAX_PRICE");
+    }
+
     function _convertPrice(
         ICaskVault.Asset memory _fromAsset,
-        ICaskDCA.DCA memory _dca,
+        address _toAsset,
+        address _toPriceFeed,
         uint256 amount
     ) internal view returns(uint256) {
-        require(_fromAsset.priceFeed != address(0), "!INVALID(inputAsset)");
-        require(_dca.priceFeed != address(0), "!INVALID(outputAsset)");
-
         if (amount == 0) {
             return 0;
         }
@@ -177,14 +186,13 @@ ICaskDCAManager
         int256 oraclePrice;
         uint256 updatedAt;
 
-        address toAsset = _dca.path[_dca.path.length-1];
-        uint8 toAssetDecimals = IERC20Metadata(toAsset).decimals();
-        uint8 toFeedDecimals = AggregatorV3Interface(_dca.priceFeed).decimals();
+        uint8 toAssetDecimals = IERC20Metadata(_toAsset).decimals();
+        uint8 toFeedDecimals = AggregatorV3Interface(_toPriceFeed).decimals();
         
         ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(_fromAsset.priceFeed).latestRoundData();
         uint256 fromOraclePrice = uint256(oraclePrice);
         require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_OUTDATED");
-        ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(_dca.priceFeed).latestRoundData();
+        ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(_toPriceFeed).latestRoundData();
         uint256 toOraclePrice = uint256(oraclePrice);
         require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_OUTDATED");
 
