@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
@@ -19,7 +19,7 @@ ReentrancyGuardUpgradeable,
 CaskJobQueue,
 ICaskDCAManager
 {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20Metadata;
 
     uint256 private constant QUEUE_ID_DCA = 3;
 
@@ -117,42 +117,42 @@ ICaskDCAManager
         ICaskDCA.DCA memory _dca
     ) internal returns(uint256) {
 
-        ICaskVault.Asset memory fromAsset = caskVault.getAsset(_dca.inputAsset);
+        address inputAsset = _dca.path[0];
+
+        ICaskVault.Asset memory inputAssetInfo = caskVault.getAsset(inputAsset);
+        require(inputAssetInfo.allowed, "!INVALID(inputAsset)");
 
         // protocol fee for DCA buy (does not include fee charged by swap router)
         uint256 protocolFee = (_dca.amount * feeBps) / 10000;
 
-        uint256 beforeBalance = IERC20(_dca.inputAsset).balanceOf(address(this));
+        uint256 beforeBalance = IERC20Metadata(inputAsset).balanceOf(address(this));
 
         // perform a 'payment' to this contract, fee goes to vault
         caskVault.protocolPayment(_dca.user, address(this), _dca.amount, protocolFee);
 
         // then withdraw the MASH received above as input asset to fund swap
-        caskVault.withdraw(_dca.inputAsset, caskVault.sharesForValue(_dca.amount - protocolFee));
+        caskVault.withdraw(inputAsset, caskVault.sharesForValue(_dca.amount - protocolFee));
 
         // calculate actual amount of inputAsset that was received from payment/withdraw
-        uint256 amountIn = IERC20(_dca.inputAsset).balanceOf(address(this)) - beforeBalance;
+        uint256 amountIn = IERC20Metadata(inputAsset).balanceOf(address(this)) - beforeBalance;
+        require(amountIn > 0, "!INVALID(amountIn)");
 
         // let swap router spend the amount of newly acquired inputAsset
-        IERC20(_dca.inputAsset).safeIncreaseAllowance(_dca.router, amountIn);
+        IERC20Metadata(inputAsset).safeIncreaseAllowance(_dca.router, amountIn);
 
-        uint256 inputAssetOneUnit = uint256(10 ** fromAsset.assetDecimals);
-        uint256 pricePerOutputUnit =  inputAssetOneUnit / _convertPrice(fromAsset, _dca, inputAssetOneUnit);
+        uint256 inputAssetOneUnit = uint256(10 ** inputAssetInfo.assetDecimals);
+        uint256 pricePerOutputUnit =  inputAssetOneUnit / _convertPrice(inputAssetInfo, _dca, inputAssetOneUnit);
         require(_dca.minPrice == 0 || _dca.minPrice > pricePerOutputUnit, "!MIN_PRICE");
         require(_dca.maxPrice == 0 || _dca.maxPrice < pricePerOutputUnit, "!MAX_PRICE");
 
-        uint256 optimalOutput = _convertPrice(fromAsset, _dca, amountIn);
+        uint256 optimalOutput = _convertPrice(inputAssetInfo, _dca, amountIn);
         uint256 amountOutMin = optimalOutput - ((optimalOutput * _dca.slippageBps) / 10000);
-
-        address[] memory path = new address[](2);
-        path[0] = _dca.inputAsset;
-        path[1] = _dca.outputAsset;
 
         // perform swap
         try IUniswapV2Router02(_dca.router).swapExactTokensForTokens(
             amountIn,
             amountOutMin,
-            path,
+            _dca.path,
             _dca.user,
             block.timestamp + 1 hours
         ) returns (uint256[] memory amounts) {
@@ -177,6 +177,10 @@ ICaskDCAManager
         int256 oraclePrice;
         uint256 updatedAt;
 
+        address toAsset = _dca.path[_dca.path.length-1];
+        uint8 toAssetDecimals = IERC20Metadata(toAsset).decimals();
+        uint8 toFeedDecimals = AggregatorV3Interface(_dca.priceFeed).decimals();
+        
         ( , oraclePrice, , updatedAt, ) = AggregatorV3Interface(_fromAsset.priceFeed).latestRoundData();
         uint256 fromOraclePrice = uint256(oraclePrice);
         require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_OUTDATED");
@@ -184,19 +188,19 @@ ICaskDCAManager
         uint256 toOraclePrice = uint256(oraclePrice);
         require(maxPriceFeedAge == 0 || block.timestamp - updatedAt <= maxPriceFeedAge, "!PRICE_OUTDATED");
 
-        if (_fromAsset.priceFeedDecimals != _dca.priceFeedDecimals) {
+        if (_fromAsset.priceFeedDecimals != toFeedDecimals) {
             // since oracle precision is different, scale everything
             // to _toAsset precision and do conversion
-            return _scalePrice(amount, _fromAsset.assetDecimals, _dca.assetDecimals) *
-                _scalePrice(fromOraclePrice, _fromAsset.priceFeedDecimals, _dca.assetDecimals) /
-                _scalePrice(toOraclePrice, _dca.priceFeedDecimals, _dca.assetDecimals);
+            return _scalePrice(amount, _fromAsset.assetDecimals, toAssetDecimals) *
+                _scalePrice(fromOraclePrice, _fromAsset.priceFeedDecimals, toAssetDecimals) /
+                _scalePrice(toOraclePrice, toFeedDecimals, toAssetDecimals);
         } else {
             // oracles are already in same precision, so just scale _amount to oracle precision,
             // do the price conversion and convert back to _toAsset precision
             return _scalePrice(
-                _scalePrice(amount, _fromAsset.assetDecimals, _dca.priceFeedDecimals) * fromOraclePrice / toOraclePrice,
-                _dca.priceFeedDecimals,
-                _dca.assetDecimals
+                _scalePrice(amount, _fromAsset.assetDecimals, toFeedDecimals) * fromOraclePrice / toOraclePrice,
+                    toFeedDecimals,
+                    toAssetDecimals
             );
         }
     }

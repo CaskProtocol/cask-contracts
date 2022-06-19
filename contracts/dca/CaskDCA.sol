@@ -70,7 +70,7 @@ BaseRelayRecipient
 
 
     function createDCA(
-        address[] calldata _assetSpec, // inputAsset, outputAsset, router, priceFeed
+        address[] calldata _assetSpec, // router, priceFeed, path...
         bytes32[] calldata _merkleProof,
         uint256 _amount,
         uint32 _period,
@@ -80,7 +80,7 @@ BaseRelayRecipient
     ) external override returns(bytes32) {
         require(_amount > 0, "!INVALID(amount)");
         require(_period > 86400, "!INVALID(period)");
-        require(_assetSpec.length == 4, "!INVALID(assetSpec)");
+        require(_assetSpec.length >= 4, "!INVALID(assetSpec)");
         require(_verifyAssetSpec(_assetSpec, _merkleProof), "!INVALID(assetSpec)");
 
         bytes32 dcaId = keccak256(abi.encodePacked(_msgSender(), _assetSpec, _amount, _period,
@@ -90,14 +90,11 @@ BaseRelayRecipient
 
         DCA storage dca = dcaMap[dcaId];
         dca.user = _msgSender();
-        dca.inputAsset = _assetSpec[0];
-        dca.outputAsset = _assetSpec[1];
-        dca.router = _assetSpec[2];
-        dca.priceFeed = _assetSpec[3];
+        dca.router = _assetSpec[0];
+        dca.priceFeed = _assetSpec[1];
+        dca.path = _assetSpec[2:];
         dca.amount = _amount;
         dca.period = _period;
-        dca.assetDecimals = IERC20Metadata(_assetSpec[1]).decimals();
-        dca.priceFeedDecimals = AggregatorV3Interface(_assetSpec[3]).decimals();
         dca.minPrice = _priceLimits[0];
         dca.maxPrice = _priceLimits[1];
         dca.slippageBps = _slippageBps;

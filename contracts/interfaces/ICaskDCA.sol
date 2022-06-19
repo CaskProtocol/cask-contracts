@@ -21,8 +21,6 @@ interface ICaskDCA {
 
     struct DCA {
         address user;
-        address inputAsset;
-        address outputAsset;
         address router;
         address priceFeed;
         uint256 amount;
@@ -36,13 +34,12 @@ interface ICaskDCA {
         uint32 createdAt;
         uint32 processAt;
         uint32 completeAt;
-        uint8 assetDecimals;
-        uint8 priceFeedDecimals;
         DCAStatus status;
+        address[] path;
     }
 
     function createDCA(
-        address[] calldata _assetSpec, // inputAsset, outputAsset, router, priceFeed
+        address[] calldata _assetSpec, // router, priceFeed, path...
         bytes32[] calldata _merkleProof,
         uint256 _amount,
         uint32 _period,

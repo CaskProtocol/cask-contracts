@@ -90,7 +90,7 @@ async function dcaLiquidity(taskArguments, hre) {
 function assetMerkleLeafHash(asset) {
     return ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(
         [ "address[]" ],
-        [ [asset.inputAsset, asset.outputAsset, asset.router, asset.priceFeed] ]
+        [ [asset.router, asset.priceFeed, ...asset.path] ]
     ));
 }
 
