@@ -89,11 +89,8 @@ ICaskDCAManager
             return;
         }
 
-        if ((dca.finishAt > 0 && dca.finishAt <= timestamp) ||
-            (dca.finishAtNumBuys > 0 && dca.numBuys >= dca.finishAtNumBuys) ||
-            (dca.finishAtTotalAmount > 0 && dca.totalAmount >= dca.finishAtTotalAmount))
-        {
-            caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Finish);
+        if (dca.completeAt > 0 && dca.completeAt <= timestamp) {
+            caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Complete);
             return;
         }
 
@@ -122,11 +119,12 @@ ICaskDCAManager
 
         ICaskVault.Asset memory fromAsset = caskVault.getAsset(_dca.inputAsset);
 
+        // protocol fee for DCA buy (does not include fee charged by swap router)
         uint256 protocolFee = (_dca.amount * feeBps) / 10000;
 
         uint256 beforeBalance = IERC20(_dca.inputAsset).balanceOf(address(this));
 
-        // perform a 'payment' to this contract
+        // perform a 'payment' to this contract, fee goes to vault
         caskVault.protocolPayment(_dca.user, address(this), _dca.amount, protocolFee);
 
         // then withdraw the MASH received above as input asset to fund swap
@@ -135,6 +133,7 @@ ICaskDCAManager
         // calculate actual amount of inputAsset that was received from payment/withdraw
         uint256 amountIn = IERC20(_dca.inputAsset).balanceOf(address(this)) - beforeBalance;
 
+        // let swap router spend the amount of newly acquired inputAsset
         IERC20(_dca.inputAsset).safeIncreaseAllowance(_dca.router, amountIn);
 
         uint256 inputAssetOneUnit = uint256(10 ** fromAsset.assetDecimals);
@@ -149,6 +148,7 @@ ICaskDCAManager
         path[0] = _dca.inputAsset;
         path[1] = _dca.outputAsset;
 
+        // perform swap
         try IUniswapV2Router02(_dca.router).swapExactTokensForTokens(
             amountIn,
             amountOutMin,
@@ -156,7 +156,7 @@ ICaskDCAManager
             _dca.user,
             block.timestamp + 1 hours
         ) returns (uint256[] memory amounts) {
-            return amounts[1];
+            return amounts[amounts.length-1]; // last amount is final output amount
         } catch (bytes memory) {
             return 0;
         }

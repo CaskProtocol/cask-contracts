@@ -8,7 +8,7 @@ interface ICaskDCA {
         Active,
         Paused,
         Canceled,
-        Finished
+        Complete
     }
 
     enum ManagerCommand {
@@ -16,7 +16,7 @@ interface ICaskDCA {
         Cancel,
         Skip,
         Pause,
-        Finish
+        Complete
     }
 
     struct DCA {
@@ -29,15 +29,13 @@ interface ICaskDCA {
         uint256 numBuys;
         uint256 numSkips;
         uint256 totalAmount;
-        uint256 finishAtNumBuys;
-        uint256 finishAtTotalAmount;
         uint256 slippageBps;
         uint256 maxPrice;
         uint256 minPrice;
         uint32 period;
         uint32 createdAt;
         uint32 processAt;
-        uint32 finishAt;
+        uint32 completeAt;
         uint8 assetDecimals;
         uint8 priceFeedDecimals;
         DCAStatus status;
@@ -50,12 +48,14 @@ interface ICaskDCA {
         uint32 _period,
         uint256 _slippageBps,
         uint256[] calldata _priceLimits,
-        uint32 _finishAt,
-        uint256 _finishAtNumBuys,
-        uint256 _finishAtTotalAmount
+        uint32 _completeAt
     ) external returns(bytes32);
 
     function getDCA(bytes32 _dcaId) external view returns (DCA memory);
+
+    function getUserDCAList(address _user, uint256 _limit, uint256 _offset) external view returns (bytes32[] memory);
+
+    function getUserDCACount(address _user) external view returns (uint256);
 
     function cancelDCA(bytes32 _dcaId) external;
 
@@ -81,5 +81,5 @@ interface ICaskDCA {
 
     event DCACanceled(bytes32 indexed dcaId, address indexed user);
 
-    event DCAFinished(bytes32 indexed dcaId, address indexed user);
+    event DCACompleted(bytes32 indexed dcaId, address indexed user);
 }

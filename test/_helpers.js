@@ -44,6 +44,13 @@ const advanceBlocks = async (numBlocks) => {
     }
 };
 
+const impersonateAccount = async (account) => {
+    return hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [account],
+    });
+};
+
 
 /**
  * Sets the price in USD the mock oracle will return for a specific token.
@@ -145,6 +152,7 @@ module.exports = {
     getBlockTimestamp,
     setOracleTokenPriceUsd,
     advanceBlocks,
+    impersonateAccount,
     getNetworkAddresses,
     runSubscriptionKeeper,
     subscriptionCheckUpkeep,

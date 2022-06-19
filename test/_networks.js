@@ -13,7 +13,7 @@ const isTest = process.env.IS_TEST === "true";
 
 const isDevnet = isLocalhost || isMemnet;
 const isRealChain = !isLocalhost && !isMemnet;
-const isDaoChain = isMemnet || isFork || isLocalhost || isEthereum;
+const isDaoChain = isMemnet || isLocalhost || isEthereum;
 const isProtocolChain = isMemnet || isFork || isLocalhost || isMainnet || isTestnet || isInternal;
 
 

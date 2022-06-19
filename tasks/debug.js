@@ -234,24 +234,10 @@ async function _debug_dca(taskArguments, hre) {
  * Prints information about deployed contracts and their config.
  */
 async function debug(taskArguments, hre) {
-
-    const isFork = process.env.FORK === "true";
-    const isLocalhost = !isFork && hre.network.name === "localhost";
-    const isMemnet = hre.network.name === "hardhat";
-
-    const isEthereum = hre.network.name === "ethereum";
-
-    const isMainnet = hre.network.name.startsWith('mainnet_');
-    const isTestnet = hre.network.name.startsWith('testnet_');
-    const isInternal = hre.network.name.startsWith('internal_');
-
-    const isTest = process.env.IS_TEST === "true";
-
-    const isDevnet = isLocalhost || isMemnet;
-    const isRealChain = !isLocalhost && !isMemnet;
-    const isDaoChain = isMemnet || isFork || isLocalhost || isEthereum;
-    const isProtocolChain = isMemnet || isFork || isLocalhost || isMainnet || isTestnet || isInternal;
-
+    const {
+        isDaoChain,
+        isProtocolChain,
+    } = require("../test/_networks");
 
     if (isDaoChain) {
         await _debug_core(taskArguments, hre);
@@ -262,7 +248,6 @@ async function debug(taskArguments, hre) {
         await _debug_protocol(taskArguments, hre);
         await _debug_dca(taskArguments, hre);
     }
-
 }
 
 module.exports = {

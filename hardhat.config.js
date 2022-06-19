@@ -16,7 +16,7 @@ const { debug } = require("./tasks/debug");
 const { fund } = require("./tasks/fund");
 const { fixtures } = require("./tasks/fixtures");
 const { keeper } = require("./tasks/keeper");
-const { dcaMerkleRoot} = require("./tasks/dca");
+const { dcaMerkleRoot, dcaLiquidity } = require("./tasks/dca");
 
 
 // production
@@ -78,6 +78,8 @@ task("keeper", "Run a keeper")
 task("dca:merkleroot", "Generate merkle root for DCA asset list")
     .addOptionalParam("execute", "Update on-chain merkle root", "false")
     .setAction(dcaMerkleRoot);
+
+task("dca:liquidity", "Add liquidity to the mock uniswap router for DCA swaps", dcaLiquidity);
 
 module.exports = {
   mocha: {

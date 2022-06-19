@@ -66,7 +66,7 @@ const deployDCA = async ({ethers, getNamedAccounts}) => {
         );
         log(`Authorized CaskVault protocol ${dcaManager.address} for CaskDCAManager`);
     } else {
-        log(`Please authorize CaskDCAManager (${dcaManager.address}) as approved CaskVault protocol`);
+        log(`Please authorize CaskDCAManager (${dcaManager.address}) as an approved CaskVault protocol`);
     }
 }
 
@@ -91,16 +91,16 @@ const transferOwnerships = async ({ethers, getNamedAccounts}) => {
 }
 
 const main = async (hre) => {
-    console.log("Running 005_dca deployment...");
+    console.log("Running 008_dca deployment...");
     await deployDCA(hre);
     await transferOwnerships(hre);
-    console.log("005_dca deploy done.");
+    console.log("008_dca deploy done.");
     return true;
 };
 
-main.id = "005_dca";
+main.id = "008_dca";
 main.tags = ["dca"];
-main.dependencies = ["protocol"];
+main.dependencies = ["protocol","dca_mocks"];
 main.skip = () => !isProtocolChain;
 
 module.exports = main;
