@@ -25,5 +25,23 @@
     "priceFeed": "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
     "path": ["0x2791bca1f2de4661ed88a30c99a7a9449aa84174","0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270"],
     "chainId": 44144
+  },
+  {
+    "inputAssetSymbol": "USDC",
+    "outputAssetSymbol": "WMATIC",
+    "routerName": "MockRouter",
+    "router": "0x44a32Fd68d62069EDDBdca8ba84Eb947A662a034",
+    "priceFeed": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+    "path": ["0x2791bca1f2de4661ed88a30c99a7a9449aa84174","0x2791bca1f2de4661ed88a30c99a7a9449aa84174"],
+    "chainId": 31337
+  },
+  {
+    "inputAssetSymbol": "USDC",
+    "outputAssetSymbol": "ABC",
+    "routerName": "MockRouter",
+    "router": "0x44a32Fd68d62069EDDBdca8ba84Eb947A662a034",
+    "priceFeed": "0x43AE7EDaaCD6Eb97d45A24b14736047f75230114",
+    "path": ["0x4F91541C5BB7b2bE0eFfc05063f77808Eb0Bf09d","0x1fA4E417Ed8B4497D0D1C73cb54C5e2704055Bf7"],
+    "chainId": 31337
   }
 ]

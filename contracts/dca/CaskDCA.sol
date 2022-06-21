@@ -108,6 +108,8 @@ BaseRelayRecipient
 
         dcaManager.registerDCA(dcaId);
 
+        emit DCACreated(dcaId, dca.user, dca.path[0], dca.path[dca.path.length-1], _amount, _period);
+
         return dcaId;
     }
 
@@ -150,6 +152,48 @@ BaseRelayRecipient
 
         emit DCAResumed(_dcaId, dca.user);
     }
+
+    function _verifyAssetSpec(
+        address[] calldata _assetSpec,
+        bytes32[] calldata _merkleProof
+    ) internal view returns(bool) {
+        return MerkleProof.verify(_merkleProof, assetsMerkleRoot, keccak256(abi.encode(_assetSpec)));
+    }
+
+
+    function getDCA(
+        bytes32 _dcaId
+    ) external override view returns (DCA memory) {
+        return dcaMap[_dcaId];
+    }
+
+    function getUserDCAList(
+        address _user,
+        uint256 _limit,
+        uint256 _offset
+    ) external override view returns (bytes32[] memory) {
+        uint256 size = _limit;
+        if (size > userDCAs[_user].length) {
+            size = userDCAs[_user].length;
+        }
+        if (_offset >= userDCAs[_user].length) {
+            return new bytes32[](0);
+        }
+        bytes32[] memory dcaIds = new bytes32[](size);
+        for (uint256 i = 0; i < size && i + _offset < userDCAs[_user].length; i++) {
+            dcaIds[i] = userDCAs[_user][i+_offset];
+        }
+        return dcaIds;
+    }
+
+    function getUserDCACount(
+        address _user
+    ) external override view returns (uint256) {
+        return userDCAs[_user].length;
+    }
+
+
+    /************************** MANAGER FUNCTIONS **************************/
 
     function managerCommand(
         bytes32 _dcaId,
@@ -196,44 +240,6 @@ BaseRelayRecipient
         dca.numBuys += 1;
 
         emit DCAProcessed(_dcaId, dca.user);
-    }
-
-    function _verifyAssetSpec(
-        address[] calldata _assetSpec,
-        bytes32[] calldata _merkleProof
-    ) internal view returns(bool) {
-        return MerkleProof.verify(_merkleProof, assetsMerkleRoot, keccak256(abi.encode(_assetSpec)));
-    }
-
-    function getDCA(
-        bytes32 _dcaId
-    ) external override view returns (DCA memory) {
-        return dcaMap[_dcaId];
-    }
-
-    function getUserDCAList(
-        address _user,
-        uint256 _limit,
-        uint256 _offset
-    ) external override view returns (bytes32[] memory) {
-        uint256 size = _limit;
-        if (size > userDCAs[_user].length) {
-            size = userDCAs[_user].length;
-        }
-        if (_offset >= userDCAs[_user].length) {
-            return new bytes32[](0);
-        }
-        bytes32[] memory dcaIds = new bytes32[](size);
-        for (uint256 i = 0; i < size && i + _offset < userDCAs[_user].length; i++) {
-            dcaIds[i] = userDCAs[_user][i+_offset];
-        }
-        return dcaIds;
-    }
-
-    function getUserDCACount(
-        address _user
-    ) external override view returns (uint256) {
-        return userDCAs[_user].length;
     }
 
     /************************** ADMIN FUNCTIONS **************************/

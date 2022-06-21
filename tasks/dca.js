@@ -2,6 +2,8 @@ const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
 const path = require('path');
 const fs = require('fs');
+const { CaskSDK } = require('@caskprotocol/sdk');
+
 
 const {
     usdcUnits
@@ -17,23 +19,13 @@ async function dcaMerkleRoot(taskArguments, hre) {
     console.log(`Processing assets file: ${assetsFilePath}`);
 
     const assetList = JSON.parse(fs.readFileSync(assetsFilePath));
-    let filteredAssets;
-
-    if (hre.network.name === "localhost") {
-        filteredAssets = assetList;
-    } else {
-        filteredAssets = assetList.filter((asset) => asset.chainId === chainId);
-    }
+    const filteredAssets = assetList.filter((asset) => asset.chainId === chainId);
 
     console.log(`Loaded ${assetList.length} assets; filtered to ${filteredAssets.length} using chainId ${chainId}`);
 
-    const assetsMerkleRoot = assetMerkleRoot(filteredAssets);
+    const assetsMerkleRoot = CaskSDK.utils.dcaMerkleRoot(filteredAssets);
 
     console.log(`Asset merkle root: ${assetsMerkleRoot}`);
-
-    // const proof = assetMerkleProof(filteredAssets, filteredAssets[0]);
-    // console.log(`Asset merkle proof of ${JSON.stringify(filteredAssets[0], null, 2)}: ${proof}`);
-    // console.log(`Verify: ${assetMerkleVerify(filteredAssets, filteredAssets[0], proof)}`);
 
     const { catchUnknownSigner } = hre.deployments;
     const { governorAddr } = await hre.getNamedAccounts();
@@ -84,35 +76,6 @@ async function dcaLiquidity(taskArguments, hre) {
     await abc.connect(deployer).mint(router.address, hre.ethers.utils.parseUnits('100000.0', 18));
 
     console.log(`Funded swap liquidity for USDC/ABC pair at router ${router.address}`);
-}
-
-
-function assetMerkleLeafHash(asset) {
-    return ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(
-        [ "address[]" ],
-        [ [asset.router, asset.priceFeed, ...asset.path] ]
-    ));
-}
-
-function assetMerkleTree(assetList) {
-    const elements = assetList.map((asset) => assetMerkleLeafHash(asset));
-    return new MerkleTree(elements, keccak256, { sort: true });
-}
-
-function assetMerkleRoot(assetList) {
-    const merkleTree = assetMerkleTree(assetList);
-    return ethers.utils.hexZeroPad(merkleTree.getHexRoot(), 32);
-}
-
-function assetMerkleProof(assetList, asset) {
-    const merkleTree = assetMerkleTree(assetList);
-    return merkleTree.getHexProof(assetMerkleLeafHash(asset));
-}
-
-function assetMerkleVerify(assetList, asset, proof) {
-    const merkleTree = assetMerkleTree(assetList);
-    const leaf = assetMerkleLeafHash(asset);
-    return merkleTree.verify(proof, leaf, merkleTree.getHexRoot());
 }
 
 
