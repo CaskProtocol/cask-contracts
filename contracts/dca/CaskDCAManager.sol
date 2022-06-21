@@ -94,11 +94,13 @@ ICaskDCAManager
             return;
         }
 
+        uint256 protocolFee = (dca.amount * feeBps) / 10000;
+
         // did a swap happen successfully?
-        if (_processDCABuy(dca) > 0) {
+        if (_processDCABuy(dca, protocolFee) > 0) {
             scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
 
-            caskDCA.managerProcessed(_dcaId, dca.amount);
+            caskDCA.managerProcessed(_dcaId, protocolFee);
 
         } else {
             if (dca.numSkips >= maxSkips) {
@@ -113,7 +115,8 @@ ICaskDCAManager
     }
 
     function _processDCABuy(
-        ICaskDCA.DCA memory _dca
+        ICaskDCA.DCA memory _dca,
+        uint256 _protocolFee
     ) internal returns(uint256) {
 
         address inputAsset = _dca.path[0];
@@ -124,16 +127,13 @@ ICaskDCAManager
 
         _ensureMinMaxPrice(_dca, inputAssetInfo, outputAsset, _dca.priceFeed);
 
-        // protocol fee for DCA buy (does not include fee charged by swap router)
-        uint256 protocolFee = (_dca.amount * feeBps) / 10000;
-
         uint256 beforeBalance = IERC20Metadata(inputAsset).balanceOf(address(this));
 
         // perform a 'payment' to this contract, fee goes to vault
-        caskVault.protocolPayment(_dca.user, address(this), _dca.amount, protocolFee);
+        caskVault.protocolPayment(_dca.user, address(this), _dca.amount, _protocolFee);
 
         // then withdraw the MASH received above as input asset to fund swap
-        uint256 withdrawShares = caskVault.sharesForValue(_dca.amount - protocolFee);
+        uint256 withdrawShares = caskVault.sharesForValue(_dca.amount - _protocolFee);
         if (withdrawShares > caskVault.balanceOf(address(this))) {
             withdrawShares = caskVault.balanceOf(address(this));
         }
