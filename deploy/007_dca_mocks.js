@@ -52,6 +52,7 @@ const deployDCAMocks = async ({ethers, getNamedAccounts}) => {
 
     await router.initialize([usdc.address], [abc.address]);
 
+    // mint swap liquidity to mock router
     await usdc.connect(deployer).mint(router.address, usdcUnits('100000.0'));
     await abc.connect(deployer).mint(router.address, ethers.utils.parseUnits('100000.0', 18));
 

@@ -94,12 +94,11 @@ ICaskDCAManager
             return;
         }
 
-        uint256 purchaseAmount = _processDCABuy(dca);
-
-        if (purchaseAmount > 0) {
+        // did a swap happen successfully?
+        if (_processDCABuy(dca) > 0) {
             scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
 
-            caskDCA.managerProcessed(_dcaId, purchaseAmount);
+            caskDCA.managerProcessed(_dcaId, dca.amount);
 
         } else {
             if (dca.numSkips >= maxSkips) {
@@ -134,7 +133,11 @@ ICaskDCAManager
         caskVault.protocolPayment(_dca.user, address(this), _dca.amount, protocolFee);
 
         // then withdraw the MASH received above as input asset to fund swap
-        caskVault.withdraw(inputAsset, caskVault.sharesForValue(_dca.amount - protocolFee));
+        uint256 withdrawShares = caskVault.sharesForValue(_dca.amount - protocolFee);
+        if (withdrawShares > caskVault.balanceOf(address(this))) {
+            withdrawShares = caskVault.balanceOf(address(this));
+        }
+        caskVault.withdraw(inputAsset, withdrawShares);
 
         // calculate actual amount of inputAsset that was received from payment/withdraw
         uint256 amountIn = IERC20Metadata(inputAsset).balanceOf(address(this)) - beforeBalance;
@@ -154,6 +157,7 @@ ICaskDCAManager
             _dca.user,
             block.timestamp + 1 hours
         ) returns (uint256[] memory amounts) {
+            require(amounts.length >= 2, "!INVALID(amounts)");
             return amounts[amounts.length-1]; // last amount is final output amount
         } catch (bytes memory) {
             return 0;

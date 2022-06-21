@@ -27,7 +27,7 @@ contract MockUniswapRouter {
         address[] calldata path,
         address to,
         uint256 deadline
-    ) external returns (uint256[] memory amounts) {
+    ) external returns (uint256[] memory) {
         address tok0 = path[0];
         address tok1 = pairMaps[tok0];
         // Give 1:1
@@ -36,6 +36,12 @@ contract MockUniswapRouter {
 
         IERC20Metadata(tok0).transferFrom(msg.sender, address(this), amountIn);
         IERC20Metadata(tok1).transfer(to, amountOut);
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 0;
+        amounts[1] = amountOut;
+
+        return amounts;
     }
 
 
