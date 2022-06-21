@@ -75,7 +75,8 @@ BaseRelayRecipient
         uint256 _amount,
         uint32 _period,
         uint256 _slippageBps,
-        uint256[] calldata _priceLimits,
+        uint256 _minPrice,
+        uint256 _maxPrice,
         uint32 _completeAt
     ) external override returns(bytes32) {
         require(_amount > 0, "!INVALID(amount)");
@@ -95,8 +96,8 @@ BaseRelayRecipient
         dca.path = _assetSpec[2:];
         dca.amount = _amount;
         dca.period = _period;
-        dca.minPrice = _priceLimits[0];
-        dca.maxPrice = _priceLimits[1];
+        dca.minPrice = _minPrice;
+        dca.maxPrice = _maxPrice;
         dca.slippageBps = _slippageBps;
         dca.createdAt = timestamp;
         dca.processAt = timestamp;

@@ -44,7 +44,8 @@ interface ICaskDCA {
         uint256 _amount,
         uint32 _period,
         uint256 _slippageBps,
-        uint256[] calldata _priceLimits,
+        uint256 _minPrice,
+        uint256 _maxPrice,
         uint32 _completeAt
     ) external returns(bytes32);
 
