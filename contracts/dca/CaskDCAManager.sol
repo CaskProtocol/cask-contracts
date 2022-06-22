@@ -33,6 +33,10 @@ ICaskDCAManager
     /** @dev merkle root of allowed assets definitions. */
     bytes32 public assetsMerkleRoot;
 
+    /** @dev map of swap routers that are deemed unsafe and any active DCA to them will be canceled */
+    mapping(address => bool) public blacklistedRouters;
+
+
     /************************** PARAMETERS **************************/
 
     /** @dev max number of failed DCA purchases before DCA is permanently canceled. */
@@ -73,6 +77,11 @@ ICaskDCAManager
     ) override internal {
 
         ICaskDCA.DCA memory dca = caskDCA.getDCA(_dcaId);
+
+        if (blacklistedRouters[dca.router]) {
+            caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Cancel);
+            return;
+        }
 
         uint32 timestamp = uint32(block.timestamp);
 
@@ -240,5 +249,17 @@ ICaskDCAManager
         feeBps = _feeBps;
         maxPriceFeedAge = _maxPriceFeedAge;
         queueBucketSize = _queueBucketSize;
+    }
+
+    function blacklistRouter(
+        address _router
+    ) external onlyOwner {
+        blacklistedRouters[_router] = true;
+    }
+
+    function unblacklistRouter(
+        address _router
+    ) external onlyOwner {
+        blacklistedRouters[_router] = false;
     }
 }

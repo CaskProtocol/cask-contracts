@@ -27,13 +27,19 @@ BaseRelayRecipient
     /** @dev contract to manage DCA executions. */
     ICaskDCAManager public dcaManager;
 
-    /** @dev merkle root of approved assets. */
-    bytes32 public assetsMerkleRoot;
-
     /** @dev map of DCA ID to DCA info. */
     mapping(bytes32 => DCA) private dcaMap; // dcaId => DCA
     mapping(address => bytes32[]) private userDCAs; // user => dcaId[]
 
+
+    /** @dev merkle root of approved assets. */
+    bytes32 public assetsMerkleRoot;
+
+    /** @dev minimum amount of vault base asset for a DCA. */
+    uint256 public minAmount;
+
+    /** @dev minimum period for a DCA. */
+    uint32 public minPeriod;
 
     function initialize(
         bytes32 _assetsMerkleRoot
@@ -42,6 +48,8 @@ BaseRelayRecipient
         __Pausable_init();
 
         assetsMerkleRoot = _assetsMerkleRoot;
+        minAmount = 1;
+        minPeriod = 86400;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -79,8 +87,8 @@ BaseRelayRecipient
         uint256 _maxPrice,
         uint32 _completeAt
     ) external override returns(bytes32) {
-        require(_amount > 0, "!INVALID(amount)");
-        require(_period > 86400, "!INVALID(period)");
+        require(_amount >= minAmount, "!INVALID(amount)");
+        require(_period >= minPeriod, "!INVALID(period)");
         require(_assetSpec.length >= 4, "!INVALID(assetSpec)");
         require(_verifyAssetSpec(_assetSpec, _merkleProof), "!INVALID(assetSpec)");
 
@@ -270,4 +278,15 @@ BaseRelayRecipient
         assetsMerkleRoot = _assetsMerkleRoot;
     }
 
+    function setMinAmount(
+        uint256 _minAmount
+    ) external onlyOwner {
+        minAmount = _minAmount;
+    }
+
+    function setMinPeriod(
+        uint32 _minPeriod
+    ) external onlyOwner {
+        minPeriod = _minPeriod;
+    }
 }
