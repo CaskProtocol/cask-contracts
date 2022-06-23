@@ -21,7 +21,7 @@ ICaskDCAManager
 {
     using SafeERC20 for IERC20Metadata;
 
-    uint256 private constant QUEUE_ID_DCA = 3;
+    uint256 private constant QUEUE_ID_DCA = 1;
 
 
     /** @dev Pointer to CaskDCA contract */
@@ -83,14 +83,11 @@ ICaskDCAManager
             return;
         }
 
-        uint32 timestamp = uint32(block.timestamp);
-
-        if (dca.status == ICaskDCA.DCAStatus.Paused ||
-            dca.status == ICaskDCA.DCAStatus.Canceled ||
-            dca.status == ICaskDCA.DCAStatus.None)
-        {
+        if (dca.status != ICaskDCA.DCAStatus.Active){
             return;
         }
+
+        uint32 timestamp = uint32(block.timestamp);
 
         // not time to process yet, re-queue for processAt time
         if (dca.processAt > timestamp) {
@@ -98,16 +95,14 @@ ICaskDCAManager
             return;
         }
 
-        if (dca.completeAt > 0 && dca.completeAt <= timestamp) {
-            caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Complete);
-            return;
-        }
-
         uint256 protocolFee = (dca.amount * feeBps) / 10000;
 
         // did a swap happen successfully?
         if (_processDCABuy(dca, protocolFee) > 0) {
-            scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
+
+            if (dca.totalAmount == 0 || dca.currentAmount < dca.totalAmount) {
+                scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
+            }
 
             caskDCA.managerProcessed(_dcaId, protocolFee);
 
@@ -139,14 +134,22 @@ ICaskDCAManager
         uint256 beforeBalance = IERC20Metadata(inputAsset).balanceOf(address(this));
 
         // perform a 'payment' to this contract, fee goes to vault
-        caskVault.protocolPayment(_dca.user, address(this), _dca.amount, _protocolFee);
+        try caskVault.protocolPayment(_dca.user, address(this), _dca.amount, _protocolFee) {
+            // noop
+        } catch (bytes memory) {
+            return 0;
+        }
 
         // then withdraw the MASH received above as input asset to fund swap
         uint256 withdrawShares = caskVault.sharesForValue(_dca.amount - _protocolFee);
         if (withdrawShares > caskVault.balanceOf(address(this))) {
             withdrawShares = caskVault.balanceOf(address(this));
         }
-        caskVault.withdraw(inputAsset, withdrawShares);
+        try caskVault.withdraw(inputAsset, withdrawShares) {
+            // noop
+        } catch (bytes memory) {
+            return 0;
+        }
 
         // calculate actual amount of inputAsset that was received from payment/withdraw
         uint256 amountIn = IERC20Metadata(inputAsset).balanceOf(address(this)) - beforeBalance;
@@ -163,7 +166,7 @@ ICaskDCAManager
             amountIn,
             amountOutMin,
             _dca.path,
-            _dca.user,
+            _dca.to,
             block.timestamp + 1 hours
         ) returns (uint256[] memory amounts) {
             require(amounts.length >= 2, "!INVALID(amounts)");

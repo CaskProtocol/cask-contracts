@@ -15,25 +15,25 @@ interface ICaskDCA {
         None,
         Cancel,
         Skip,
-        Pause,
-        Complete
+        Pause
     }
 
     struct DCA {
         address user;
+        address to;
         address router;
         address priceFeed;
         uint256 amount;
+        uint256 totalAmount;
+        uint256 currentAmount;
         uint256 numBuys;
         uint256 numSkips;
-        uint256 totalAmount;
         uint256 slippageBps;
         uint256 maxPrice;
         uint256 minPrice;
         uint32 period;
         uint32 createdAt;
         uint32 processAt;
-        uint32 completeAt;
         DCAStatus status;
         address[] path;
     }
@@ -41,12 +41,13 @@ interface ICaskDCA {
     function createDCA(
         address[] calldata _assetSpec, // router, priceFeed, path...
         bytes32[] calldata _merkleProof,
+        address _to,
         uint256 _amount,
+        uint256 _totalAmount,
         uint32 _period,
         uint256 _slippageBps,
         uint256 _minPrice,
-        uint256 _maxPrice,
-        uint32 _completeAt
+        uint256 _maxPrice
     ) external returns(bytes32);
 
     function getDCA(bytes32 _dcaId) external view returns (DCA memory);
@@ -66,8 +67,8 @@ interface ICaskDCA {
     function managerProcessed(bytes32 _dcaId, uint256 _fee) external;
 
 
-    event DCACreated(bytes32 indexed dcaId, address indexed user, address inputAsset,
-        address outputAsset, uint256 amount, uint32 period);
+    event DCACreated(bytes32 indexed dcaId, address indexed user, address indexed to, address inputAsset,
+        address outputAsset, uint256 amount, uint256 totalAmount, uint32 period);
 
     event DCAPaused(bytes32 indexed dcaId, address indexed user);
 

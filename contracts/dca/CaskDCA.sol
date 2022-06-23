@@ -80,12 +80,13 @@ BaseRelayRecipient
     function createDCA(
         address[] calldata _assetSpec, // router, priceFeed, path...
         bytes32[] calldata _merkleProof,
+        address _to,
         uint256 _amount,
+        uint256 _totalAmount,
         uint32 _period,
         uint256 _slippageBps,
         uint256 _minPrice,
-        uint256 _maxPrice,
-        uint32 _completeAt
+        uint256 _maxPrice
     ) external override returns(bytes32) {
         require(_amount >= minAmount, "!INVALID(amount)");
         require(_period >= minPeriod, "!INVALID(period)");
@@ -99,24 +100,26 @@ BaseRelayRecipient
 
         DCA storage dca = dcaMap[dcaId];
         dca.user = _msgSender();
+        dca.to = _to;
         dca.router = _assetSpec[0];
         dca.priceFeed = _assetSpec[1];
         dca.path = _assetSpec[2:];
         dca.amount = _amount;
+        dca.totalAmount = _totalAmount;
         dca.period = _period;
         dca.minPrice = _minPrice;
         dca.maxPrice = _maxPrice;
         dca.slippageBps = _slippageBps;
         dca.createdAt = timestamp;
         dca.processAt = timestamp;
-        dca.completeAt = _completeAt;
         dca.status = DCAStatus.Active;
 
         userDCAs[_msgSender()].push(dcaId);
 
         dcaManager.registerDCA(dcaId);
 
-        emit DCACreated(dcaId, dca.user, dca.path[0], dca.path[dca.path.length-1], _amount, _period);
+        emit DCACreated(dcaId, dca.user, dca.to, dca.path[0], dca.path[dca.path.length-1],
+            _amount, _totalAmount, _period);
 
         return dcaId;
     }
@@ -229,11 +232,6 @@ BaseRelayRecipient
 
             emit DCACanceled(_dcaId, dca.user);
 
-        } else if (_command == ManagerCommand.Complete) {
-
-            dca.status = DCAStatus.Complete;
-
-            emit DCACompleted(_dcaId, dca.user);
         }
     }
 
@@ -244,10 +242,16 @@ BaseRelayRecipient
         DCA storage dca = dcaMap[_dcaId];
 
         dca.processAt = dca.processAt + dca.period;
-        dca.totalAmount += dca.amount;
+        dca.currentAmount += dca.amount;
         dca.numBuys += 1;
 
         emit DCAProcessed(_dcaId, dca.user, _fee);
+
+        if (dca.totalAmount > 0 && dca.currentAmount >= dca.totalAmount) {
+            dca.status = DCAStatus.Complete;
+            emit DCACompleted(_dcaId, dca.user);
+        }
+
     }
 
     /************************** ADMIN FUNCTIONS **************************/
