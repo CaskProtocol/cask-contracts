@@ -27,6 +27,8 @@ abstract contract ICaskJobQueue is Initializable {
 
     function setQueueBucketSize(uint32 _queueBucketSize) virtual external;
 
+    function setMaxQueueAge(uint32 _maxQueueAge) virtual external;
+
 
     event WorkUnitProcessed(uint8 queueId, bytes32 workUnit);
 

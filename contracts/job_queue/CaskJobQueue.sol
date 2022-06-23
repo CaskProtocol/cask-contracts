@@ -19,6 +19,9 @@ ICaskJobQueue
     /** @dev size (in seconds) of buckets to group jobs into for processing */
     uint32 public queueBucketSize;
 
+    /** @dev max age (in seconds) of a bucket before a processing is triggered */
+    uint32 public maxQueueAge;
+
     /** @dev map used to track jobs in the queues */
     mapping(uint8 => mapping(uint32 => bytes32[])) private queue; // renewal bucket => workUnit[]
     mapping(uint8 => uint32) private queueBucket; // current bucket being processed
@@ -37,6 +40,7 @@ ICaskJobQueue
         uint32 _queueBucketSize
     ) internal onlyInitializing {
         queueBucketSize = _queueBucketSize;
+        maxQueueAge = queueBucketSize * 20;
     }
 
 
@@ -96,8 +100,8 @@ ICaskJobQueue
             checkBucket = bucket;
         }
 
-        // if queue is more than an hour old, all hands on deck
-        if (bucket >= checkBucket && bucket - checkBucket > (queueBucketSize * 20)) {
+        // if queue is over maxQueueAge and needs upkeep regardless of anything queued
+        if (bucket >= checkBucket && bucket - checkBucket >= maxQueueAge) {
             upkeepNeeded = true;
         } else {
             while (checkBucket <= bucket) {
@@ -168,6 +172,12 @@ ICaskJobQueue
         uint32 _queueBucketSize
     ) external override onlyOwner {
         queueBucketSize = _queueBucketSize;
+    }
+
+    function setMaxQueueAge(
+        uint32 _maxQueueAge
+    ) external override onlyOwner {
+        maxQueueAge = _maxQueueAge;
     }
 
 }
