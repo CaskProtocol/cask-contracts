@@ -1,5 +1,3 @@
-const { MerkleTree } = require("merkletreejs");
-const keccak256 = require("keccak256");
 const path = require('path');
 const fs = require('fs');
 const { CaskSDK } = require('@caskprotocol/sdk');
