@@ -2,15 +2,10 @@ const {
     usdtUnits,
     usdcUnits,
     daiUnits,
-    ustUnits,
-    fraxUnits,
-    day,
-    hour,
 } = require("../utils/units");
 
 const {
     isProtocolChain,
-    isMemnet,
 } = require("../test/_networks");
 
 const { getNetworkAddresses } = require("../test/_helpers");
@@ -24,75 +19,18 @@ const {
 
 const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
 
-    const {deployerAddr, governorAddr} = await getNamedAccounts();
-    const sDeployer = await ethers.provider.getSigner(deployerAddr);
+    const {governorAddr} = await getNamedAccounts();
 
     const networkAddresses = await getNetworkAddresses(deployments);
     log(`Deploying protocol contracts using network addresses: ${JSON.stringify(networkAddresses, null, 2)}`);
 
     await deployProxyWithConfirmation('CaskVault');
-    await deployProxyWithConfirmation('CaskSubscriptionPlans');
-    await deployProxyWithConfirmation('CaskSubscriptions');
-    await deployProxyWithConfirmation('CaskSubscriptionManager');
 
     const vault = await ethers.getContract("CaskVault");
     await withConfirmation(
         vault.initialize(networkAddresses.USDC, networkAddresses.USDC_USD, governorAddr)
     );
     log("Initialized CaskVault");
-
-    const subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
-    await withConfirmation(
-        subscriptionPlans.initialize()
-    );
-    log("Initialized CaskSubscriptionPlans");
-
-    const subscriptions = await ethers.getContract("CaskSubscriptions");
-    await withConfirmation(
-        subscriptions.initialize(subscriptionPlans.address)
-    );
-    log("Initialized CaskSubscriptions");
-
-    await withConfirmation(
-        subscriptionPlans.setSubscriptions(subscriptions.address)
-    );
-    log("Set CaskSubscriptions address in CaskSubscriptionPlans");
-
-    const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
-    await withConfirmation(
-        subscriptionManager.initialize(vault.address, subscriptionPlans.address, subscriptions.address)
-    );
-    log("Initialized CaskSubscriptionManager");
-    if (isMemnet) {
-        await withConfirmation(
-            subscriptionManager.setParameters(
-                usdcUnits('0.50'), // paymentMinValue
-                usdcUnits('0.05'), // paymentFeeMin
-                ethers.BigNumber.from('100'), // paymentFeeRateMin
-                ethers.BigNumber.from('100'), // paymentFeeRateMax
-                ethers.BigNumber.from('0'), // stakeTargetFactor
-                24 * hour // processBucketSize
-            )
-        );
-        log("Set CaskSubscriptionManager parameters for memnet");
-    }
-
-    await withConfirmation(
-        vault.connect(sDeployer).addProtocol(subscriptionManager.address)
-    );
-    log(`Authorized CaskVault protocol ${subscriptionManager.address} for CaskSubscriptionManager`);
-
-    await withConfirmation(
-        subscriptions.connect(sDeployer).setManager(subscriptionManager.address)
-    );
-    log(`Set CaskSubscriptions manager to ${subscriptionManager.address}`);
-
-    await withConfirmation(
-        subscriptionPlans.connect(sDeployer).setManager(subscriptionManager.address)
-    );
-    log(`Set CaskSubscriptionPlans manager to ${subscriptionManager.address}`);
-
-
 }
 
 /**
@@ -105,9 +43,6 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     const sDeployer = await ethers.provider.getSigner(deployerAddr);
 
     const vault = await ethers.getContract("CaskVault");
-    const subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
-    const subscriptions = await ethers.getContract("CaskSubscriptions");
-    const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
 
     await withConfirmation(
         vault.connect(sDeployer).setMinDeposit(usdcUnits('0.01'))
@@ -138,15 +73,6 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
 
     await withConfirmation(
         vault.transferOwnership(governorAddr)
-    );
-    await withConfirmation(
-        subscriptionPlans.transferOwnership(governorAddr)
-    );
-    await withConfirmation(
-        subscriptions.transferOwnership(governorAddr)
-    );
-    await withConfirmation(
-        subscriptionManager.transferOwnership(governorAddr)
     );
     log(`Protocol contracts ownership transferred to ${governorAddr}`);
 

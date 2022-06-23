@@ -16,24 +16,28 @@ const {
  * The deploy function should never return true so that hardhat deploy does not consider it a one-time migration.
  */
 
-const deployProtocolUpgrade = async () => {
+const deployUpgrades = async () => {
 
     await upgradeProxyWithConfirmation('CaskVault');
     await upgradeProxyWithConfirmation('CaskSubscriptionPlans');
     await upgradeProxyWithConfirmation('CaskSubscriptions');
     await upgradeProxyWithConfirmation('CaskSubscriptionManager');
+    await upgradeProxyWithConfirmation('CaskDCA');
+    await upgradeProxyWithConfirmation('CaskDCAManager');
+    await upgradeProxyWithConfirmation('CaskP2P');
+    await upgradeProxyWithConfirmation('CaskP2PManager');
 
 }
 
 const main = async (hre) => {
-    console.log("Running 999_protocol_upgrade deployment...");
-    await deployProtocolUpgrade(hre);
-    console.log("999_protocol_upgrade deploy done.");
+    console.log("Running 999_upgrade deployment...");
+    await deployUpgrades(hre);
+    console.log("999_upgrade deploy done.");
 };
 
-main.id = "999_protocol_upgrade";
-main.tags = ["protocol"];
-main.dependencies = ["mocks"];
+main.id = "999_upgrade";
+main.tags = ["upgrade"];
+main.dependencies = ["mocks","protocol","subscriptions","dca","p2p"];
 main.skip = () => !isProtocolChain || isDevnet;
 
 module.exports = main;
