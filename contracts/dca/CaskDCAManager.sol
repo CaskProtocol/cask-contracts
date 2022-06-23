@@ -107,7 +107,7 @@ ICaskDCAManager
             caskDCA.managerProcessed(_dcaId, protocolFee);
 
         } else {
-            if (dca.numSkips >= maxSkips) {
+            if (maxSkips > 0 && dca.numSkips >= maxSkips) {
                 caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Pause);
             } else {
                 scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
