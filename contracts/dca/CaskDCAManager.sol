@@ -96,15 +96,16 @@ ICaskDCAManager
         }
 
         uint256 protocolFee = (dca.amount * feeBps) / 10000;
+        uint256 buyQty = _processDCABuy(dca, protocolFee);
 
         // did a swap happen successfully?
-        if (_processDCABuy(dca, protocolFee) > 0) {
+        if (buyQty > 0) {
 
             if (dca.totalAmount == 0 || dca.currentAmount < dca.totalAmount) {
                 scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
             }
 
-            caskDCA.managerProcessed(_dcaId, protocolFee);
+            caskDCA.managerProcessed(_dcaId, buyQty, protocolFee);
 
         } else {
             if (maxSkips > 0 && dca.numSkips >= maxSkips) {

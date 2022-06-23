@@ -235,12 +235,14 @@ BaseRelayRecipient
 
     function managerProcessed(
         bytes32 _dcaId,
+        uint256 _buyQty,
         uint256 _fee
     ) external override onlyManager {
         DCA storage dca = dcaMap[_dcaId];
 
         dca.processAt = dca.processAt + dca.period;
         dca.currentAmount += dca.amount;
+        dca.currentQty += _buyQty;
         dca.numBuys += 1;
 
         emit DCAProcessed(_dcaId, dca.user, _fee);

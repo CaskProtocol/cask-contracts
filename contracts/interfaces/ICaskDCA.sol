@@ -26,6 +26,7 @@ interface ICaskDCA {
         uint256 amount;
         uint256 totalAmount;
         uint256 currentAmount;
+        uint256 currentQty;
         uint256 numBuys;
         uint256 numSkips;
         uint256 slippageBps;
@@ -64,7 +65,7 @@ interface ICaskDCA {
 
     function managerCommand(bytes32 _dcaId, ManagerCommand _command) external;
 
-    function managerProcessed(bytes32 _dcaId, uint256 _fee) external;
+    function managerProcessed(bytes32 _dcaId, uint256 _buyQty, uint256 _fee) external;
 
 
     event DCACreated(bytes32 indexed dcaId, address indexed user, address indexed to, address inputAsset,
