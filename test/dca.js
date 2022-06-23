@@ -87,7 +87,6 @@ describe("CaskDCA General", function () {
 
         // confirm second DCA was processed
         result = await userDCA.getDCA(dcaId);
-        console.dir(result);
         expect(result.status).to.equal(DCAStatus.Active);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('80'));
         expect(await abc.balanceOf(user.address)).to.equal(parseUnits('19.94', 18));
@@ -96,7 +95,6 @@ describe("CaskDCA General", function () {
 
         // confirm third DCA was processed
         result = await userDCA.getDCA(dcaId);
-        console.dir(result);
         expect(result.status).to.equal(DCAStatus.Active);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('70'));
         expect(await abc.balanceOf(user.address)).to.equal(parseUnits('29.91', 18));

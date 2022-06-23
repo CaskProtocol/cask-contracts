@@ -164,4 +164,10 @@ ICaskJobQueue
         emit WorkUnitQueued(_queueId, _workUnit, _processAt);
     }
 
+    function setQueueBucketSize(
+        uint32 _queueBucketSize
+    ) external override onlyOwner {
+        queueBucketSize = _queueBucketSize;
+    }
+
 }
