@@ -3,9 +3,9 @@ async function keeper(taskArguments, hre) {
     let keeperTarget;
     let keeperWalletPk;
 
-    if (taskArguments.protocol === 'subscription') {
+    if (taskArguments.protocol === 'subscriptions') {
         keeperTarget = await ethers.getContract("CaskSubscriptionManager");
-        keeperWalletPk = process.env.SUBSCRIPTION_KEEPER_PK || process.env.KEEPER_PK;
+        keeperWalletPk = process.env.SUBSCRIPTIONS_KEEPER_PK || process.env.KEEPER_PK;
         console.log(`Starting keeper targeting CaskSubscriptionManager at ${keeperTarget.address}`);
     } else if (taskArguments.protocol === 'dca') {
         keeperTarget = await ethers.getContract("CaskDCAManager");
