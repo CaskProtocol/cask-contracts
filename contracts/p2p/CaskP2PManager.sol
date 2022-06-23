@@ -78,9 +78,8 @@ ICaskP2PManager
             scheduleWorkUnit(_queueId, _p2pId, bucketAt(p2p.processAt));
             return;
         }
-        
 
-        // did a swap happen successfully?
+        // did a transfer happen successfully?
         if (_processP2PTransfer(p2p)) {
 
             if (p2p.totalAmount == 0 || p2p.currentAmount < p2p.totalAmount) {
