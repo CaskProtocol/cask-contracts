@@ -21,7 +21,7 @@ ICaskDCAManager
 {
     using SafeERC20 for IERC20Metadata;
 
-    uint256 private constant QUEUE_ID_DCA = 1;
+    uint8 private constant QUEUE_ID_DCA = 1;
 
 
     /** @dev Pointer to CaskDCA contract */
@@ -72,7 +72,7 @@ ICaskDCAManager
     }
 
     function processWorkUnit(
-        uint256 _queueId,
+        uint8 _queueId,
         bytes32 _dcaId
     ) override internal {
 

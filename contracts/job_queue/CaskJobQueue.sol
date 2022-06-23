@@ -20,8 +20,8 @@ ICaskJobQueue
     uint32 public queueBucketSize;
 
     /** @dev map used to track jobs in the queues */
-    mapping(uint256 => mapping(uint32 => bytes32[])) private queue; // renewal bucket => workUnit[]
-    mapping(uint256 => uint32) private queueBucket; // current bucket being processed
+    mapping(uint8 => mapping(uint32 => bytes32[])) private queue; // renewal bucket => workUnit[]
+    mapping(uint8 => uint32) private queueBucket; // current bucket being processed
 
 
     function __CaskJobQueue_init(
@@ -52,7 +52,7 @@ ICaskJobQueue
     }
 
     function queueItem(
-        uint256 _queueId,
+        uint8 _queueId,
         uint32 _bucket,
         uint256 _idx
     ) external override view returns(bytes32) {
@@ -60,20 +60,20 @@ ICaskJobQueue
     }
 
     function queueSize(
-        uint256 _queueId,
+        uint8 _queueId,
         uint32 _bucket
     ) external override view returns(uint256) {
         return queue[_queueId][_bucket].length;
     }
 
     function queuePosition(
-        uint256 _queueId
+        uint8 _queueId
     ) external override view returns(uint32) {
         return queueBucket[_queueId];
     }
 
     function setQueuePosition(
-        uint256 _queueId,
+        uint8 _queueId,
         uint32 _timestamp
     ) external override onlyOwner {
         queueBucket[_queueId] = bucketAt(_timestamp);
@@ -85,8 +85,8 @@ ICaskJobQueue
         (
         uint256 limit,
         uint256 minDepth,
-        uint256 queueId
-        ) = abi.decode(checkData, (uint256, uint256, uint256));
+        uint8 queueId
+        ) = abi.decode(checkData, (uint256, uint256, uint8));
 
         uint32 bucket = currentBucket();
         upkeepNeeded = false;
@@ -121,8 +121,8 @@ ICaskJobQueue
         (
         uint256 limit,
         uint256 depth,
-        uint256 queueId
-        ) = abi.decode(performData, (uint256, uint256, uint256));
+        uint8 queueId
+        ) = abi.decode(performData, (uint256, uint256, uint8));
 
         uint32 bucket = currentBucket();
         uint256 jobsProcessed = 0;
@@ -156,7 +156,7 @@ ICaskJobQueue
 
 
     function scheduleWorkUnit(
-        uint256 _queueId,
+        uint8 _queueId,
         bytes32 _workUnit,
         uint32 _processAt
     ) internal override {

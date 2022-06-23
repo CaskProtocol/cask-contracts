@@ -67,9 +67,10 @@ task("fund", "Funds all accounts with USDC/USDT/DAI", fund);
 task("fixtures", "Setup fixtured provider plans and consumer subscriptions", fixtures);
 
 task("keeper", "Run a keeper")
-    .addOptionalParam("limit", "Max subscriptions to process per run", "4")
+    .addOptionalParam("protocol", "Protocol to upkeep: One of 'subscriptions', 'dca' or 'p2p'", "subscriptions")
+    .addOptionalParam("limit", "Max work items to process per run", "4")
     .addOptionalParam("minDepth", "Only run keeper if queue is at least this deep", "0")
-    .addOptionalParam("queue", "comma separated list of queues - 1 for active queue, 2 for past due queue", "1,2")
+    .addOptionalParam("queue", "comma separated list of queues", "1")
     .addOptionalParam("interval", "How often (in ms) to do keeper upkeep check", "30000")
     .addOptionalParam("gasLimit", "gasLimit for keeper transaction", "2500000")
     .addOptionalParam("gasPrice", "gasPrice for keeper transaction")

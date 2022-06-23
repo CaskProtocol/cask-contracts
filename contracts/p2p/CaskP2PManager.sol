@@ -19,7 +19,7 @@ ICaskP2PManager
 {
     using SafeERC20 for IERC20Metadata;
 
-    uint256 private constant QUEUE_ID_P2P = 1;
+    uint8 private constant QUEUE_ID_P2P = 1;
 
 
     /** @dev Pointer to CaskP2P contract */
@@ -61,7 +61,7 @@ ICaskP2PManager
     }
 
     function processWorkUnit(
-        uint256 _queueId,
+        uint8 _queueId,
         bytes32 _p2pId
     ) override internal {
 

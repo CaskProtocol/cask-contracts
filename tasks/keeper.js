@@ -1,8 +1,25 @@
 async function keeper(taskArguments, hre) {
 
-    const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
-    const queues = taskArguments.queue.split(/\s*,\s*/);
+    let keeperTarget;
+    let keeperWalletPk;
 
+    if (taskArguments.protocol === 'subscription') {
+        keeperTarget = await ethers.getContract("CaskSubscriptionManager");
+        keeperWalletPk = process.env.SUBSCRIPTION_KEEPER_PK || process.env.KEEPER_PK;
+        console.log(`Starting keeper targeting CaskSubscriptionManager at ${keeperTarget.address}`);
+    } else if (taskArguments.protocol === 'dca') {
+        keeperTarget = await ethers.getContract("CaskDCAManager");
+        keeperWalletPk = process.env.DCA_KEEPER_PK || process.env.KEEPER_PK;
+        console.log(`Starting keeper targeting CaskDCAManager at ${keeperTarget.address}`);
+    } else if (taskArguments.protocol === 'p2p') {
+        keeperTarget = await ethers.getContract("CaskP2PManager");
+        keeperWalletPk = process.env.P2P_KEEPER_PK || process.env.KEEPER_PK;
+        console.log(`Starting keeper targeting CaskP2PManager at ${keeperTarget.address}`);
+    } else {
+        throw new Error(`Unknown protocol target: ${taskArguments.protocol}`);
+    }
+
+    const queues = taskArguments.queue.split(/\s*,\s*/);
     const gasPrice = parseInt(taskArguments.gasPrice) || hre.network.config.gasPrice;
 
     let keeperWallet;
@@ -13,10 +30,10 @@ async function keeper(taskArguments, hre) {
         keeperWallet = new ethers.Wallet(process.env.INTERNAL_KEEPER_PK || process.env.TESTNET_KEEPER_PK,
             hre.ethers.provider);
     } else {
-        keeperWallet = new ethers.Wallet(process.env.KEEPER_PK, hre.ethers.provider);
+        keeperWallet = new ethers.Wallet(keeperWalletPk, hre.ethers.provider);
     }
 
-    const keeperManager = subscriptionManager.connect(keeperWallet);
+    const keeperManager = keeperTarget.connect(keeperWallet);
 
     console.log(`Keeper ${keeperWallet.address} running with limit ${taskArguments.limit} on queue(s) ${queues} using gasPrice ${gasPrice}`)
 
@@ -55,9 +72,10 @@ async function keeper(taskArguments, hre) {
                             gasPrice: typeof(gasPrice) === 'number' ? gasPrice : undefined
                         });
                     const events = (await tx.wait()).events || [];
-                    const report = events.find((e) => e.event === "SubscriptionManagerReport");
+                    const report = events.find((e) => e.event === "SubscriptionManagerReport" ||
+                                                      e.event === "QueueRunReport");
                     if (report) {
-                        console.log(`Report: performed ${report.args.renewals} renewals`);
+                        console.log(`Report: performed ${JSON.stringify(report.args, null, 2)}`);
                     } else {
                         console.log(`Report not detected after keeper run`);
                     }
