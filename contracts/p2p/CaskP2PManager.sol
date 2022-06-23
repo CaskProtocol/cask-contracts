@@ -104,7 +104,6 @@ ICaskP2PManager
     function _processP2PTransfer(
         ICaskP2P.P2P memory _p2p
     ) internal returns(bool) {
-        require(_p2p.amount >= paymentFee, "!AMOUNT_TOO_LOW");
         try caskVault.protocolPayment(_p2p.user, _p2p.to, _p2p.amount, paymentFee) {
             return true;
         } catch (bytes memory) {
