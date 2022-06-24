@@ -44,7 +44,7 @@ describe("CaskDCA General", function () {
         const initialUserBalance = await userVault.currentValueOf(user.address);
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
-        const assetInfo =  assetList.find((a) => a.path[a.path.length-1].toLowerCase() === abc.address.toLowerCase());
+        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(assetList, assetInfo);
 
         const assetSpec = [
@@ -99,7 +99,6 @@ describe("CaskDCA General", function () {
 
     });
 
-
     it("DCA with totalAmount", async function () {
 
         const {
@@ -122,7 +121,7 @@ describe("CaskDCA General", function () {
         const initialUserBalance = await userVault.currentValueOf(user.address);
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
-        const assetInfo =  assetList.find((a) => a.path[a.path.length-1].toLowerCase() === abc.address.toLowerCase());
+        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(assetList, assetInfo);
 
         const assetSpec = [
@@ -171,6 +170,51 @@ describe("CaskDCA General", function () {
         result = await userDCA.getDCA(dcaId);
         expect(result.status).to.equal(DCAStatus.Complete);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('75'));
+    });
+
+    it("DCA fails with bad proof", async function () {
+
+        const {
+            networkAddresses,
+            user,
+            vault,
+            dca,
+            abc,
+            assetList,
+        } = await dcaWithLiquidityFixture();
+
+        const userVault = vault.connect(user);
+        const userDCA = dca.connect(user);
+
+
+        // deposit to vault
+        await userVault.deposit(networkAddresses.USDC, usdcUnits('100'));
+
+        // check initial balance
+        const initialUserBalance = await userVault.currentValueOf(user.address);
+        expect(initialUserBalance).to.equal(usdcUnits('100'));
+
+        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
+
+        const assetSpec = [
+            assetInfo.router.toLowerCase(),
+            assetInfo.priceFeed.toLowerCase(),
+            ...assetInfo.path.map((a) => a.toLowerCase())
+        ];
+
+        // create DCA
+        await expect(userDCA.createDCA(
+            assetSpec, // assetSpec
+            ['0x56a9e930d5992a8446ba6814144d4ae98194eaf9d8210be85ed01614b45effff'], // bad merkleProof
+            user.address, // to
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            7 * day, // period
+            100, // slippageBps
+            0, // minPrice
+            0 // maxPrice
+        )).to.be.revertedWith("!INVALID(assetSpec)");
+
     });
 
 });
