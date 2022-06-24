@@ -204,15 +204,16 @@ BaseRelayRecipient
 
     function managerProcessed(
         bytes32 _p2pId,
+        uint256 _amount,
         uint256 _fee
     ) external override onlyManager {
         P2P storage p2p = p2pMap[_p2pId];
 
         p2p.processAt = p2p.processAt + p2p.period;
-        p2p.currentAmount += p2p.amount;
+        p2p.currentAmount += _amount;
         p2p.numPayments += 1;
 
-        emit P2PProcessed(_p2pId, p2p.user, _fee);
+        emit P2PProcessed(_p2pId, p2p.user, _amount, _fee);
 
         if (p2p.totalAmount > 0 && p2p.currentAmount >= p2p.totalAmount) {
             p2p.status = P2PStatus.Complete;

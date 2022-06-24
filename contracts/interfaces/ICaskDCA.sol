@@ -65,7 +65,7 @@ interface ICaskDCA {
 
     function managerCommand(bytes32 _dcaId, ManagerCommand _command) external;
 
-    function managerProcessed(bytes32 _dcaId, uint256 _buyQty, uint256 _fee) external;
+    function managerProcessed(bytes32 _dcaId, uint256 _amount, uint256 _buyQty, uint256 _fee) external;
 
 
     event DCACreated(bytes32 indexed dcaId, address indexed user, address indexed to, address inputAsset,
@@ -77,7 +77,7 @@ interface ICaskDCA {
 
     event DCASkipped(bytes32 indexed dcaId, address indexed user);
 
-    event DCAProcessed(bytes32 indexed dcaId, address indexed user, uint256 fee);
+    event DCAProcessed(bytes32 indexed dcaId, address indexed user, uint256 amount, uint256 buyQty, uint256 fee);
 
     event DCACanceled(bytes32 indexed dcaId, address indexed user);
 

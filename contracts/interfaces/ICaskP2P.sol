@@ -53,7 +53,7 @@ interface ICaskP2P {
 
     function managerCommand(bytes32 _p2pId, ManagerCommand _command) external;
 
-    function managerProcessed(bytes32 _p2pId, uint256 _fee) external;
+    function managerProcessed(bytes32 _p2pId, uint256 amount, uint256 _fee) external;
 
 
     event P2PCreated(bytes32 indexed p2pId, address indexed user, address indexed to,
@@ -65,7 +65,7 @@ interface ICaskP2P {
 
     event P2PSkipped(bytes32 indexed p2pId, address indexed user);
 
-    event P2PProcessed(bytes32 indexed p2pId, address indexed user, uint256 fee);
+    event P2PProcessed(bytes32 indexed p2pId, address indexed user, uint256 amount, uint256 fee);
 
     event P2PCanceled(bytes32 indexed p2pId, address indexed user);
 

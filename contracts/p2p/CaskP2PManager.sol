@@ -79,14 +79,18 @@ ICaskP2PManager
             return;
         }
 
+        uint256 amount = p2p.amount;
+        if (p2p.totalAmount > 0 && amount > p2p.totalAmount - p2p.currentAmount) {
+            amount = p2p.totalAmount - p2p.currentAmount;
+        }
         // did a transfer happen successfully?
-        if (_processP2PTransfer(p2p)) {
+        if (_processP2PTransfer(p2p, amount)) {
 
-            if (p2p.totalAmount == 0 || p2p.currentAmount < p2p.totalAmount) {
+            if (p2p.totalAmount == 0 || p2p.currentAmount + amount < p2p.totalAmount) {
                 scheduleWorkUnit(_queueId, _p2pId, bucketAt(p2p.processAt + p2p.period));
             }
 
-            caskP2P.managerProcessed(_p2pId, paymentFee);
+            caskP2P.managerProcessed(_p2pId, amount, paymentFee);
 
         } else {
             if (maxSkips > 0 && p2p.numSkips >= maxSkips) {
@@ -101,9 +105,10 @@ ICaskP2PManager
     }
 
     function _processP2PTransfer(
-        ICaskP2P.P2P memory _p2p
+        ICaskP2P.P2P memory _p2p,
+        uint256 _amount
     ) internal returns(bool) {
-        try caskVault.protocolPayment(_p2p.user, _p2p.to, _p2p.amount, paymentFee) {
+        try caskVault.protocolPayment(_p2p.user, _p2p.to, _amount, paymentFee) {
             return true;
         } catch (bytes memory) {
             return false;
