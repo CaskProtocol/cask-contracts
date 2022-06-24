@@ -1,5 +1,4 @@
 const { expect } = require("chai");
-const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
     usdcUnits,
