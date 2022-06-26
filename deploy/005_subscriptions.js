@@ -104,7 +104,7 @@ const transferOwnerships = async ({ethers, getNamedAccounts}) => {
     await withConfirmation(
         subscriptionManager.transferOwnership(governorAddr)
     );
-    log(`Protocol contracts ownership transferred to ${governorAddr}`);
+    log(`Subscriptions contracts ownership transferred to ${governorAddr}`);
 
 }
 

@@ -17,7 +17,7 @@ const {
 } = require("../utils/deploy");
 
 
-const deployProtocol = async ({deployments, ethers, getNamedAccounts}) => {
+const deployVault = async ({deployments, ethers, getNamedAccounts}) => {
 
     const {governorAddr} = await getNamedAccounts();
 
@@ -74,13 +74,13 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     await withConfirmation(
         vault.transferOwnership(governorAddr)
     );
-    log(`Protocol contracts ownership transferred to ${governorAddr}`);
+    log(`Vault contract ownership transferred to ${governorAddr}`);
 
 }
 
 const main = async (hre) => {
     console.log("Running 004_vault deployment...");
-    await deployProtocol(hre);
+    await deployVault(hre);
     await configureVault(hre);
     console.log("004_vault deploy done.");
     return true;
