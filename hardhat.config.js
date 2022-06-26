@@ -77,6 +77,7 @@ task("keeper", "Run a keeper")
     .setAction(keeper);
 
 task("dca:merkleroot", "Generate merkle root for DCA asset list")
+    .addParam("file", "Asset JSON file")
     .addOptionalParam("execute", "Update on-chain merkle root", "false")
     .setAction(dcaMerkleRoot);
 

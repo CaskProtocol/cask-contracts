@@ -1,0 +1,47 @@
+[
+  {
+    "inputAssetSymbol": "USDC",
+    "outputAssetSymbol": "WAVAX",
+    "routerName": "Quickswap",
+    "router": "0x60ae616a2155ee3d9a68541ba4544862310933d4",
+    "priceFeed": "0x0A77230d17318075983913bC2145DB16C7366156",
+    "path": ["0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e","0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7"],
+    "chainId": 43114
+  },
+  {
+    "inputAssetSymbol": "USDC",
+    "outputAssetSymbol": "JOE",
+    "routerName": "Quickswap",
+    "router": "0x60ae616a2155ee3d9a68541ba4544862310933d4",
+    "priceFeed": "0x02D35d3a8aC3e1626d3eE09A78Dd87286F5E8e3a",
+    "path": ["0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e","0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7","0x6e84a6216ea6dacc71ee8e6b0a5b7322eebc0fdd"],
+    "chainId": 43114
+  },
+  {
+    "inputAssetSymbol": "USDC",
+    "outputAssetSymbol": "WETH.e",
+    "routerName": "Quickswap",
+    "router": "0x60ae616a2155ee3d9a68541ba4544862310933d4",
+    "priceFeed": "0x976B3D034E162d8bD72D6b9C989d545b839003b0",
+    "path": ["0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e","0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7","0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab"],
+    "chainId": 43114
+  },
+  {
+    "inputAssetSymbol": "USDC",
+    "outputAssetSymbol": "BTC.b",
+    "routerName": "Quickswap",
+    "router": "0x60ae616a2155ee3d9a68541ba4544862310933d4",
+    "priceFeed": "0x2779D32d5166BAaa2B2b658333bA7e6Ec0C65743",
+    "path": ["0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e","0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7","0x152b9d0fdc40c096757f570a51e494bd4b943e50"],
+    "chainId": 43114
+  },
+  {
+    "inputAssetSymbol": "USDC",
+    "outputAssetSymbol": "LINK.e",
+    "routerName": "Quickswap",
+    "router": "0x60ae616a2155ee3d9a68541ba4544862310933d4",
+    "priceFeed": "0x49ccd9ca821EfEab2b98c60dC60F518E765EDe9a",
+    "path": ["0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e","0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7","0x5947bb275c521040051d82396192181b413227a3"],
+    "chainId": 43114
+  }
+]

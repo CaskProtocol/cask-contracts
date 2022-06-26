@@ -133,9 +133,13 @@ ICaskDCAManager
         address outputAsset = _dca.path[_dca.path.length-1];
 
         ICaskVault.Asset memory inputAssetInfo = caskVault.getAsset(inputAsset);
-        require(inputAssetInfo.allowed, "!INVALID(inputAsset)");
+        if (!inputAssetInfo.allowed) {
+            return 0;
+        }
 
-        _ensureMinMaxPrice(_dca, inputAssetInfo, outputAsset, _dca.priceFeed);
+        if (!_checkMinMaxPrice(_dca, _amount, inputAssetInfo, outputAsset, _dca.priceFeed)) {
+            return 0;
+        }
 
         uint256 beforeBalance = IERC20Metadata(inputAsset).balanceOf(address(this));
 
@@ -161,10 +165,16 @@ ICaskDCAManager
         uint256 amountIn = IERC20Metadata(inputAsset).balanceOf(address(this)) - beforeBalance;
         require(amountIn > 0, "!INVALID(amountIn)");
 
+        uint256 optimalOutput;
+        if (_dca.priceFeed != address(0)) {
+            optimalOutput = _convertPrice(inputAssetInfo, outputAsset, _dca.priceFeed, _amount);
+        } else {
+            uint256[] memory amountOuts = IUniswapV2Router02(_dca.router).getAmountsOut(_amount, _dca.path);
+            optimalOutput = amountOuts[amountOuts.length-1];
+        }
+
         // let swap router spend the amount of newly acquired inputAsset
         IERC20Metadata(inputAsset).safeIncreaseAllowance(_dca.router, amountIn);
-
-        uint256 optimalOutput = _convertPrice(inputAssetInfo, outputAsset, _dca.priceFeed, amountIn);
 
         // perform swap
         try IUniswapV2Router02(_dca.router).swapExactTokensForTokens(
@@ -181,26 +191,51 @@ ICaskDCAManager
         }
     }
 
-    function _ensureMinMaxPrice(
+    function _checkMinMaxPrice(
         ICaskDCA.DCA memory _dca,
+        uint256 _amount,
         ICaskVault.Asset memory _inputAssetInfo,
         address _outputAsset,
         address _outputPriceFeed
-    ) internal view {
-        uint256 inputAssetOneUnit = uint256(10 ** _inputAssetInfo.assetDecimals);
-        uint256 pricePerOutputUnit =  inputAssetOneUnit /
-                _convertPrice(_inputAssetInfo, _outputAsset, _outputPriceFeed, inputAssetOneUnit);
-        require(_dca.minPrice == 0 || _dca.minPrice > pricePerOutputUnit, "!MIN_PRICE");
-        require(_dca.maxPrice == 0 || _dca.maxPrice < pricePerOutputUnit, "!MAX_PRICE");
+    ) internal view returns(bool) {
+        if (_dca.minPrice == 0 && _dca.maxPrice == 0) {
+            return true;
+        }
+
+        uint256 pricePerOutputUnit;
+        uint8 outputAssetDecimals = IERC20Metadata(_outputAsset).decimals();
+        uint256 outputAssetOneUnit = uint256(10 ** outputAssetDecimals);
+
+        if (_dca.priceFeed != address(0)) { // use price feed
+            pricePerOutputUnit =
+                    outputAssetOneUnit *
+                    outputAssetOneUnit /
+                    _convertPrice(_inputAssetInfo, _outputAsset, _outputPriceFeed, uint256(10 ** _inputAssetInfo.assetDecimals));
+
+        } else { // use swap router price
+            uint256[] memory amountOuts = IUniswapV2Router02(_dca.router).getAmountsOut(_amount, _dca.path);
+            pricePerOutputUnit =
+                    _scalePrice(_amount, _inputAssetInfo.assetDecimals, outputAssetDecimals) *
+                    outputAssetOneUnit /
+                    amountOuts[amountOuts.length-1];
+        }
+
+        if (_dca.minPrice > 0 && pricePerOutputUnit < _dca.minPrice) {
+            return false;
+        } else if (_dca.maxPrice > 0 && pricePerOutputUnit > _dca.maxPrice) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     function _convertPrice(
         ICaskVault.Asset memory _fromAsset,
         address _toAsset,
         address _toPriceFeed,
-        uint256 amount
+        uint256 _amount
     ) internal view returns(uint256) {
-        if (amount == 0) {
+        if (_amount == 0) {
             return 0;
         }
 
@@ -220,14 +255,14 @@ ICaskDCAManager
         if (_fromAsset.priceFeedDecimals != toFeedDecimals) {
             // since oracle precision is different, scale everything
             // to _toAsset precision and do conversion
-            return _scalePrice(amount, _fromAsset.assetDecimals, toAssetDecimals) *
+            return _scalePrice(_amount, _fromAsset.assetDecimals, toAssetDecimals) *
                 _scalePrice(fromOraclePrice, _fromAsset.priceFeedDecimals, toAssetDecimals) /
                 _scalePrice(toOraclePrice, toFeedDecimals, toAssetDecimals);
         } else {
             // oracles are already in same precision, so just scale _amount to oracle precision,
             // do the price conversion and convert back to _toAsset precision
             return _scalePrice(
-                _scalePrice(amount, _fromAsset.assetDecimals, toFeedDecimals) * fromOraclePrice / toOraclePrice,
+                _scalePrice(_amount, _fromAsset.assetDecimals, toFeedDecimals) * fromOraclePrice / toOraclePrice,
                     toFeedDecimals,
                     toAssetDecimals
             );

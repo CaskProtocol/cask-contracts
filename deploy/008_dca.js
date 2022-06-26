@@ -1,6 +1,3 @@
-const path = require('path');
-const fs = require('fs');
-
 const {
     hour,
 } = require("../utils/units");
@@ -17,8 +14,6 @@ const {
     deployProxyWithConfirmation,
     withConfirmation,
 } = require("../utils/deploy");
-
-const {CaskSDK} = require("@caskprotocol/sdk");
 
 
 const deployDCA = async ({ethers, getNamedAccounts}) => {
@@ -58,15 +53,6 @@ const deployDCA = async ({ethers, getNamedAccounts}) => {
             )
         );
         log("Set CaskDCAManager parameters for memnet");
-
-        const assetsFilePath = path.resolve(__dirname, '../data/dca_assets.json');
-        const assetList = JSON.parse(fs.readFileSync(assetsFilePath));
-        const filteredAssets = assetList.filter((asset) => asset.chainId === 31337);
-        const assetsMerkleRoot = CaskSDK.utils.dcaMerkleRoot(filteredAssets);
-        await withConfirmation(
-            dca.setAssetsMerkleRoot(assetsMerkleRoot)
-        );
-        log(`Set CaskDCA merkleRoot to ${assetsMerkleRoot} using data from ${assetsFilePath}`);
     }
 
     await withConfirmation(

@@ -66,8 +66,49 @@ async function dcaWithLiquidityFixture() {
     return fixture;
 }
 
+async function dcaWithLiquidityFixtureNoPricefeed() {
+    const fixture = await dcaFixture();
+
+    await fixture.usdc.connect(fixture.deployer).mint(fixture.router.address, usdcUnits('100000.0'));
+    await fixture.abc.connect(fixture.deployer).mint(fixture.router.address,
+        hre.ethers.utils.parseUnits('100000.0', 18));
+
+    fixture.assetList = [
+        {
+            "inputAssetSymbol": "USDC",
+            "outputAssetSymbol": "ABC",
+            "routerName": "MockRouter",
+            "router": fixture.router.address.toLowerCase(),
+            "priceFeed": "0x0000000000000000000000000000000000000000",
+            "path": [
+                fixture.usdc.address.toLowerCase(),
+                fixture.abc.address.toLowerCase()
+            ],
+            "chainId": 31337
+        },
+        {
+            "inputAssetSymbol": "USDC",
+            "outputAssetSymbol": "ZZZ",
+            "routerName": "MockRouter",
+            "router": fixture.router.address.toLowerCase(),
+            "priceFeed": "0x0000000000000000000000000000000000000000",
+            "path": [
+                fixture.usdc.address.toLowerCase(),
+                "0x1fA4E417Ed8B4497D0D1C73cb54C5e2704055Bf7"
+            ],
+            "chainId": 31337
+        },
+    ];
+
+    fixture.assetsMerkleRoot = CaskSDK.utils.dcaMerkleRoot(fixture.assetList);
+
+    await fixture.dca.connect(fixture.governor).setAssetsMerkleRoot(fixture.assetsMerkleRoot);
+
+    return fixture;
+}
 
 module.exports = {
     dcaFixture,
     dcaWithLiquidityFixture,
+    dcaWithLiquidityFixtureNoPricefeed,
 }

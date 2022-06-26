@@ -30,7 +30,7 @@ contract MockUniswapRouter {
         address tok0 = path[0];
         address tok1 = pairMaps[tok0];
         // Give 1:1
-        uint256 amountOut = scaleBy(amountIn, IERC20Metadata(tok1).decimals(), IERC20Metadata(tok0).decimals());
+        uint256 amountOut = _scaleBy(amountIn, IERC20Metadata(tok1).decimals(), IERC20Metadata(tok0).decimals());
         require(amountOut >= amountOutMin, "Slippage error");
         require(deadline > block.timestamp);
 
@@ -38,13 +38,29 @@ contract MockUniswapRouter {
         IERC20Metadata(tok1).transfer(to, amountOut);
 
         uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 0;
+        amounts[0] = amountIn;
         amounts[1] = amountOut;
 
         return amounts;
     }
 
-    function scaleBy(
+    function getAmountsOut(
+        uint256 amountIn,
+        address[] memory path
+    ) external view returns (uint256[] memory) {
+        address tok0 = path[0];
+        address tok1 = pairMaps[tok0];
+        // Give 1:1
+        uint256 amountOut = _scaleBy(amountIn, IERC20Metadata(tok1).decimals(), IERC20Metadata(tok0).decimals());
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = amountIn;
+        amounts[1] = amountOut;
+
+        return amounts;
+    }
+
+    function _scaleBy(
         uint256 x,
         uint256 to,
         uint256 from

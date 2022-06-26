@@ -1,7 +1,5 @@
-const path = require('path');
 const fs = require('fs');
 const { CaskSDK } = require('@caskprotocol/sdk');
-
 
 const {
     usdcUnits
@@ -13,10 +11,7 @@ async function dcaMerkleRoot(taskArguments, hre) {
     const network = await hre.ethers.provider.getNetwork();
     const chainId = network.chainId;
 
-    const assetsFilePath = path.resolve(__dirname, '../data/dca_assets.json');
-    console.log(`Processing assets file: ${assetsFilePath}`);
-
-    const assetList = JSON.parse(fs.readFileSync(assetsFilePath));
+    const assetList = JSON.parse(fs.readFileSync(taskArguments.file));
     const filteredAssets = assetList.filter((asset) => asset.chainId === chainId);
 
     console.log(`Loaded ${assetList.length} assets; filtered to ${filteredAssets.length} using chainId ${chainId}`);
