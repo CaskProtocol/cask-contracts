@@ -100,7 +100,7 @@ const main = async (hre) => {
 
 main.id = "008_dca";
 main.tags = ["dca"];
-main.dependencies = ["protocol","dca_mocks"];
+main.dependencies = ["vault","dca_mocks"];
 main.skip = () => !isProtocolChain;
 
 module.exports = main;

@@ -37,7 +37,7 @@ const main = async (hre) => {
 
 main.id = "999_upgrade";
 main.tags = ["upgrade"];
-main.dependencies = ["mocks","protocol","subscriptions","dca","p2p"];
+main.dependencies = ["mocks","vault","subscriptions","dca","p2p"];
 main.skip = () => !isProtocolChain || isDevnet;
 
 module.exports = main;

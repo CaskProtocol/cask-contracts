@@ -180,20 +180,20 @@ describe("FundingSource", function () {
         await advanceTimeRunSubscriptionKeeper(3, day);
 
         // confirm charge after 7 day trial ended
-        expect(await dai.balanceOf(consumerA.address)).to.equal(daiUnits('9989.99')); // includes 0.01 slippage
+        expect(await dai.balanceOf(consumerA.address)).to.equal(daiUnits('9989.989')); // includes 0.01 slippage
         result = await consumerASubscriptions.getSubscription(subscriptionId);
         expect(result.subscription.discountId).to.equal(ethers.utils.hexZeroPad(0, 32)); // no discount code
 
         await advanceTimeRunSubscriptionKeeper(31, day);
 
         // confirm charge after another month
-        expect(await dai.balanceOf(consumerA.address)).to.equal(daiUnits('9979.98')); // includes 0.01 slippage
+        expect(await dai.balanceOf(consumerA.address)).to.equal(daiUnits('9979.978')); // includes 0.01 slippage
         result = await consumerASubscriptions.getSubscription(subscriptionId);
 
         await advanceTimeRunSubscriptionKeeper(31, day);
 
         // confirm charge after another month
-        expect(await dai.balanceOf(consumerA.address)).to.equal(daiUnits('9969.97')); // includes 0.01 slippage
+        expect(await dai.balanceOf(consumerA.address)).to.equal(daiUnits('9969.967')); // includes 0.01 slippage
         result = await consumerASubscriptions.getSubscription(subscriptionId);
 
         // cancel
@@ -203,13 +203,13 @@ describe("FundingSource", function () {
         await advanceTimeRunSubscriptionKeeper(32, day);
 
         // confirm no charges after cancel
-        expect(await dai.balanceOf(consumerA.address)).to.equal(daiUnits('9969.97')); // includes 0.01 slippage
+        expect(await dai.balanceOf(consumerA.address)).to.equal(daiUnits('9969.967')); // includes 0.01 slippage
         result = await consumerASubscriptions.getSubscription(subscriptionId);
 
         await advanceTimeRunSubscriptionKeeper(31, day);
 
         // confirm still no charges after cancel
-        expect(await dai.balanceOf(consumerA.address)).to.equal(daiUnits('9969.97'));
+        expect(await dai.balanceOf(consumerA.address)).to.equal(daiUnits('9969.967'));
         result = await consumerASubscriptions.getSubscription(subscriptionId);
 
     });

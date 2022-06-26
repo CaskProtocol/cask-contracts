@@ -79,15 +79,15 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
 }
 
 const main = async (hre) => {
-    console.log("Running 004_protocol deployment...");
+    console.log("Running 004_vault deployment...");
     await deployProtocol(hre);
     await configureVault(hre);
-    console.log("004_protocol deploy done.");
+    console.log("004_vault deploy done.");
     return true;
 };
 
-main.id = "004_protocol";
-main.tags = ["protocol"];
+main.id = "004_vault";
+main.tags = ["vault"];
 main.dependencies = ["mocks"];
 main.skip = () => !isProtocolChain;
 

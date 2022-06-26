@@ -118,7 +118,7 @@ const main = async (hre) => {
 
 main.id = "005_subscriptions";
 main.tags = ["subscriptions"];
-main.dependencies = ["mocks","protocol"];
+main.dependencies = ["mocks","vault"];
 main.skip = () => !isProtocolChain;
 
 module.exports = main;

@@ -97,7 +97,7 @@ const main = async (hre) => {
 
 main.id = "009_p2p";
 main.tags = ["p2p"];
-main.dependencies = ["protocol"];
+main.dependencies = ["vault"];
 main.skip = () => !isProtocolChain;
 
 module.exports = main;
