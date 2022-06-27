@@ -166,7 +166,6 @@ ReentrancyGuardUpgradeable
                     // slippage is removed in the deposit
                     assetAmount = (assetAmount * 10000 / (10000 - asset.slippageBps)) + 1;
                 }
-                //9989 988987886675342878
             }
             _depositTo(_from, _from, profile.fundingAsset, assetAmount);
         } else {
