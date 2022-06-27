@@ -566,14 +566,10 @@ ReentrancyGuardUpgradeable
                     _scalePrice(fromOraclePrice, assets[_fromAsset].priceFeedDecimals, assets[_toAsset].assetDecimals) /
                     _scalePrice(toOraclePrice, assets[_toAsset].priceFeedDecimals, assets[_toAsset].assetDecimals);
         } else {
-            // oracles are already in same precision, so just scale _amount to oracle precision,
-            // do the price conversion and convert back to _toAsset precision
-            return _scalePrice(
-                    _scalePrice(_fromAmount, assets[_fromAsset].assetDecimals, assets[_toAsset].priceFeedDecimals) *
-                            fromOraclePrice / toOraclePrice,
-                        assets[_toAsset].priceFeedDecimals,
-                        assets[_toAsset].assetDecimals
-            );
+            // oracles are already in same precision, so just scale _amount to asset precision,
+            // and multiply by the price feed ratio
+            return _scalePrice(_fromAmount, assets[_fromAsset].assetDecimals, assets[_toAsset].assetDecimals) *
+                fromOraclePrice / toOraclePrice;
         }
     }
 
