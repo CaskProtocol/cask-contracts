@@ -423,6 +423,7 @@ ReentrancyGuardUpgradeable
         address _protocol
     ) external onlyOwner {
         protocols.push(_protocol);
+        emit AddProtocol(_protocol);
     }
 
     function removeProtocol(
@@ -439,6 +440,7 @@ ReentrancyGuardUpgradeable
             protocols[idx] = protocols[protocols.length - 1];
             protocols.pop();
         }
+        emit RemoveProtocol(_protocol);
     }
 
     function protocolCount() external view returns(uint256) {
@@ -449,24 +451,28 @@ ReentrancyGuardUpgradeable
         address _feeDistributor
     ) external onlyOwner {
         feeDistributor = _feeDistributor;
+        emit SetFeeDistributor(_feeDistributor);
     }
 
     function setMinDeposit(
         uint256 _minDeposit
     ) external onlyOwner {
         minDeposit = _minDeposit;
+        emit SetMinDeposit(_minDeposit);
     }
 
     function setMaxPriceFeedAge(
         uint256 _maxPriceFeedAge
     ) external onlyOwner {
         maxPriceFeedAge = _maxPriceFeedAge;
+        emit SetMaxPriceFeedAge(_maxPriceFeedAge);
     }
 
     function setTrustedForwarder(
         address _forwarder
     ) external onlyOwner {
         _setTrustedForwarder(_forwarder);
+        emit SetTrustedForwarder(_forwarder);
     }
 
 
