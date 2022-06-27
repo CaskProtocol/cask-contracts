@@ -160,13 +160,18 @@ ReentrancyGuardUpgradeable
 
                 // convert to equivalent amount in specified asset and add slippage
                 assetAmount = _convertPrice(baseAsset, profile.fundingAsset, _value);
-                assetAmount += (assetAmount * asset.slippageBps) / 10000;
+
+                if (asset.slippageBps > 0) {
+                    // the +1 is to fix underfunding due to decimal drops when the
+                    // slippage is removed in the deposit
+                    assetAmount = (assetAmount * 10000 / (10000 - asset.slippageBps)) + 1;
+                }
+                //9989 988987886675342878
             }
             _depositTo(_from, _from, profile.fundingAsset, assetAmount);
         } else {
             require(profile.fundingSource == FundingSource.Cask, "!INVALID(fundingSource)");
         }
-
         uint256 shares = _sharesForValue(_value);
 
         uint256 protocolFeeShares = 0;
