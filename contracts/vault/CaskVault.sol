@@ -162,15 +162,15 @@ ReentrancyGuardUpgradeable
                 assetAmount = _convertPrice(baseAsset, profile.fundingAsset, _value);
 
                 if (asset.slippageBps > 0) {
-                    // add 1 to slippage bps to be sure deposit results in enough for payment after slippage fee
-                    assetAmount += (assetAmount * (asset.slippageBps + 1)) / 10000;
+                    // the +1 is to fix underfunding due to decimal drops when the
+                    // slippage is removed in the deposit
+                    assetAmount = (assetAmount * 10000 / (10000 - asset.slippageBps)) + 1;
                 }
             }
             _depositTo(_from, _from, profile.fundingAsset, assetAmount);
         } else {
             require(profile.fundingSource == FundingSource.Cask, "!INVALID(fundingSource)");
         }
-
         uint256 shares = _sharesForValue(_value);
 
         uint256 protocolFeeShares = 0;
@@ -422,6 +422,7 @@ ReentrancyGuardUpgradeable
         address _protocol
     ) external onlyOwner {
         protocols.push(_protocol);
+        emit AddProtocol(_protocol);
     }
 
     function removeProtocol(
@@ -438,6 +439,7 @@ ReentrancyGuardUpgradeable
             protocols[idx] = protocols[protocols.length - 1];
             protocols.pop();
         }
+        emit RemoveProtocol(_protocol);
     }
 
     function protocolCount() external view returns(uint256) {
@@ -448,24 +450,28 @@ ReentrancyGuardUpgradeable
         address _feeDistributor
     ) external onlyOwner {
         feeDistributor = _feeDistributor;
+        emit SetFeeDistributor(_feeDistributor);
     }
 
     function setMinDeposit(
         uint256 _minDeposit
     ) external onlyOwner {
         minDeposit = _minDeposit;
+        emit SetMinDeposit(_minDeposit);
     }
 
     function setMaxPriceFeedAge(
         uint256 _maxPriceFeedAge
     ) external onlyOwner {
         maxPriceFeedAge = _maxPriceFeedAge;
+        emit SetMaxPriceFeedAge(_maxPriceFeedAge);
     }
 
     function setTrustedForwarder(
         address _forwarder
     ) external onlyOwner {
         _setTrustedForwarder(_forwarder);
+        emit SetTrustedForwarder(_forwarder);
     }
 
 
@@ -565,14 +571,10 @@ ReentrancyGuardUpgradeable
                     _scalePrice(fromOraclePrice, assets[_fromAsset].priceFeedDecimals, assets[_toAsset].assetDecimals) /
                     _scalePrice(toOraclePrice, assets[_toAsset].priceFeedDecimals, assets[_toAsset].assetDecimals);
         } else {
-            // oracles are already in same precision, so just scale _amount to oracle precision,
-            // do the price conversion and convert back to _toAsset precision
-            return _scalePrice(
-                    _scalePrice(_fromAmount, assets[_fromAsset].assetDecimals, assets[_toAsset].priceFeedDecimals) *
-                            fromOraclePrice / toOraclePrice,
-                        assets[_toAsset].priceFeedDecimals,
-                        assets[_toAsset].assetDecimals
-            );
+            // oracles are already in same precision, so just scale _amount to asset precision,
+            // and multiply by the price feed ratio
+            return _scalePrice(_fromAmount, assets[_fromAsset].assetDecimals, assets[_toAsset].assetDecimals) *
+                fromOraclePrice / toOraclePrice;
         }
     }
 

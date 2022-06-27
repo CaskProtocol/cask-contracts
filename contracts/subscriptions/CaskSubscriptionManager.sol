@@ -453,6 +453,9 @@ KeeperCompatibleInterface
         uint256 _stakeTargetFactor,
         uint32 _processBucketSize
     ) external onlyOwner {
+        require(paymentFeeRateMin < 10000, "!INVALID(paymentFeeRateMin)");
+        require(paymentFeeRateMax < 10000, "!INVALID(paymentFeeRateMax)");
+
         paymentMinValue = _paymentMinValue;
         paymentFeeMin = _paymentFeeMin;
         paymentFeeRateMin = _paymentFeeRateMin;

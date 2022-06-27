@@ -127,6 +127,7 @@ contract CaskVestedEscrow is ReentrancyGuard{
             uint256 amount = _amount[i];
             // can only set startedAt and cliffDuration on first funding
             if (startedAt[_recipient[i]] == 0){
+                require(_recipient[i] != address(0), "!zeroAddress");
                 members.push(_recipient[i]);
                 startedAt[_recipient[i]] = startAt;
                 cliffAt[_recipient[i]] = startAt + _cliffDuration;
