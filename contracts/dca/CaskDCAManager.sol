@@ -307,6 +307,8 @@ ICaskDCAManager
         uint256 _maxPriceFeedAge,
         uint32 _queueBucketSize
     ) external onlyOwner {
+        require(_dcaFeeBps < 10000, "!INVALID(dcaFeeBps)");
+
         maxSkips = _maxSkips;
         dcaFeeBps = _dcaFeeBps;
         dcaFeeMin = _dcaFeeMin;
