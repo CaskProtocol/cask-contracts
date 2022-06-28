@@ -43,7 +43,13 @@ ICaskDCAManager
     uint256 public maxSkips;
 
     /** @dev DCA transaction fee in basis points. */
-    uint256 public feeBps;
+    uint256 public dcaFeeBps;
+
+    /** @dev Minimum DCA transaction fee. */
+    uint256 public dcaFeeMin;
+
+    /** @dev Smallest allowable DCA amount. */
+    uint256 public dcaMinValue;
 
     /** @dev revert if price feed age is older than this number of seconds. set to 0 to disable check. */
     uint256 public maxPriceFeedAge;
@@ -57,7 +63,9 @@ ICaskDCAManager
         caskVault = ICaskVault(_caskVault);
 
         maxSkips = 0;
-        feeBps = 0;
+        dcaFeeBps = 0;
+        dcaFeeMin = 0;
+        dcaMinValue = 0;
         maxPriceFeedAge = 0;
 
         __CaskJobQueue_init(3600);
@@ -87,6 +95,10 @@ ICaskDCAManager
             return;
         }
 
+        if (dca.amount < dcaMinValue) {
+            caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Cancel);
+        }
+
         uint32 timestamp = uint32(block.timestamp);
 
         // not time to process yet, re-queue for processAt time
@@ -99,7 +111,12 @@ ICaskDCAManager
         if (dca.totalAmount > 0 && amount > dca.totalAmount - dca.currentAmount) {
             amount = dca.totalAmount - dca.currentAmount;
         }
-        uint256 protocolFee = (amount * feeBps) / 10000;
+
+        uint256 protocolFee = (amount * dcaFeeBps) / 10000;
+        if (protocolFee < dcaFeeMin) {
+            protocolFee = dcaFeeMin;
+        }
+
         uint256 buyQty = _processDCABuy(dca, amount, protocolFee);
 
         // did a swap happen successfully?
@@ -284,25 +301,35 @@ ICaskDCAManager
 
     function setParameters(
         uint256 _maxSkips,
-        uint256 _feeBps,
+        uint256 _dcaFeeBps,
+        uint256 _dcaFeeMin,
+        uint256 _dcaMinValue,
         uint256 _maxPriceFeedAge,
         uint32 _queueBucketSize
     ) external onlyOwner {
         maxSkips = _maxSkips;
-        feeBps = _feeBps;
+        dcaFeeBps = _dcaFeeBps;
+        dcaFeeMin = _dcaFeeMin;
+        dcaMinValue = _dcaMinValue;
         maxPriceFeedAge = _maxPriceFeedAge;
         queueBucketSize = _queueBucketSize;
+
+        emit SetParameters();
     }
 
     function blacklistRouter(
         address _router
     ) external onlyOwner {
         blacklistedRouters[_router] = true;
+
+        emit BlacklistRouter(_router);
     }
 
     function unblacklistRouter(
         address _router
     ) external onlyOwner {
         blacklistedRouters[_router] = false;
+
+        emit UnblacklistRouter(_router);
     }
 }

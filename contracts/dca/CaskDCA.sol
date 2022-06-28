@@ -116,6 +116,8 @@ BaseRelayRecipient
 
         dcaManager.registerDCA(dcaId);
 
+        require(dca.status == DCAStatus.Active, "!UNPROCESSABLE");
+
         emit DCACreated(dcaId, dca.user, dca.to, dca.path[0], dca.path[dca.path.length-1],
             _amount, _totalAmount, _period);
 

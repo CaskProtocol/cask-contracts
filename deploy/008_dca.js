@@ -1,4 +1,5 @@
 const {
+    usdcUnits,
     hour,
 } = require("../utils/units");
 
@@ -47,7 +48,9 @@ const deployDCA = async ({ethers, getNamedAccounts}) => {
         await withConfirmation(
             dcaManager.setParameters(
                 5, // maxSkips
-                30, // feeBps (0.3%)
+                30, // dcaFeeBps (0.3%)
+                usdcUnits('0.1'), // dcaFeeMin
+                usdcUnits('1.00'), // dcaMinValue
                 86400+3600, // maxPriceFeedAge (1 day + 1 hour)
                 24 * hour // queueBucketSize
             )
