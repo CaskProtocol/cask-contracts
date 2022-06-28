@@ -20,7 +20,10 @@ interface ICaskSubscriptionManager {
 
     function renewSubscription(uint256 _subscriptionId) external;
 
-    /** @dev Emitted when the keeper job performs renewals */
+    /** @dev Emitted when the keeper job performs renewals. */
     event SubscriptionManagerReport(uint256 limit, uint256 renewals, uint256 depth, CheckType checkType,
         uint256 queueRemaining, uint32 currentBucket);
+
+    /** @dev Emitted when manager parameters are changed. */
+    event SetParameters();
 }
