@@ -466,6 +466,8 @@ KeeperCompatibleInterface
         // re-map to new bucket size
         processingBucket[CheckType.Active] = _bucketAt(processingBucket[CheckType.Active]);
         processingBucket[CheckType.PastDue] = _bucketAt(processingBucket[CheckType.PastDue]);
+
+        emit SetParameters();
     }
 
     function setProcessingBucket(
