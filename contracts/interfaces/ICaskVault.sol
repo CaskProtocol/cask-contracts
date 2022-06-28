@@ -220,4 +220,21 @@ interface ICaskVault is IERC20MetadataUpgradeable {
     /** @dev Emitted when `participant` sets their funding source */
     event SetFundingSource(address indexed participant, FundingSource fundingSource, address fundingAsset);
 
+    /** @dev Emitted when a new protocol is allowed to use the vault */
+    event AddProtocol(address indexed protocol);
+
+    /** @dev Emitted when a protocol is no longer allowed to use the vault */
+    event RemoveProtocol(address indexed protocol);
+
+    /** @dev Emitted when the vault fee distributor is changed */
+    event SetFeeDistributor(address indexed feeDistributor);
+
+    /** @dev Emitted when minDeposit is changed */
+    event SetMinDeposit(uint256 minDeposit);
+
+    /** @dev Emitted when maxPriceFeedAge is changed */
+    event SetMaxPriceFeedAge(uint256 maxPriceFeedAge);
+
+    /** @dev Emitted when the trustedForwarder address is changed */
+    event SetTrustedForwarder(address indexed feeDistributor);
 }

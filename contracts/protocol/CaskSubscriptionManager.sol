@@ -453,6 +453,9 @@ KeeperCompatibleInterface
         uint256 _stakeTargetFactor,
         uint32 _processBucketSize
     ) external onlyOwner {
+        require(_paymentFeeRateMin < 10000, "!INVALID(paymentFeeRateMin)");
+        require(_paymentFeeRateMax < 10000, "!INVALID(paymentFeeRateMax)");
+
         paymentMinValue = _paymentMinValue;
         paymentFeeMin = _paymentFeeMin;
         paymentFeeRateMin = _paymentFeeRateMin;
@@ -463,6 +466,8 @@ KeeperCompatibleInterface
         // re-map to new bucket size
         processingBucket[CheckType.Active] = _bucketAt(processingBucket[CheckType.Active]);
         processingBucket[CheckType.PastDue] = _bucketAt(processingBucket[CheckType.PastDue]);
+
+        emit SetParameters();
     }
 
     function setProcessingBucket(
