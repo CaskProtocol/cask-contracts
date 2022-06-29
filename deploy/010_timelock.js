@@ -41,6 +41,5 @@ const main = async (hre) => {
 main.id = "010_timelock";
 main.tags = ["timelock"];
 main.dependencies = [""];
-main.skip = () => !isProtocolChain;
 
 module.exports = main;
