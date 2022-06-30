@@ -3,9 +3,7 @@ const {
 } = require("../utils/units");
 
 const {
-    isProtocolChain,
-    isMainnet,
-    isFork,
+    isDevnet,
 } = require("../test/_networks");
 
 const {
@@ -22,7 +20,7 @@ const deployTimelock = async ({getNamedAccounts}) => {
     const {governorAddr} = await getNamedAccounts();
 
     let delay = 48 * hour;
-    if (!isMainnet && !isFork) {
+    if (isDevnet) {
         delay = 5;
     }
     await deployWithConfirmation('CaskTimelockController',
