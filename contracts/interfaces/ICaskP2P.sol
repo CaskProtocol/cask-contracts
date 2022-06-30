@@ -41,7 +41,7 @@ interface ICaskP2P {
 
     function getP2P(bytes32 _p2pId) external view returns (P2P memory);
 
-    function getUserP2PList(address _user, uint256 _limit, uint256 _offset) external view returns (bytes32[] memory);
+    function getUserP2P(address _user, uint256 _idx) external view returns (bytes32);
 
     function getUserP2PCount(address _user) external view returns (uint256);
 

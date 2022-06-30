@@ -145,23 +145,11 @@ BaseRelayRecipient
         return p2pMap[_p2pId];
     }
 
-    function getUserP2PList(
+    function getUserP2P(
         address _user,
-        uint256 _limit,
-        uint256 _offset
-    ) external override view returns (bytes32[] memory) {
-        uint256 size = _limit;
-        if (size > userP2Ps[_user].length) {
-            size = userP2Ps[_user].length;
-        }
-        if (_offset >= userP2Ps[_user].length) {
-            return new bytes32[](0);
-        }
-        bytes32[] memory p2pIds = new bytes32[](size);
-        for (uint256 i = 0; i < size && i + _offset < userP2Ps[_user].length; i++) {
-            p2pIds[i] = userP2Ps[_user][i+_offset];
-        }
-        return p2pIds;
+        uint256 _idx
+    ) external override view returns (bytes32) {
+        return userP2Ps[_user][_idx];
     }
 
     function getUserP2PCount(

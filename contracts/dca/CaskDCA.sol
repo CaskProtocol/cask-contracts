@@ -178,23 +178,11 @@ BaseRelayRecipient
         return dcaMap[_dcaId];
     }
 
-    function getUserDCAList(
+    function getUserDCA(
         address _user,
-        uint256 _limit,
-        uint256 _offset
-    ) external override view returns (bytes32[] memory) {
-        uint256 size = _limit;
-        if (size > userDCAs[_user].length) {
-            size = userDCAs[_user].length;
-        }
-        if (_offset >= userDCAs[_user].length) {
-            return new bytes32[](0);
-        }
-        bytes32[] memory dcaIds = new bytes32[](size);
-        for (uint256 i = 0; i < size && i + _offset < userDCAs[_user].length; i++) {
-            dcaIds[i] = userDCAs[_user][i+_offset];
-        }
-        return dcaIds;
+        uint256 _idx
+    ) external override view returns (bytes32) {
+        return userDCAs[_user][_idx];
     }
 
     function getUserDCACount(

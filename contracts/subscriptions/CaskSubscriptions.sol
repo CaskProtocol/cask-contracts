@@ -42,6 +42,7 @@ PausableUpgradeable
     mapping(address => uint256[]) private providerSubscriptions; // provider => subscriptionId[]
     mapping(address => uint256) private providerActiveSubscriptionCount; // provider => count
     mapping(address => mapping(uint32 => uint256)) private planActiveSubscriptionCount; // provider => planId => count
+    mapping(address => mapping(address => mapping(uint32 => uint256))) private consumerProviderPlanActiveCount;
 
     modifier onlyManager() {
         require(_msgSender() == address(subscriptionManager), "!AUTH");
@@ -211,6 +212,7 @@ PausableUpgradeable
 
         providerActiveSubscriptionCount[subscription.provider] += 1;
         planActiveSubscriptionCount[subscription.provider][subscription.planId] += 1;
+        consumerProviderPlanActiveCount[ownerOf(_subscriptionId)][subscription.provider][subscription.planId] += 1;
 
         // if renewal date has already passed, set it to now so consumer is not charged for the time it was paused
         if (subscription.renewAt < uint32(block.timestamp)) {
@@ -290,6 +292,9 @@ PausableUpgradeable
 
             providerActiveSubscriptionCount[subscription.provider] -= 1;
             planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
+            if (consumerProviderPlanActiveCount[ownerOf(_subscriptionId)][subscription.provider][subscription.planId] > 0) {
+                consumerProviderPlanActiveCount[ownerOf(_subscriptionId)][subscription.provider][subscription.planId] -= 1;
+            }
 
             emit SubscriptionCanceled(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
                 subscription.ref, subscription.planId);
@@ -301,6 +306,9 @@ PausableUpgradeable
 
             providerActiveSubscriptionCount[subscription.provider] -= 1;
             planActiveSubscriptionCount[subscription.provider][subscription.planId] -= 1;
+            if (consumerProviderPlanActiveCount[ownerOf(_subscriptionId)][subscription.provider][subscription.planId] > 0) {
+                consumerProviderPlanActiveCount[ownerOf(_subscriptionId)][subscription.provider][subscription.planId] -= 1;
+            }
 
             emit SubscriptionPaused(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
                 subscription.ref, subscription.planId);
@@ -347,23 +355,19 @@ PausableUpgradeable
         }
     }
 
-    function getConsumerSubscriptions(
+    function getConsumerSubscription(
         address _consumer,
-        uint256 _limit,
-        uint256 _offset
-    ) external override view returns (uint256[] memory) {
-        uint256 size = _limit;
-        if (size > consumerSubscriptions[_consumer].length) {
-            size = consumerSubscriptions[_consumer].length;
-        }
-        if (_offset >= consumerSubscriptions[_consumer].length) {
-            return new uint256[](0);
-        }
-        uint256[] memory subscriptionIds = new uint256[](size);
-        for (uint256 i = 0; i < size && i + _offset < consumerSubscriptions[_consumer].length; i++) {
-            subscriptionIds[i] = consumerSubscriptions[_consumer][i+_offset];
-        }
-        return subscriptionIds;
+        uint256 _idx
+    ) external override view returns(uint256) {
+        return consumerSubscriptions[_consumer][_idx];
+    }
+
+    function getActiveSubscriptionCount(
+        address _consumer,
+        address _provider,
+        uint32 _planId
+    ) external override view returns(uint256) {
+        return consumerProviderPlanActiveCount[_consumer][_provider][_planId];
     }
 
     function getConsumerSubscriptionCount(
@@ -372,23 +376,11 @@ PausableUpgradeable
         return consumerSubscriptions[_consumer].length;
     }
 
-    function getProviderSubscriptions(
+    function getProviderSubscription(
         address _provider,
-        uint256 _limit,
-        uint256 _offset
-    ) external override view returns (uint256[] memory) {
-        uint256 size = _limit;
-        if (size > providerSubscriptions[_provider].length) {
-            size = providerSubscriptions[_provider].length;
-        }
-        if (_offset >= providerSubscriptions[_provider].length) {
-            return new uint256[](0);
-        }
-        uint256[] memory subscriptionIds = new uint256[](size);
-        for (uint256 i = 0; i < size && i + _offset < providerSubscriptions[_provider].length; i++) {
-            subscriptionIds[i] = providerSubscriptions[_provider][i+_offset];
-        }
-        return subscriptionIds;
+        uint256 _idx
+    ) external override view returns(uint256) {
+        return providerSubscriptions[_provider][_idx];
     }
 
     function getProviderSubscriptionCount(
@@ -481,6 +473,7 @@ PausableUpgradeable
         providerSubscriptions[provider].push(subscriptionId);
         providerActiveSubscriptionCount[provider] += 1;
         planActiveSubscriptionCount[provider][planInfo.planId] += 1;
+        consumerProviderPlanActiveCount[_msgSender()][provider][planInfo.planId] += 1;
 
         (
         subscription.discountId,

@@ -53,7 +53,7 @@ interface ICaskDCA {
 
     function getDCA(bytes32 _dcaId) external view returns (DCA memory);
 
-    function getUserDCAList(address _user, uint256 _limit, uint256 _offset) external view returns (bytes32[] memory);
+    function getUserDCA(address _user, uint256 _idx) external view returns (bytes32);
 
     function getUserDCACount(address _user) external view returns (uint256);
 
