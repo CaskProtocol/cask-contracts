@@ -8,9 +8,9 @@ interface ICaskDCAManager {
     /** @dev Emitted when manager parameters are changed. */
     event SetParameters();
 
-    /** @dev Emitted when a swap router address is blacklisted. */
-    event BlacklistRouter(address indexed router);
+    /** @dev Emitted when an assetSpec is blacklisted. */
+    event BlacklistAssetSpec(bytes32 indexed assetSpec);
 
-    /** @dev Emitted when a swap router address is unblacklisted. */
-    event UnblacklistRouter(address indexed router);
+    /** @dev Emitted when an assetSpec is unblacklisted. */
+    event UnblacklistAssetSpec(bytes32 indexed assetSpec);
 }

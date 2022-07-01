@@ -18,6 +18,14 @@ interface ICaskDCA {
         Pause
     }
 
+    enum SkipReason {
+        None,
+        AssetNotAllowed,
+        PaymentFailed,
+        OutsideLimits,
+        SwapFailed
+    }
+
     struct DCA {
         address user;
         address to;
@@ -67,6 +75,7 @@ interface ICaskDCA {
 
     function managerProcessed(bytes32 _dcaId, uint256 _amount, uint256 _buyQty, uint256 _fee) external;
 
+    function managerSkipped(bytes32 _dcaId, SkipReason _skipReason) external;
 
     event DCACreated(bytes32 indexed dcaId, address indexed user, address indexed to, address inputAsset,
         address outputAsset, uint256 amount, uint256 totalAmount, uint32 period);
@@ -75,7 +84,7 @@ interface ICaskDCA {
 
     event DCAResumed(bytes32 indexed dcaId, address indexed user);
 
-    event DCASkipped(bytes32 indexed dcaId, address indexed user);
+    event DCASkipped(bytes32 indexed dcaId, address indexed user, SkipReason skipReason);
 
     event DCAProcessed(bytes32 indexed dcaId, address indexed user, uint256 amount, uint256 buyQty, uint256 fee);
 

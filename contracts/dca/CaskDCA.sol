@@ -201,14 +201,7 @@ BaseRelayRecipient
 
         DCA storage dca = dcaMap[_dcaId];
 
-        if (_command == ManagerCommand.Skip) {
-
-            dca.processAt = dca.processAt + dca.period;
-            dca.numSkips += 1;
-
-            emit DCASkipped(_dcaId, dca.user);
-
-        } else if (_command == ManagerCommand.Pause) {
+        if (_command == ManagerCommand.Pause) {
 
             dca.status = DCAStatus.Paused;
 
@@ -221,6 +214,18 @@ BaseRelayRecipient
             emit DCACanceled(_dcaId, dca.user);
 
         }
+    }
+
+    function managerSkipped(
+        bytes32 _dcaId,
+        SkipReason _skipReason
+    ) external override onlyManager {
+        DCA storage dca = dcaMap[_dcaId];
+
+        dca.processAt = dca.processAt + dca.period;
+        dca.numSkips += 1;
+
+        emit DCASkipped(_dcaId, dca.user, _skipReason);
     }
 
     function managerProcessed(
