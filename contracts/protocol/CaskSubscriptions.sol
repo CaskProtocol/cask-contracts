@@ -510,7 +510,7 @@ PausableUpgradeable
 
         Subscription storage subscription = subscriptions[_subscriptionId];
 
-        require(subscription.renewAt > uint32(block.timestamp), "!NEED_RENEWAL");
+        require(subscription.renewAt == 0 || subscription.renewAt > uint32(block.timestamp), "!NEED_RENEWAL");
         require(subscription.status == SubscriptionStatus.Active ||
             subscription.status == SubscriptionStatus.Trialing, "!INVALID(status)");
 
