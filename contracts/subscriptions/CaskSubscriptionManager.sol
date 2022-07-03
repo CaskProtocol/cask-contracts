@@ -395,7 +395,7 @@ KeeperCompatibleInterface
 
         } else {
 
-            if (chargePrice == 0 || _processPayment(consumer, subscription.provider, _subscriptionId, chargePrice)) {
+            if (_processPayment(consumer, subscription.provider, _subscriptionId, chargePrice)) {
 
                 if (subscription.renewAt + planInfo.period < timestamp) {
                     // subscription is still behind, put in next queue bucket
