@@ -35,6 +35,11 @@ const AVALANCHE_STRATEGIST = "0x65cf6394de068ca0301044f3bad050d925bA3Cfa";
 const FANTOM_GOVERNOR = "";
 const FANTOM_STRATEGIST = "";
 
+const CELO_GOVERNOR = "0xB538e8DcD297450BdeF46222f3CeB33bB1e921b3";
+const CELO_STRATEGIST = "0xB538e8DcD297450BdeF46222f3CeB33bB1e921b3";
+
+const AURORA_GOVERNOR = "0xFeAc0a0D83577A29D74d6294A2CeD14e84eee0eC";
+const AURORA_STRATEGIST = "0xFeAc0a0D83577A29D74d6294A2CeD14e84eee0eC";
 
 // testnet networks - common across all testnets
 const TESTNET_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
@@ -231,6 +236,8 @@ module.exports = {
       mainnet_polygon: POLYGON_GOVERNOR,
       mainnet_avalanche: AVALANCHE_GOVERNOR,
       mainnet_fantom: FANTOM_GOVERNOR,
+      mainnet_celo: CELO_GOVERNOR,
+      mainnet_aurora: AURORA_GOVERNOR,
 
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
@@ -248,6 +255,8 @@ module.exports = {
       mainnet_polygon: POLYGON_STRATEGIST,
       mainnet_avalanche: AVALANCHE_STRATEGIST,
       mainnet_fantom: FANTOM_STRATEGIST,
+      mainnet_celo: CELO_STRATEGIST,
+      mainnet_aurora: AURORA_STRATEGIST,
 
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
@@ -296,6 +305,8 @@ module.exports = {
       mainnet_polygon: KEEPER,
       mainnet_avalanche: KEEPER,
       mainnet_fantom: KEEPER,
+      mainnet_celo: KEEPER,
+      mainnet_aurora: KEEPER,
 
       default: 11,
       localhost: process.env.FORK === "true" ? KEEPER : 11,
@@ -319,7 +330,19 @@ module.exports = {
       ftmTestnet: process.env.FTMSCAN_API_KEY,
       avalanche: process.env.SNOWTRACE_API_KEY,
       avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY,
-    }
+      aurora: process.env.AURORASCAN_API_KEY,
+      celo: process.env.CELOSCAN_API_KEY,
+    },
+    customChains: [
+      {
+        network: "celo",
+        chainId: 42220,
+        urls: {
+          apiURL: "https://api.celoscan.xyz/api",
+          browserURL: "https://celoscan.xyz"
+        }
+      }
+    ]
   },
   contractSizer: {
     alphaSort: true,
