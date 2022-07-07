@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { CaskSDK } = require('@caskprotocol/sdk');
+const fetch = require('cross-fetch');
 
 const {
     usdcUnits
@@ -71,9 +72,34 @@ async function dcaLiquidity(taskArguments, hre) {
     console.log(`Funded swap liquidity for USDC/ABC pair at router ${router.address}`);
 }
 
+async function dcaPublishManifests(taskArguments, hre) {
 
+    const ipfs = new CaskSDK.ipfs.IPFS({
+        ipfsProvider: CaskSDK.ipfs.providers.PINATA,
+        pinataApiKey: process.env.PINATA_API_KEY,
+        pinataApiSecret: process.env.PINATA_API_SECRET
+    });
+    const pinata = ipfs.pinata;
+
+    const pinataResult = await pinata.pinFromFS(taskArguments.manifestDir);
+    console.log(`Pin results: ${JSON.stringify(pinataResult, null, 2)}`);
+
+    const infuraPinUrl = `https://ipfs.infura.io:5001/api/v0/pin/add?arg=/ipfs/${pinataResult.IpfsHash}`;
+    console.log(`Pinning CID ${pinataResult.IpfsHash} to Infura`);
+    const infuraResult = await fetch(infuraPinUrl, {
+        method: 'post',
+        headers: {
+            'Authorization': 'Basic ' +
+                Buffer.from(`${process.env.INFURA_IPFS_PROJECT_ID}:${process.env.INFURA_IPFS_PROJECT_SECRET}`, 'binary')
+                    .toString('base64')
+        }
+    });
+    console.log(`Infura Pin results: ${JSON.stringify(await infuraResult.json(), null, 2)}`);
+
+}
 
 module.exports = {
     dcaMerkleRoot,
     dcaLiquidity,
+    dcaPublishManifests,
 };
