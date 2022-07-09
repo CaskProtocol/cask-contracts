@@ -32,34 +32,36 @@ async function dcaWithLiquidityFixture() {
     await fixture.abc.connect(fixture.deployer).mint(fixture.router.address,
         hre.ethers.utils.parseUnits('100000.0', 18));
 
-    fixture.assetList = [
-        {
-            "inputAssetSymbol": "USDC",
-            "outputAssetSymbol": "ABC",
-            "routerName": "MockRouter",
-            "router": fixture.router.address.toLowerCase(),
-            "priceFeed": fixture.priceFeed.address.toLowerCase(),
-            "path": [
-                fixture.usdc.address.toLowerCase(),
-                fixture.abc.address.toLowerCase()
-            ],
-            "chainId": 31337
-        },
-        {
-            "inputAssetSymbol": "USDC",
-            "outputAssetSymbol": "ZZZ",
-            "routerName": "MockRouter",
-            "router": fixture.router.address.toLowerCase(),
-            "priceFeed": fixture.priceFeed.address.toLowerCase(),
-            "path": [
-                fixture.usdc.address.toLowerCase(),
-                "0x1fA4E417Ed8B4497D0D1C73cb54C5e2704055Bf7"
-            ],
-            "chainId": 31337
-        },
-    ];
+    fixture.dcaManifest = {
+        assets:[
+            {
+                "inputAssetSymbol": "USDC",
+                "outputAssetSymbol": "ABC",
+                "routerName": "MockRouter",
+                "router": fixture.router.address.toLowerCase(),
+                "priceFeed": fixture.priceFeed.address.toLowerCase(),
+                "path": [
+                    fixture.usdc.address.toLowerCase(),
+                    fixture.abc.address.toLowerCase()
+                ],
+                "chainId": 31337
+            },
+            {
+                "inputAssetSymbol": "USDC",
+                "outputAssetSymbol": "ZZZ",
+                "routerName": "MockRouter",
+                "router": fixture.router.address.toLowerCase(),
+                "priceFeed": fixture.priceFeed.address.toLowerCase(),
+                "path": [
+                    fixture.usdc.address.toLowerCase(),
+                    "0x1fA4E417Ed8B4497D0D1C73cb54C5e2704055Bf7"
+                ],
+                "chainId": 31337
+            },
+        ]
+    }
 
-    fixture.assetsMerkleRoot = CaskSDK.utils.dcaMerkleRoot(fixture.assetList);
+    fixture.assetsMerkleRoot = CaskSDK.utils.dcaMerkleRoot(fixture.dcaManifest.assets);
 
     await fixture.dca.connect(fixture.governor).setAssetsMerkleRoot(fixture.assetsMerkleRoot);
 
@@ -73,34 +75,36 @@ async function dcaWithLiquidityFixtureNoPricefeed() {
     await fixture.abc.connect(fixture.deployer).mint(fixture.router.address,
         hre.ethers.utils.parseUnits('100000.0', 18));
 
-    fixture.assetList = [
-        {
-            "inputAssetSymbol": "USDC",
-            "outputAssetSymbol": "ABC",
-            "routerName": "MockRouter",
-            "router": fixture.router.address.toLowerCase(),
-            "priceFeed": "0x0000000000000000000000000000000000000000",
-            "path": [
-                fixture.usdc.address.toLowerCase(),
-                fixture.abc.address.toLowerCase()
-            ],
-            "chainId": 31337
-        },
-        {
-            "inputAssetSymbol": "USDC",
-            "outputAssetSymbol": "ZZZ",
-            "routerName": "MockRouter",
-            "router": fixture.router.address.toLowerCase(),
-            "priceFeed": "0x0000000000000000000000000000000000000000",
-            "path": [
-                fixture.usdc.address.toLowerCase(),
-                "0x1fA4E417Ed8B4497D0D1C73cb54C5e2704055Bf7"
-            ],
-            "chainId": 31337
-        },
-    ];
+    fixture.dcaManifest = {
+        assets:[
+            {
+                "inputAssetSymbol": "USDC",
+                "outputAssetSymbol": "ABC",
+                "routerName": "MockRouter",
+                "router": fixture.router.address.toLowerCase(),
+                "priceFeed": "0x0000000000000000000000000000000000000000",
+                "path": [
+                    fixture.usdc.address.toLowerCase(),
+                    fixture.abc.address.toLowerCase()
+                ],
+                "chainId": 31337
+            },
+            {
+                "inputAssetSymbol": "USDC",
+                "outputAssetSymbol": "ZZZ",
+                "routerName": "MockRouter",
+                "router": fixture.router.address.toLowerCase(),
+                "priceFeed": "0x0000000000000000000000000000000000000000",
+                "path": [
+                    fixture.usdc.address.toLowerCase(),
+                    "0x1fA4E417Ed8B4497D0D1C73cb54C5e2704055Bf7"
+                ],
+                "chainId": 31337
+            },
+        ]
+    }
 
-    fixture.assetsMerkleRoot = CaskSDK.utils.dcaMerkleRoot(fixture.assetList);
+    fixture.assetsMerkleRoot = CaskSDK.utils.dcaMerkleRoot(fixture.dcaManifest.assets);
 
     await fixture.dca.connect(fixture.governor).setAssetsMerkleRoot(fixture.assetsMerkleRoot);
 

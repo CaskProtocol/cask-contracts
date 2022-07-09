@@ -31,7 +31,7 @@ describe("CaskDCA General", function () {
             vault,
             dca,
             abc,
-            assetList,
+            dcaManifest,
         } = await dcaWithLiquidityFixture();
 
         const userVault = vault.connect(user);
@@ -45,8 +45,8 @@ describe("CaskDCA General", function () {
         const initialUserBalance = await userVault.currentValueOf(user.address);
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
-        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
-        const merkleProof = CaskSDK.utils.dcaMerkleProof(assetList, assetInfo);
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
 
         const assetSpec = [
             assetInfo.router.toLowerCase(),
@@ -108,7 +108,7 @@ describe("CaskDCA General", function () {
             vault,
             dca,
             abc,
-            assetList,
+            dcaManifest,
         } = await dcaWithLiquidityFixture();
 
         const userVault = vault.connect(user);
@@ -122,8 +122,8 @@ describe("CaskDCA General", function () {
         const initialUserBalance = await userVault.currentValueOf(user.address);
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
-        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
-        const merkleProof = CaskSDK.utils.dcaMerkleProof(assetList, assetInfo);
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
 
         const assetSpec = [
             assetInfo.router.toLowerCase(),
@@ -184,7 +184,7 @@ describe("CaskDCA General", function () {
             vault,
             dca,
             abc,
-            assetList,
+            dcaManifest,
         } = await dcaWithLiquidityFixtureNoPricefeed();
 
         const userVault = vault.connect(user);
@@ -198,8 +198,8 @@ describe("CaskDCA General", function () {
         const initialUserBalance = await userVault.currentValueOf(user.address);
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
-        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
-        const merkleProof = CaskSDK.utils.dcaMerkleProof(assetList, assetInfo);
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
 
         const assetSpec = [
             assetInfo.router.toLowerCase(),
@@ -261,7 +261,7 @@ describe("CaskDCA General", function () {
             vault,
             dca,
             abc,
-            assetList,
+            dcaManifest,
         } = await dcaWithLiquidityFixture();
 
         const userVault = vault.connect(user);
@@ -275,8 +275,8 @@ describe("CaskDCA General", function () {
         const initialUserBalance = await userVault.currentValueOf(user.address);
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
-        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
-        const merkleProof = CaskSDK.utils.dcaMerkleProof(assetList, assetInfo);
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
 
         const assetSpec = [
             assetInfo.router.toLowerCase(),
@@ -334,7 +334,7 @@ describe("CaskDCA General", function () {
             vault,
             dca,
             abc,
-            assetList,
+            dcaManifest,
         } = await dcaWithLiquidityFixture();
 
         const userVault = vault.connect(user);
@@ -348,7 +348,7 @@ describe("CaskDCA General", function () {
         const initialUserBalance = await userVault.currentValueOf(user.address);
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
-        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
 
         const assetSpec = [
             assetInfo.router.toLowerCase(),
@@ -379,7 +379,7 @@ describe("CaskDCA General", function () {
             vault,
             dca,
             abc,
-            assetList,
+            dcaManifest,
         } = await dcaWithLiquidityFixture();
 
         const userVault = vault.connect(user);
@@ -393,8 +393,8 @@ describe("CaskDCA General", function () {
         const initialUserBalance = await userVault.currentValueOf(user.address);
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
-        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
-        const merkleProof = CaskSDK.utils.dcaMerkleProof(assetList, assetInfo);
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
 
         const assetSpec = [
             assetInfo.router.toLowerCase(),
@@ -446,7 +446,7 @@ describe("CaskDCA General", function () {
             vault,
             dca,
             abc,
-            assetList,
+            dcaManifest,
         } = await dcaWithLiquidityFixture();
 
         const userVault = vault.connect(user);
@@ -460,8 +460,8 @@ describe("CaskDCA General", function () {
         const initialUserBalance = await userVault.currentValueOf(user.address);
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
-        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
-        const merkleProof = CaskSDK.utils.dcaMerkleProof(assetList, assetInfo);
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
 
         const assetSpec = [
             assetInfo.router.toLowerCase(),
@@ -513,7 +513,7 @@ describe("CaskDCA General", function () {
             vault,
             dca,
             abc,
-            assetList,
+            dcaManifest,
         } = await dcaWithLiquidityFixture();
 
         const userVault = vault.connect(user);
@@ -527,8 +527,8 @@ describe("CaskDCA General", function () {
         const initialUserBalance = await userVault.currentValueOf(user.address);
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
-        const assetInfo =  CaskSDK.utils.getDCAAsset(assetList, abc.address);
-        const merkleProof = CaskSDK.utils.dcaMerkleProof(assetList, assetInfo);
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
 
         const assetSpec = [
             assetInfo.router.toLowerCase(),
@@ -542,6 +542,57 @@ describe("CaskDCA General", function () {
             merkleProof, // merkleProof
             user.address, // to
             usdcUnits('0.90'), // too low of an amount
+            0, // totalAmount
+            7 * day, // period
+            100, // slippageBps
+            0,
+            0
+        )).to.be.revertedWith("!UNPROCESSABLE");
+
+    });
+
+    it("assetSpec blacklist works", async function () {
+
+        const {
+            networkAddresses,
+            governor,
+            user,
+            vault,
+            dca,
+            abc,
+            dcaManifest,
+        } = await dcaWithLiquidityFixture();
+
+        const userVault = vault.connect(user);
+        const userDCA = dca.connect(user);
+
+        // deposit to vault
+        await userVault.deposit(networkAddresses.USDC, usdcUnits('100'));
+
+        // check initial balance
+        const initialUserBalance = await userVault.currentValueOf(user.address);
+        expect(initialUserBalance).to.equal(usdcUnits('100'));
+
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
+
+        const assetSpec = [
+            assetInfo.router.toLowerCase(),
+            assetInfo.priceFeed.toLowerCase(),
+            ...assetInfo.path.map((a) => a.toLowerCase())
+        ];
+
+        const assetSpecHash = CaskSDK.utils.dcaAssetspecHash(assetInfo);
+
+        const dcaManager = await ethers.getContract("CaskDCAManager");
+        await dcaManager.connect(governor).blacklistAssetspec(assetSpecHash);
+
+        // create DCA
+        await expect(userDCA.createDCA(
+            assetSpec, // assetSpec
+            merkleProof, // merkleProof
+            user.address, // to
+            usdcUnits('10'), // amount
             0, // totalAmount
             7 * day, // period
             100, // slippageBps

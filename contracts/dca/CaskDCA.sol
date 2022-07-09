@@ -117,6 +117,7 @@ BaseRelayRecipient
         dcaManager.registerDCA(dcaId);
 
         require(dca.status == DCAStatus.Active, "!UNPROCESSABLE");
+        require(dca.numBuys == 1, "!UNPROCESSABLE"); // make sure first DCA purchase succeeded
 
         emit DCACreated(dcaId, dca.user, dca.to, dca.path[0], dca.path[dca.path.length-1],
             _amount, _totalAmount, _period);
@@ -168,7 +169,8 @@ BaseRelayRecipient
         address[] calldata _assetSpec,
         bytes32[] calldata _merkleProof
     ) internal view returns(bool) {
-        return MerkleProof.verify(_merkleProof, assetsMerkleRoot, keccak256(abi.encode(_assetSpec)));
+        return MerkleProof.verify(_merkleProof, assetsMerkleRoot,
+            keccak256(abi.encode(_assetSpec[0], _assetSpec[1], _assetSpec[2:])));
     }
 
 

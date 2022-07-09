@@ -85,9 +85,10 @@ ICaskDCAManager
     ) override internal {
 
         ICaskDCA.DCA memory dca = caskDCA.getDCA(_dcaId);
-        bytes32 assetSpec = keccak256(abi.encode(dca.router, dca.priceFeed, dca.path));
 
-        if (blacklistedAssetspecs[assetSpec]) {
+        bytes32 assetSpecHash = keccak256(abi.encode(dca.router, dca.priceFeed, dca.path));
+
+        if (blacklistedAssetspecs[assetSpecHash]) {
             caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Cancel);
             return;
         }
@@ -98,6 +99,7 @@ ICaskDCAManager
 
         if (dca.amount < dcaMinValue) {
             caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Cancel);
+            return;
         }
 
         uint32 timestamp = uint32(block.timestamp);

@@ -69,7 +69,7 @@ async function dcaLiquidity(taskArguments, hre) {
     await usdc.connect(deployer).mint(router.address, usdcUnits('100000.0'));
     await abc.connect(deployer).mint(router.address, hre.ethers.utils.parseUnits('100000.0', 18));
 
-    console.log(`Funded swap liquidity for USDC/ABC pair at router ${router.address}`);
+    console.log(`Funded swap liquidity for USDC/ABC (${usdc.address}/${abc.address}) pair at router ${router.address}`);
 }
 
 async function dcaPublishManifests(taskArguments, hre) {
