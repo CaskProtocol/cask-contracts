@@ -48,6 +48,12 @@ KeeperCompatibleInterface
     /** @dev min value for a payment. */
     uint256 public paymentMinValue;
 
+    /** @dev max age a process bucket can grow to before a forced processing occurs. */
+    uint32 processBucketMaxAge;
+
+    /** @dev number of seconds between failed payment retries. */
+    uint32 public paymentRetryDelay;
+
     modifier onlySubscriptions() {
         require(_msgSender() == address(subscriptions), "!AUTH");
         _;
@@ -72,6 +78,8 @@ KeeperCompatibleInterface
         paymentFeeRateMax = 0;
         stakeTargetFactor = 0;
         processBucketSize = 300;
+        processBucketMaxAge = 1 hours;
+        paymentRetryDelay = 12 hours;
 
         processingBucket[CheckType.Active] = _currentBucket();
         processingBucket[CheckType.PastDue] = _currentBucket();
@@ -256,7 +264,7 @@ KeeperCompatibleInterface
         }
 
         // if queue is more than an hour old, all hands on deck
-        if (currentBucket >= checkBucket && currentBucket - checkBucket > 1 hours) {
+        if (currentBucket >= checkBucket && currentBucket - checkBucket > processBucketMaxAge) {
             upkeepNeeded = true;
         } else {
             while (checkBucket <= currentBucket) {
@@ -411,10 +419,10 @@ KeeperCompatibleInterface
                 if (subscription.renewAt < timestamp - (planInfo.gracePeriod * 1 days)) {
                     subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.Cancel);
                 } else if (subscription.status != ICaskSubscriptions.SubscriptionStatus.PastDue) {
-                    processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
+                    processQueue[CheckType.PastDue][_bucketAt(timestamp + paymentRetryDelay)].push(_subscriptionId);
                     subscriptions.managerCommand(_subscriptionId, ICaskSubscriptions.ManagerCommand.PastDue);
                 } else {
-                    processQueue[CheckType.PastDue][_bucketAt(timestamp + 4 hours)].push(_subscriptionId);
+                    processQueue[CheckType.PastDue][_bucketAt(timestamp + paymentRetryDelay)].push(_subscriptionId);
                 }
 
             }
@@ -451,7 +459,9 @@ KeeperCompatibleInterface
         uint256 _paymentFeeRateMin,
         uint256 _paymentFeeRateMax,
         uint256 _stakeTargetFactor,
-        uint32 _processBucketSize
+        uint32 _processBucketSize,
+        uint32 _processBucketMaxAge,
+        uint32 _paymentRetryDelay
     ) external onlyOwner {
         require(_paymentFeeRateMin < 10000, "!INVALID(paymentFeeRateMin)");
         require(_paymentFeeRateMax < 10000, "!INVALID(paymentFeeRateMax)");
@@ -462,6 +472,8 @@ KeeperCompatibleInterface
         paymentFeeRateMax = _paymentFeeRateMax;
         stakeTargetFactor = _stakeTargetFactor;
         processBucketSize = _processBucketSize;
+        processBucketMaxAge = _processBucketMaxAge;
+        paymentRetryDelay = _paymentRetryDelay;
 
         // re-map to new bucket size
         processingBucket[CheckType.Active] = _bucketAt(processingBucket[CheckType.Active]);

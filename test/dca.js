@@ -377,6 +377,7 @@ describe("CaskDCA General", function () {
             networkAddresses,
             user,
             vault,
+            priceFeed,
             dca,
             abc,
             dcaManifest,
@@ -413,7 +414,7 @@ describe("CaskDCA General", function () {
             0, // totalAmount
             7 * day, // period
             100, // slippageBps
-            parseUnits('1.1', 18), // minPrice
+            parseUnits('0.9', 18), // minPrice
             0 // maxPrice
         );
 
@@ -427,15 +428,21 @@ describe("CaskDCA General", function () {
         expect(createdEvent.args.period).to.equal(7*day);
 
         // confirm initial DCA was skipped due to minPrice
-        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('100'));
+        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
+        result = await userDCA.getDCA(dcaId);
+        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.numSkips).to.equal(0);
+
+        // change price of ABC so its no longer in range
+        await priceFeed.setPrice(ethers.utils.parseUnits("0.5", 8)); // set ABC price to 0.5 USDC - below minPrice
 
         await advanceTimeRunDCAKeeper(9, day);
 
-        // confirm second DCA was processed
+        // confirm second DCA was skipped
         result = await userDCA.getDCA(dcaId);
         expect(result.status).to.equal(DCAStatus.Active);
-        expect(result.numSkips).to.equal(2);
-        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('100'));
+        expect(result.numSkips).to.equal(1);
+        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
     });
 
     it("DCA with maxPrice not met", async function () {
@@ -444,6 +451,7 @@ describe("CaskDCA General", function () {
             networkAddresses,
             user,
             vault,
+            priceFeed,
             dca,
             abc,
             dcaManifest,
@@ -481,7 +489,7 @@ describe("CaskDCA General", function () {
             7 * day, // period
             100, // slippageBps
             0, // minPrice
-            parseUnits('0.9', 18), // maxPrice
+            parseUnits('1.1', 18), // maxPrice
         );
 
         const events = (await tx.wait()).events || [];
@@ -494,15 +502,21 @@ describe("CaskDCA General", function () {
         expect(createdEvent.args.period).to.equal(7*day);
 
         // confirm initial DCA was skipped due to minPrice
-        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('100'));
+        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
+        result = await userDCA.getDCA(dcaId);
+        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.numSkips).to.equal(0);
+
+        // change price of ABC so its no longer in range
+        await priceFeed.setPrice(ethers.utils.parseUnits("1.5", 8)); // set ABC price to 1.5 USDC - above maxPrice
 
         await advanceTimeRunDCAKeeper(9, day);
 
-        // confirm second DCA was processed
+        // confirm second DCA was skipped
         result = await userDCA.getDCA(dcaId);
         expect(result.status).to.equal(DCAStatus.Active);
-        expect(result.numSkips).to.equal(2);
-        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('100'));
+        expect(result.numSkips).to.equal(1);
+        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
     });
 
     it("DCA min value enforced", async function () {
@@ -549,6 +563,51 @@ describe("CaskDCA General", function () {
             0
         )).to.be.revertedWith("!UNPROCESSABLE");
 
+    });
+
+    it("DCA range at create time value enforced", async function () {
+
+        const {
+            networkAddresses,
+            user,
+            vault,
+            dca,
+            abc,
+            dcaManifest,
+        } = await dcaWithLiquidityFixture();
+
+        const userVault = vault.connect(user);
+        const userDCA = dca.connect(user);
+
+
+        // deposit to vault
+        await userVault.deposit(networkAddresses.USDC, usdcUnits('100'));
+
+        // check initial balance
+        const initialUserBalance = await userVault.currentValueOf(user.address);
+        expect(initialUserBalance).to.equal(usdcUnits('100'));
+
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
+
+        const assetSpec = [
+            assetInfo.router.toLowerCase(),
+            assetInfo.priceFeed.toLowerCase(),
+            ...assetInfo.path.map((a) => a.toLowerCase())
+        ];
+
+        // create DCA
+        await expect(userDCA.createDCA(
+            assetSpec, // assetSpec
+            merkleProof, // merkleProof
+            user.address, // to
+            usdcUnits('10'), // too low of an amount
+            0, // totalAmount
+            7 * day, // period
+            100, // slippageBps
+            parseUnits('1.1', 18), // minPrice,
+            parseUnits('1.5', 18) // maxPrice
+        )).to.be.revertedWith("!UNPROCESSABLE"); // current price is 1 USDC per ABC - outside of DCA price range
     });
 
     it("assetSpec blacklist works", async function () {

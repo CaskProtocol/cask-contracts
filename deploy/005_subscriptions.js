@@ -59,7 +59,9 @@ const deploySubscriptions = async ({ethers, getNamedAccounts}) => {
                 ethers.BigNumber.from('100'), // paymentFeeRateMin
                 ethers.BigNumber.from('100'), // paymentFeeRateMax
                 ethers.BigNumber.from('0'), // stakeTargetFactor
-                24 * hour // processBucketSize
+                24 * hour, // processBucketSize
+                1 * hour, // processBucketMaxAge
+                12 * hour // paymentRetryDelay
             )
         );
         log("Set CaskSubscriptionManager parameters for memnet");

@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 contract MockUniswapRouter {
 
     mapping(address => address) public pairMaps;
+    uint256 outputBps;
 
     function initialize(
         address[] calldata _0tokens,
@@ -18,6 +19,7 @@ contract MockUniswapRouter {
         for (uint256 i = 0; i < _0tokens.length; i++) {
             pairMaps[_0tokens[i]] = _1tokens[i];
         }
+        outputBps = 10000; // by default output the same as the input
     }
 
     function swapExactTokensForTokens(
@@ -31,6 +33,8 @@ contract MockUniswapRouter {
         address tok1 = pairMaps[tok0];
         // Give 1:1
         uint256 amountOut = _scaleBy(amountIn, IERC20Metadata(tok1).decimals(), IERC20Metadata(tok0).decimals());
+        amountOut = amountOut * outputBps / 10000;
+
         require(amountOut >= amountOutMin, "Slippage error");
         require(deadline > block.timestamp);
 
@@ -58,6 +62,12 @@ contract MockUniswapRouter {
         amounts[1] = amountOut;
 
         return amounts;
+    }
+
+    function setOutputBps(
+        uint256 _outputBps
+    ) external {
+        outputBps = _outputBps;
     }
 
     function _scaleBy(
