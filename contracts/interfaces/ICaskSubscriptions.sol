@@ -104,19 +104,15 @@ interface ICaskSubscriptions is IERC721Upgradeable {
     function getSubscription(uint256 _subscriptionId) external view returns
         (Subscription memory subscription, address currentOwner);
 
-    function getConsumerSubscriptions(address _consumer, uint256 limit,
-        uint256 offset) external view returns (uint256[] memory);
+    function getConsumerSubscription(address _consumer, uint256 _idx) external view returns(uint256);
 
     function getConsumerSubscriptionCount(address _consumer) external view returns (uint256);
 
-    function getProviderSubscriptions(address _provider, uint256 limit,
-        uint256 offset) external view returns (uint256[] memory);
+    function getProviderSubscription(address _provider, uint256 _idx) external view returns(uint256);
 
-    function getProviderSubscriptionCount(
-        address _provider,
-        bool _includeCanceled,
-        uint32 _planId
-    ) external view returns (uint256);
+    function getProviderSubscriptionCount(address _provider, bool _includeCanceled, uint32 _planId) external view returns (uint256);
+
+    function getActiveSubscriptionCount(address _consumer, address _provider, uint32 _planId) external view returns(uint256);
 
     function getPendingPlanChange(uint256 _subscriptionId) external view returns (bytes32);
 
