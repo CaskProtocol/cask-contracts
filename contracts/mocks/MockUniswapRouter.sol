@@ -56,6 +56,7 @@ contract MockUniswapRouter {
         address tok1 = pairMaps[tok0];
         // Give 1:1
         uint256 amountOut = _scaleBy(amountIn, IERC20Metadata(tok1).decimals(), IERC20Metadata(tok0).decimals());
+        amountOut = amountOut * outputBps / 10000;
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = amountIn;
