@@ -94,6 +94,9 @@ BaseRelayRecipient
 
         p2pManager.registerP2P(p2pId);
 
+        require(p2p.status == P2PStatus.Active, "!UNPROCESSABLE");
+        require(p2p.numPayments == 1, "!UNPROCESSABLE"); // make sure first P2P payment succeeded
+
         emit P2PCreated(p2pId, p2p.user, p2p.to, _amount, _totalAmount, _period);
 
         return p2pId;
