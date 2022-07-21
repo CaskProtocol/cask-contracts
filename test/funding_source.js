@@ -3,7 +3,8 @@ const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
     usdcUnits,
-    day, daiUnits, caskUnits,
+    daiUnits,
+    day,
 } = require("../utils/units");
 
 const {

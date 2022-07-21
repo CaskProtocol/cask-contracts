@@ -119,14 +119,16 @@ async function _debug_protocol(taskArguments, hre) {
     console.log("\nVault Configuration");
     console.log("====================");
     console.log(`paused:                                         ${await vault.paused()}`);
-    console.log(`CaskVault baseAsset:                            ${baseAsset} (${baseAssetSymbol})`);
-    console.log(`CaskVault baseAsset decimals:                   ${baseAssetInfo.assetDecimals}`);
+    console.log(`baseAsset:                                      ${baseAsset} (${baseAssetSymbol})`);
+    console.log(`baseAsset decimals:                             ${baseAssetInfo.assetDecimals}`);
+    console.log(`feeDistributor:                                 ${await vault.feeDistributor()}`);
     const protocolCount = await vault.protocolCount();
     console.log(`CaskVault protocolCount:                        ${protocolCount}`);
     for (let i = 0; i < protocolCount; i++) {
         console.log(`   protocol ${i}:                                  ${await vault.protocols(i)}`);
     }
-
+    console.log(`minDeposit:                                     ${formatUnits(await vault.minDeposit(), baseAssetInfo.assetDecimals)}`);
+    console.log(`maxPriceFeedAge:                                ${await vault.maxPriceFeedAge()}`);
     console.log(`totalSupply:                                    ${await vault.totalSupply()}`);
     console.log(`totalValue:                                     ${formatUnits(await vault.totalValue(), baseAssetInfo.assetDecimals)}`);
     console.log(`pricePerShare:                                  ${await vault.pricePerShare()}`);
@@ -182,29 +184,62 @@ async function _debug_protocol(taskArguments, hre) {
 
 }
 
+async function _debug_dca(taskArguments, hre) {
+
+    const dca = await hre.ethers.getContract("CaskDCA");
+    const dcaManager = await hre.ethers.getContract("CaskDCAManager");
+    const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
+
+    //
+    // Protocol Addresses
+    //
+    console.log("\nDCA Contract addresses");
+    console.log("====================");
+    console.log(`CaskDCA:                                        ${dca.address}`);
+    console.log(`CaskDCA Proxy Admin:                            ${await hre.upgrades.erc1967.getAdminAddress(dca.address)}`);
+    console.log(`CaskDCA Impl:                                   ${await hre.upgrades.erc1967.getImplementationAddress(dca.address)}`);
+    console.log(`CaskDCA Owner:                                  ${await dca.owner()}`);
+
+    console.log(`CaskDCAManager:                                 ${dcaManager.address}`);
+    console.log(`CaskDCAManager Proxy Admin:                     ${await hre.upgrades.erc1967.getAdminAddress(dcaManager.address)}`);
+    console.log(`CaskDCAManager Impl:                            ${await hre.upgrades.erc1967.getImplementationAddress(dcaManager.address)}`);
+    console.log(`CaskDCAManager Owner:                           ${await dcaManager.owner()}`);
+
+    console.log(`DefaultProxyAdmin:                              ${defaultProxyAdmin.address}`);
+    console.log(`DefaultProxyAdmin Owner:                        ${await defaultProxyAdmin.owner()}`);
+
+
+    //
+    // DCA Config
+    //
+    const maxSkips = await dcaManager.maxSkips();
+    const feeBps = await dcaManager.feeBps();
+    const maxPriceFeedAge = await dcaManager.maxPriceFeedAge();
+    const queueBucketSize = await dcaManager.queueBucketSize();
+
+    console.log("\nDCA Configuration");
+    console.log("====================");
+    console.log(`CaskDCA dcaManager:                             ${await dca.dcaManager()}`);
+    console.log(`CaskDCA assetsMerkleRoot:                       ${await dca.assetsMerkleRoot()}`);
+
+    console.log(`CaskDCAManager caskVault:                       ${await dcaManager.caskVault()}`);
+    console.log(`CaskDCAManager caskDCA:                         ${await dcaManager.caskDCA()}`);
+    console.log(`CaskDCAManager maxSkips:                        ${maxSkips}`);
+    console.log(`CaskDCAManager feeBps:                          ${feeBps} bps (${feeBps / 100}%)`);
+    console.log(`CaskDCAManager maxPriceFeedAge:                 ${maxPriceFeedAge} seconds`);
+    console.log(`CaskDCAManager queueBucketSize:                 ${queueBucketSize}`);
+
+}
+
 
 /**
  * Prints information about deployed contracts and their config.
  */
 async function debug(taskArguments, hre) {
-
-    const isFork = process.env.FORK === "true";
-    const isLocalhost = !isFork && hre.network.name === "localhost";
-    const isMemnet = hre.network.name === "hardhat";
-
-    const isEthereum = hre.network.name === "ethereum";
-
-    const isMainnet = hre.network.name.startsWith('mainnet_');
-    const isTestnet = hre.network.name.startsWith('testnet_');
-    const isInternal = hre.network.name.startsWith('internal_');
-
-    const isTest = process.env.IS_TEST === "true";
-
-    const isDevnet = isLocalhost || isMemnet;
-    const isRealChain = !isLocalhost && !isMemnet;
-    const isDaoChain = isMemnet || isFork || isLocalhost || isEthereum;
-    const isProtocolChain = isMemnet || isFork || isLocalhost || isMainnet || isTestnet || isInternal;
-
+    const {
+        isDaoChain,
+        isProtocolChain,
+    } = require("../test/_networks");
 
     if (isDaoChain) {
         await _debug_core(taskArguments, hre);
@@ -213,8 +248,8 @@ async function debug(taskArguments, hre) {
 
     if (isProtocolChain) {
         await _debug_protocol(taskArguments, hre);
+        await _debug_dca(taskArguments, hre);
     }
-
 }
 
 module.exports = {

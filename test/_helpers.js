@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 const addresses = require("../utils/addresses");
-const { parseUnits, formatUnits } = require("ethers").utils;
+const { parseUnits } = require("ethers").utils;
 
 const {
     isLocalhost,
@@ -29,6 +29,25 @@ const PlanStatus = {
     EndOfLife: 3,
 };
 
+
+// keep in sync with ICaskDCA.sol
+const DCAStatus = {
+    None: 0,
+    Active: 1,
+    Paused: 2,
+    Canceled: 3,
+    Complete: 4,
+};
+
+// keep in sync with ICaskP2P.sol
+const P2PStatus = {
+    None: 0,
+    Active: 1,
+    Paused: 2,
+    Canceled: 3,
+    Complete: 4,
+};
+
 const advanceTime = async (seconds) => {
     await hre.ethers.provider.send("evm_increaseTime", [seconds]);
     await hre.ethers.provider.send("evm_mine");
@@ -42,6 +61,13 @@ const advanceBlocks = async (numBlocks) => {
     for (let i = 0; i < numBlocks; i++) {
         await hre.ethers.provider.send("evm_mine");
     }
+};
+
+const impersonateAccount = async (account) => {
+    return hre.network.provider.request({
+        method: "hardhat_impersonateAccount",
+        params: [account],
+    });
 };
 
 
@@ -116,17 +142,12 @@ const runSubscriptionKeeperType = async(checkType, limit= 10, minDepth = 0) => {
         [limit, minDepth, checkType]);
     const checkUpkeep = await subscriptionCheckUpkeep(checkData);
 
-    // console.log(`runSubscriptionKeeper checkUpkeep upkeepNeeded: ${checkUpkeep.upkeepNeeded}`);
-    // console.log(`runSubscriptionKeeper checkUpkeep performData: ${checkUpkeep.performData}`);
-
     if (checkUpkeep.upkeepNeeded) {
         return subscriptionPerformUpkeep(checkUpkeep.performData);
     } else {
         return false;
     }
 }
-
-
 
 const advanceTimeRunSubscriptionKeeper = async (times, seconds, keeperLimit=10) => {
     let result;
@@ -137,17 +158,109 @@ const advanceTimeRunSubscriptionKeeper = async (times, seconds, keeperLimit=10) 
     return result;
 }
 
+const dcaCheckUpkeep = async(checkData) => {
+    const dcaManager = await ethers.getContract("CaskDCAManager");
+    return dcaManager.checkUpkeep(checkData);
+};
+
+const dcaPerformUpkeep = async(performData) => {
+    const dcaManager = await ethers.getContract("CaskDCAManager");
+    return dcaManager.performUpkeep(performData);
+};
+
+const runDCAKeeper = async(limit= 10, minDepth = 0) => {
+    await runDCAKeeperType(1, limit, minDepth);
+};
+
+const runDCAKeeperType = async(queueId, limit= 10, minDepth = 0) => {
+    const checkData = ethers.utils.defaultAbiCoder.encode(
+        ['uint256','uint256','uint8'],
+        [limit, minDepth, queueId]);
+    const checkUpkeep = await dcaCheckUpkeep(checkData);
+
+    if (checkUpkeep.upkeepNeeded) {
+        return dcaPerformUpkeep(checkUpkeep.performData);
+    } else {
+        return false;
+    }
+}
+
+const advanceTimeRunDCAKeeper = async (times, seconds, keeperLimit=10) => {
+    let result;
+    for (let i = 0; i < times; i++) {
+        await advanceTime(seconds);
+        result = await runDCAKeeper(keeperLimit);
+    }
+    return result;
+}
+
+const p2pCheckUpkeep = async(checkData) => {
+    const p2pManager = await ethers.getContract("CaskP2PManager");
+    return p2pManager.checkUpkeep(checkData);
+};
+
+const p2pPerformUpkeep = async(performData) => {
+    const p2pManager = await ethers.getContract("CaskP2PManager");
+    return p2pManager.performUpkeep(performData);
+};
+
+const runP2PKeeper = async(limit= 10, minDepth = 0) => {
+    await runP2PKeeperType(1, limit, minDepth);
+};
+
+const runP2PKeeperType = async(queueId, limit= 10, minDepth = 0) => {
+    const checkData = ethers.utils.defaultAbiCoder.encode(
+        ['uint256','uint256','uint8'],
+        [limit, minDepth, queueId]);
+    const checkUpkeep = await p2pCheckUpkeep(checkData);
+
+    if (checkUpkeep.upkeepNeeded) {
+        return p2pPerformUpkeep(checkUpkeep.performData);
+    } else {
+        return false;
+    }
+}
+
+const advanceTimeRunP2PKeeper = async (times, seconds, keeperLimit=10) => {
+    let result;
+    for (let i = 0; i < times; i++) {
+        await advanceTime(seconds);
+        result = await runP2PKeeper(keeperLimit);
+    }
+    return result;
+}
+
 
 module.exports = {
+
+    // constants from solidity interfaces
     SubscriptionStatus,
     PlanStatus,
+    DCAStatus,
+    P2PStatus,
+
     advanceTime,
     getBlockTimestamp,
     setOracleTokenPriceUsd,
     advanceBlocks,
+    impersonateAccount,
     getNetworkAddresses,
+
+    // subscriptions keeper
     runSubscriptionKeeper,
     subscriptionCheckUpkeep,
     subscriptionPerformUpkeep,
     advanceTimeRunSubscriptionKeeper,
+
+    // DCA keeper
+    runDCAKeeper,
+    dcaCheckUpkeep,
+    dcaPerformUpkeep,
+    advanceTimeRunDCAKeeper,
+
+    // P2P keeper
+    runP2PKeeper,
+    p2pCheckUpkeep,
+    p2pPerformUpkeep,
+    advanceTimeRunP2PKeeper,
 };

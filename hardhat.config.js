@@ -16,6 +16,7 @@ const { debug } = require("./tasks/debug");
 const { fund } = require("./tasks/fund");
 const { fixtures } = require("./tasks/fixtures");
 const { keeper } = require("./tasks/keeper");
+const { dcaMerkleRoot, dcaLiquidity, dcaPublishManifests } = require("./tasks/dca");
 
 
 // production
@@ -34,6 +35,11 @@ const AVALANCHE_STRATEGIST = "0x65cf6394de068ca0301044f3bad050d925bA3Cfa";
 const FANTOM_GOVERNOR = "";
 const FANTOM_STRATEGIST = "";
 
+const CELO_GOVERNOR = "0xB538e8DcD297450BdeF46222f3CeB33bB1e921b3";
+const CELO_STRATEGIST = "0xB538e8DcD297450BdeF46222f3CeB33bB1e921b3";
+
+const AURORA_GOVERNOR = "0xFeAc0a0D83577A29D74d6294A2CeD14e84eee0eC";
+const AURORA_STRATEGIST = "0xFeAc0a0D83577A29D74d6294A2CeD14e84eee0eC";
 
 // testnet networks - common across all testnets
 const TESTNET_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
@@ -66,13 +72,26 @@ task("fund", "Funds all accounts with USDC/USDT/DAI", fund);
 task("fixtures", "Setup fixtured provider plans and consumer subscriptions", fixtures);
 
 task("keeper", "Run a keeper")
-    .addOptionalParam("limit", "Max subscriptions to process per run", "4")
+    .addOptionalParam("protocol", "Protocol to upkeep: One of 'subscriptions', 'dca' or 'p2p'", "subscriptions")
+    .addOptionalParam("limit", "Max work items to process per run", "4")
     .addOptionalParam("minDepth", "Only run keeper if queue is at least this deep", "0")
-    .addOptionalParam("queue", "comma separated list of queues - 1 for active queue, 2 for past due queue", "1,2")
+    .addOptionalParam("queue", "comma separated list of queues", "1")
     .addOptionalParam("interval", "How often (in ms) to do keeper upkeep check", "30000")
     .addOptionalParam("gasLimit", "gasLimit for keeper transaction", "2500000")
     .addOptionalParam("gasPrice", "gasPrice for keeper transaction")
     .setAction(keeper);
+
+task("dca:merkleroot", "Generate merkle root for DCA asset list")
+    .addParam("file", "Asset JSON file")
+    .addOptionalParam("execute", "Update on-chain merkle root", "false")
+    .setAction(dcaMerkleRoot);
+
+task("dca:liquidity", "Add liquidity to the mock uniswap router for DCA swaps", dcaLiquidity);
+
+task("dca:publishManifests", "Publishes the DCA manifests to IPFS")
+    .addOptionalParam("manifestDir", "Directory containing the DCA manifests", "./data/dca_assets")
+    .setAction(dcaPublishManifests);
+
 
 module.exports = {
   mocha: {
@@ -222,6 +241,8 @@ module.exports = {
       mainnet_polygon: POLYGON_GOVERNOR,
       mainnet_avalanche: AVALANCHE_GOVERNOR,
       mainnet_fantom: FANTOM_GOVERNOR,
+      mainnet_celo: CELO_GOVERNOR,
+      mainnet_aurora: AURORA_GOVERNOR,
 
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
@@ -239,6 +260,8 @@ module.exports = {
       mainnet_polygon: POLYGON_STRATEGIST,
       mainnet_avalanche: AVALANCHE_STRATEGIST,
       mainnet_fantom: FANTOM_STRATEGIST,
+      mainnet_celo: CELO_STRATEGIST,
+      mainnet_aurora: AURORA_STRATEGIST,
 
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
@@ -287,6 +310,8 @@ module.exports = {
       mainnet_polygon: KEEPER,
       mainnet_avalanche: KEEPER,
       mainnet_fantom: KEEPER,
+      mainnet_celo: KEEPER,
+      mainnet_aurora: KEEPER,
 
       default: 11,
       localhost: process.env.FORK === "true" ? KEEPER : 11,
@@ -310,7 +335,19 @@ module.exports = {
       ftmTestnet: process.env.FTMSCAN_API_KEY,
       avalanche: process.env.SNOWTRACE_API_KEY,
       avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY,
-    }
+      aurora: process.env.AURORASCAN_API_KEY,
+      celo: process.env.CELOSCAN_API_KEY,
+    },
+    customChains: [
+      {
+        network: "celo",
+        chainId: 42220,
+        urls: {
+          apiURL: "https://api.celoscan.xyz/api",
+          browserURL: "https://celoscan.xyz"
+        }
+      }
+    ]
   },
   contractSizer: {
     alphaSort: true,
