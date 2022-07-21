@@ -119,14 +119,16 @@ async function _debug_protocol(taskArguments, hre) {
     console.log("\nVault Configuration");
     console.log("====================");
     console.log(`paused:                                         ${await vault.paused()}`);
-    console.log(`CaskVault baseAsset:                            ${baseAsset} (${baseAssetSymbol})`);
-    console.log(`CaskVault baseAsset decimals:                   ${baseAssetInfo.assetDecimals}`);
+    console.log(`baseAsset:                                      ${baseAsset} (${baseAssetSymbol})`);
+    console.log(`baseAsset decimals:                             ${baseAssetInfo.assetDecimals}`);
+    console.log(`feeDistributor:                                 ${await vault.feeDistributor()}`);
     const protocolCount = await vault.protocolCount();
     console.log(`CaskVault protocolCount:                        ${protocolCount}`);
     for (let i = 0; i < protocolCount; i++) {
         console.log(`   protocol ${i}:                                  ${await vault.protocols(i)}`);
     }
-
+    console.log(`minDeposit:                                     ${formatUnits(await vault.minDeposit(), baseAssetInfo.assetDecimals)}`);
+    console.log(`maxPriceFeedAge:                                ${await vault.maxPriceFeedAge()}`);
     console.log(`totalSupply:                                    ${await vault.totalSupply()}`);
     console.log(`totalValue:                                     ${formatUnits(await vault.totalValue(), baseAssetInfo.assetDecimals)}`);
     console.log(`pricePerShare:                                  ${await vault.pricePerShare()}`);
