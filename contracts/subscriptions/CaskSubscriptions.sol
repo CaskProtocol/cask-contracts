@@ -198,6 +198,9 @@ PausableUpgradeable
         require(subscription.status == SubscriptionStatus.Paused ||
                 subscription.status == SubscriptionStatus.PendingPause, "!NOT_PAUSED");
 
+        emit SubscriptionResumed(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
+            subscription.ref, subscription.planId);
+
         if (subscription.status == SubscriptionStatus.PendingPause) {
             subscription.status = SubscriptionStatus.Active;
             return;
@@ -224,9 +227,6 @@ PausableUpgradeable
 
         // make sure still active if payment was required to resume
         require(subscription.status == SubscriptionStatus.Active, "!INSUFFICIENT_FUNDS");
-
-        emit SubscriptionResumed(ownerOf(_subscriptionId), subscription.provider, _subscriptionId,
-            subscription.ref, subscription.planId);
     }
 
     function cancelSubscription(
