@@ -208,12 +208,21 @@ async function _debug_dca(taskArguments, hre) {
     console.log(`DefaultProxyAdmin:                              ${defaultProxyAdmin.address}`);
     console.log(`DefaultProxyAdmin Owner:                        ${await defaultProxyAdmin.owner()}`);
 
+    const vault = await hre.ethers.getContract("CaskVault");
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
+    const baseAssetContract = CaskSDK.contracts.ERC20({tokenAddress: baseAsset, provider: hre.ethers.provider});
+    const baseAssetSymbol = await baseAssetContract.symbol();
 
     //
     // DCA Config
     //
+    const minAmount = await dca.minAmount();
+
     const maxSkips = await dcaManager.maxSkips();
-    const feeBps = await dcaManager.feeBps();
+    const dcaFeeBps = await dcaManager.dcaFeeBps();
+    const dcaFeeMin = await dcaManager.dcaFeeMin();
+    const dcaMinValue = await dcaManager.dcaMinValue();
     const maxPriceFeedAge = await dcaManager.maxPriceFeedAge();
     const queueBucketSize = await dcaManager.queueBucketSize();
 
@@ -221,11 +230,16 @@ async function _debug_dca(taskArguments, hre) {
     console.log("====================");
     console.log(`CaskDCA dcaManager:                             ${await dca.dcaManager()}`);
     console.log(`CaskDCA assetsMerkleRoot:                       ${await dca.assetsMerkleRoot()}`);
+    console.log(`CaskDCA minAmount:                              ${minAmount} (${formatUnits(minAmount, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskDCA minPeriod:                              ${await dca.minPeriod()}`);
 
     console.log(`CaskDCAManager caskVault:                       ${await dcaManager.caskVault()}`);
     console.log(`CaskDCAManager caskDCA:                         ${await dcaManager.caskDCA()}`);
     console.log(`CaskDCAManager maxSkips:                        ${maxSkips}`);
-    console.log(`CaskDCAManager feeBps:                          ${feeBps} bps (${feeBps / 100}%)`);
+    console.log(`CaskDCAManager dcaFeeBps:                       ${dcaFeeBps} bps (${dcaFeeBps / 100}%)`);
+    console.log(`CaskDCAManager dcaFeeMin:                       ${dcaFeeMin} (${formatUnits(dcaFeeMin, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskDCAManager dcaMinValue:                     ${dcaMinValue} (${formatUnits(dcaMinValue, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskDCAManager maxSkips:                        ${maxSkips}`);
     console.log(`CaskDCAManager maxPriceFeedAge:                 ${maxPriceFeedAge} seconds`);
     console.log(`CaskDCAManager queueBucketSize:                 ${queueBucketSize}`);
 
