@@ -49,7 +49,7 @@ KeeperCompatibleInterface
     uint256 public paymentMinValue;
 
     /** @dev max age a process bucket can grow to before a forced processing occurs. */
-    uint32 processBucketMaxAge;
+    uint32 public processBucketMaxAge;
 
     /** @dev number of seconds between failed payment retries. */
     uint32 public paymentRetryDelay;
