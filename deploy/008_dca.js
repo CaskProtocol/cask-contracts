@@ -7,6 +7,7 @@ const {
     isProtocolChain,
     isMemnet,
     isDevnet,
+    isTestnet,
 } = require("../test/_networks");
 
 const {
@@ -62,7 +63,7 @@ const deployDCA = async ({ethers, getNamedAccounts}) => {
     );
     log(`Set CaskDCA manager to ${dcaManager.address}`);
 
-    if (isDevnet) {
+    if (isDevnet || isTestnet) {
         await withConfirmation(
             vault.connect(sGovernor).addProtocol(dcaManager.address)
         );

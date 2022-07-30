@@ -13,9 +13,9 @@ async function dcaMerkleRoot(taskArguments, hre) {
     const chainId = network.chainId;
 
     const assetList = JSON.parse(fs.readFileSync(taskArguments.file));
-    const filteredAssets = assetList.filter((asset) => asset.chainId === chainId);
+    const filteredAssets = assetList.assets.filter((asset) => asset.chainId === chainId);
 
-    console.log(`Loaded ${assetList.length} assets; filtered to ${filteredAssets.length} using chainId ${chainId}`);
+    console.log(`Loaded ${assetList.assets.length} assets; filtered to ${filteredAssets.length} using chainId ${chainId}`);
 
     const assetsMerkleRoot = CaskSDK.utils.dcaMerkleRoot(filteredAssets);
 
