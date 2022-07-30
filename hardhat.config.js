@@ -152,6 +152,7 @@ module.exports = {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.INTERNAL_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.INTERNAL_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
       ],
       timeout: 300000,
       gas: 2100000,
@@ -161,6 +162,7 @@ module.exports = {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.MUMBAI_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.MUMBAI_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
       ],
       timeout: 300000,
       gas: 2100000,
@@ -170,6 +172,7 @@ module.exports = {
       url: `${process.env.FTMTESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.FTMTESTNET_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.FTMTESTNET_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
       ],
       timeout: 300000,
       gas: 2100000,
@@ -179,6 +182,7 @@ module.exports = {
       url: `${process.env.FUJI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.FUJI_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.FUJI_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
       ],
       timeout: 300000,
       gas: 2100000,
@@ -188,6 +192,7 @@ module.exports = {
       url: `${process.env.EVMOSTESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.EVMOSTESTNET_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.EVMOSTESTNET_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
       ],
       timeout: 300000,
       gasPrice: parseInt(process.env.EVMOSTESTNET_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
@@ -196,6 +201,7 @@ module.exports = {
       url: `${process.env.ALFAJORES_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.ALFAJORES_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.ALFAJORES_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
       ],
       timeout: 300000,
       gasPrice: parseInt(process.env.ALFAJORES_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
@@ -204,6 +210,7 @@ module.exports = {
       url: `${process.env.AURORATESTNET_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.AURORATESTNET_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.AURORATESTNET_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
       ],
       timeout: 300000,
       gasPrice: parseInt(process.env.AURORA_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
@@ -212,6 +219,7 @@ module.exports = {
       url: `${process.env.FUJI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
         process.env.INTERNAL_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.INTERNAL_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
       ],
       timeout: 300000,
       gas: 2100000,

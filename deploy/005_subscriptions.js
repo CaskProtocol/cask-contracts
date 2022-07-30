@@ -6,6 +6,8 @@ const {
 const {
     isProtocolChain,
     isMemnet,
+    isDevnet,
+    isTestnet,
 } = require("../test/_networks");
 
 const {
@@ -67,10 +69,14 @@ const deploySubscriptions = async ({ethers, getNamedAccounts}) => {
         log("Set CaskSubscriptionManager parameters for memnet");
     }
 
-    await withConfirmation(
-        vault.connect(sGovernor).addProtocol(subscriptionManager.address)
-    );
-    log(`Authorized CaskVault protocol ${subscriptionManager.address} for CaskSubscriptionManager`);
+    if (isDevnet || isTestnet) {
+        await withConfirmation(
+            vault.connect(sGovernor).addProtocol(subscriptionManager.address)
+        );
+        log(`Authorized CaskVault protocol ${subscriptionManager.address} for CaskSubscriptionManager`);
+    } else {
+        log(`Please authorize CaskSubscriptionManager (${subscriptionManager.address}) as an approved CaskVault protocol`);
+    }
 
     await withConfirmation(
         subscriptions.connect(sDeployer).setManager(subscriptionManager.address)

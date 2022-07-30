@@ -227,6 +227,8 @@ async function _debug_dca(taskArguments, hre) {
     const dcaMinValue = await dcaManager.dcaMinValue();
     const maxPriceFeedAge = await dcaManager.maxPriceFeedAge();
     const queueBucketSize = await dcaManager.queueBucketSize();
+    const maxQueueAge = await dcaManager.maxQueueAge();
+
 
     console.log("\nDCA Configuration");
     console.log("====================");
@@ -244,6 +246,7 @@ async function _debug_dca(taskArguments, hre) {
     console.log(`CaskDCAManager maxSkips:                        ${maxSkips}`);
     console.log(`CaskDCAManager maxPriceFeedAge:                 ${maxPriceFeedAge} seconds`);
     console.log(`CaskDCAManager queueBucketSize:                 ${queueBucketSize}`);
+    console.log(`CaskDCAManager maxQueueAge:                     ${maxQueueAge}`);
 
 }
 
