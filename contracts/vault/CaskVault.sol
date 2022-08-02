@@ -68,6 +68,7 @@ ReentrancyGuardUpgradeable
     function initialize(
         address _baseAsset,
         address _baseAssetPriceFeed,
+        PriceFeedType _baseAssetPriceFeedType,
         string calldata _baseAssetBandSymbol,
         address _feeDistributor
     ) public initializer {
@@ -81,9 +82,16 @@ ReentrancyGuardUpgradeable
 
         Asset storage asset = assets[_baseAsset];
         asset.priceFeed = _baseAssetPriceFeed;
-        asset.priceFeedType = PriceFeedType.Chainlink;
+        asset.priceFeedType = _baseAssetPriceFeedType;
         asset.assetDecimals = IERC20Metadata(_baseAsset).decimals();
-        asset.priceFeedDecimals = AggregatorV3Interface(_baseAssetPriceFeed).decimals();
+        if (_baseAssetPriceFeedType == PriceFeedType.Chainlink) {
+            asset.priceFeedDecimals = AggregatorV3Interface(_baseAssetPriceFeed).decimals();
+        } else if (_baseAssetPriceFeedType == PriceFeedType.Band) {
+            asset.priceFeedDecimals = 18; // band prices are always in 1e18
+        } else {
+            revert("unknown price feed type");
+        }
+
         asset.depositLimit = type(uint256).max;
         asset.slippageBps = 0;
         asset.bandSymbol = _baseAssetBandSymbol;
