@@ -76,6 +76,8 @@ describe("CaskVault", function () {
         await vault.connect(governor).allowAsset(
             networkAddresses.DAI,
             networkAddresses.DAI_USD,
+            0,
+            "DAI",
             daiUnits('1000'),
             0);
 
@@ -88,6 +90,8 @@ describe("CaskVault", function () {
         await vault.connect(governor).allowAsset(
             networkAddresses.DAI,
             networkAddresses.DAI_USD,
+            0,
+            "DAI",
             daiUnits('2000'),
             0);
 
