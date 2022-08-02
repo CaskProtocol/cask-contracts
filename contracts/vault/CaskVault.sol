@@ -92,7 +92,7 @@ ReentrancyGuardUpgradeable
 
         Asset storage asset = assets[_baseAsset];
         asset.priceFeed = _baseAssetPriceFeed;
-        asset.priceFeedType = PriceFeedType.Chainlink;
+        asset.priceFeedType = _baseAssetPriceFeedType;
         asset.assetDecimals = IERC20Metadata(_baseAsset).decimals();
         if (_priceFeedType == PriceFeedType.Chainlink) {
             asset.priceFeedDecimals = AggregatorV3Interface(_baseAssetPriceFeed).decimals();
