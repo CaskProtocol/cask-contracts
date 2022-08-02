@@ -23,6 +23,7 @@ interface ICaskDCA {
         AssetNotAllowed,
         PaymentFailed,
         OutsideLimits,
+        ExcessiveSlippage,
         SwapFailed
     }
 

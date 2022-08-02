@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 
 abstract contract CaskJobQueue is
@@ -13,6 +14,7 @@ Initializable,
 OwnableUpgradeable,
 PausableUpgradeable,
 KeeperCompatibleInterface,
+ReentrancyGuardUpgradeable,
 ICaskJobQueue
 {
 
@@ -121,7 +123,7 @@ ICaskJobQueue
 
     function performUpkeep(
         bytes calldata performData
-    ) external override whenNotPaused {
+    ) external override whenNotPaused nonReentrant {
         (
         uint256 limit,
         uint256 depth,
