@@ -427,7 +427,7 @@ describe("CaskDCA General", function () {
         expect(createdEvent.args.amount).to.equal(usdcUnits('10'));
         expect(createdEvent.args.period).to.equal(7*day);
 
-        // confirm initial DCA was skipped due to minPrice
+        // confirm initial DCA was processed
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
         result = await userDCA.getDCA(dcaId);
         expect(result.status).to.equal(DCAStatus.Active);
@@ -442,7 +442,7 @@ describe("CaskDCA General", function () {
         result = await userDCA.getDCA(dcaId);
         expect(result.status).to.equal(DCAStatus.Active);
         expect(result.numSkips).to.equal(1);
-        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
+        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('89.9')); // minus minFee
     });
 
     it("DCA with maxPrice not met", async function () {
@@ -501,7 +501,7 @@ describe("CaskDCA General", function () {
         expect(createdEvent.args.amount).to.equal(usdcUnits('10'));
         expect(createdEvent.args.period).to.equal(7*day);
 
-        // confirm initial DCA was skipped due to minPrice
+        // confirm initial DCA was processed
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
         result = await userDCA.getDCA(dcaId);
         expect(result.status).to.equal(DCAStatus.Active);
@@ -516,7 +516,7 @@ describe("CaskDCA General", function () {
         result = await userDCA.getDCA(dcaId);
         expect(result.status).to.equal(DCAStatus.Active);
         expect(result.numSkips).to.equal(1);
-        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
+        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('89.9')); // minus minFee
     });
 
     it("DCA min value enforced", async function () {
@@ -659,6 +659,76 @@ describe("CaskDCA General", function () {
             0
         )).to.be.revertedWith("!UNPROCESSABLE");
 
+    });
+
+    it("DCA failed swap reverts properly", async function () {
+
+        const {
+            networkAddresses,
+            governor,
+            user,
+            vault,
+            router,
+            dca,
+            abc,
+            dcaManifest,
+        } = await dcaWithLiquidityFixture();
+
+        const userVault = vault.connect(user);
+        const userDCA = dca.connect(user);
+
+        // deposit to vault
+        await userVault.deposit(networkAddresses.USDC, usdcUnits('100'));
+
+        // check initial balance
+        const initialUserBalance = await userVault.currentValueOf(user.address);
+        expect(initialUserBalance).to.equal(usdcUnits('100'));
+
+        const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
+
+        const assetSpec = [
+            assetInfo.router.toLowerCase(),
+            assetInfo.priceFeed.toLowerCase(),
+            ...assetInfo.path.map((a) => a.toLowerCase())
+        ];
+
+        let result;
+
+        // create DCA
+        const tx = await userDCA.createDCA(
+            assetSpec, // assetSpec
+            merkleProof, // merkleProof
+            user.address, // to
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            7 * day, // period
+            100, // slippageBps
+            0, // minPrice
+            0, // maxPrice
+        );
+
+        const events = (await tx.wait()).events || [];
+        const createdEvent = events.find((e) => e.event === "DCACreated");
+        const dcaId = createdEvent.args.dcaId;
+        expect(dcaId).to.not.be.undefined;
+
+        // confirm initial DCA was processed
+        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
+        result = await userDCA.getDCA(dcaId);
+        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.numSkips).to.equal(0);
+
+        // set swap router to fail the swap
+        await router.setOutputBps(0);
+
+        await advanceTimeRunDCAKeeper(9, day);
+
+        // confirm second DCA was skipped
+        result = await userDCA.getDCA(dcaId);
+        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.numSkips).to.equal(1);
+        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
     });
 
 });

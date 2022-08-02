@@ -13,4 +13,7 @@ interface ICaskDCAManager {
 
     /** @dev Emitted when an assetSpec is unblacklisted. */
     event UnblacklistAssetSpec(bytes32 indexed assetSpec);
+
+    /** @dev Emitted the feeDistributor is changed. */
+    event SetFeeDistributor(address feeDistributor);
 }

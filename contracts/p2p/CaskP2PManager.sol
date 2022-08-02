@@ -125,5 +125,11 @@ ICaskP2PManager
         paymentFee = _paymentFee;
         queueBucketSize = _queueBucketSize;
     }
-    
+
+    function recoverFunds(
+        address _asset,
+        address _dest
+    ) external onlyOwner {
+        IERC20Metadata(_asset).transfer(_dest, IERC20Metadata(_asset).balanceOf(address(this)));
+    }
 }

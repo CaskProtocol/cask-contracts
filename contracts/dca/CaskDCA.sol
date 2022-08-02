@@ -39,6 +39,10 @@ BaseRelayRecipient
     /** @dev minimum period for a DCA. */
     uint32 public minPeriod;
 
+    /** @dev minimum slippage allowed for a DCA. */
+    uint256 public minSlippage;
+
+
     function initialize(
         bytes32 _assetsMerkleRoot
     ) public initializer {
@@ -48,6 +52,7 @@ BaseRelayRecipient
         assetsMerkleRoot = _assetsMerkleRoot;
         minAmount = 1;
         minPeriod = 86400;
+        minSlippage = 10;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -88,6 +93,7 @@ BaseRelayRecipient
     ) external override returns(bytes32) {
         require(_amount >= minAmount, "!INVALID(amount)");
         require(_period >= minPeriod, "!INVALID(period)");
+        require(_slippageBps >= minSlippage, "!INVALID(slippageBps)");
         require(_assetSpec.length >= 4, "!INVALID(assetSpec)");
         require(_verifyAssetSpec(_assetSpec, _merkleProof), "!INVALID(assetSpec)");
 
@@ -290,5 +296,11 @@ BaseRelayRecipient
         uint32 _minPeriod
     ) external onlyOwner {
         minPeriod = _minPeriod;
+    }
+
+    function setMinSlippage(
+        uint256 _minSlippage
+    ) external onlyOwner {
+        minSlippage = _minSlippage;
     }
 }

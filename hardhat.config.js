@@ -61,7 +61,16 @@ for (let i = 0; i < 15; i++) {
 }
 
 
-task("debug", "Print info about contracts and their configs", debug);
+task("debug:subscriptions", "Print info about subscriptions contracts and their configs", async (taskArguments, hre) => {
+  return debug(taskArguments, hre, 'subscriptions');
+});
+task("debug:dca", "Print info about dca contracts and their configs", async (taskArguments, hre) => {
+  return debug(taskArguments, hre, 'dca');
+});
+task("debug:vault", "Print info about vault contracts and their configs", async (taskArguments, hre) => {
+  return debug(taskArguments, hre, 'vault');
+});
+task("debug", "Print info about all contracts and their configs", debug);
 
 task("accounts", "Prints the list of accounts", async (taskArguments, hre) => {
   return accounts(taskArguments, hre, privateKeys);

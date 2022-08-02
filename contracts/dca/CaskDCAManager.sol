@@ -54,13 +54,18 @@ ICaskDCAManager
     /** @dev revert if price feed age is older than this number of seconds. set to 0 to disable check. */
     uint256 public maxPriceFeedAge;
 
+    /** @dev Address to receive DCA fees. */
+    address public feeDistributor;
+
 
     function initialize(
         address _caskDCA,
-        address _caskVault
+        address _caskVault,
+        address _feeDistributor
     ) public initializer {
         caskDCA = ICaskDCA(_caskDCA);
         caskVault = ICaskVault(_caskVault);
+        feeDistributor = _feeDistributor;
 
         maxSkips = 0;
         dcaFeeBps = 0;
@@ -133,7 +138,13 @@ ICaskDCAManager
 
         if (!_checkMinMaxPrice(_dcaId, inputAsset, outputAsset, amount, dca.priceFeed)) {
             scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
-            caskDCA.managerSkipped(_dcaId, ICaskDCA.SkipReason.OutsideLimits);
+
+            try caskVault.protocolPayment(dca.user, address(this), dcaFeeMin) {
+                caskDCA.managerSkipped(_dcaId, ICaskDCA.SkipReason.OutsideLimits);
+            } catch (bytes memory) {
+                caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Cancel);
+            }
+
             return;
         }
 
@@ -172,7 +183,7 @@ ICaskDCAManager
         uint256 beforeBalance = IERC20Metadata(_inputAsset).balanceOf(address(this));
 
         // perform a 'payment' to this contract, fee goes to vault
-        try caskVault.protocolPayment(dca.user, address(this), _amount, _protocolFee) {
+        try caskVault.protocolPayment(dca.user, address(this), _amount, 0) {
             // noop
         } catch (bytes memory) {
             caskDCA.managerSkipped(_dcaId, ICaskDCA.SkipReason.PaymentFailed);
@@ -184,23 +195,32 @@ ICaskDCAManager
         if (withdrawShares > caskVault.balanceOf(address(this))) {
             withdrawShares = caskVault.balanceOf(address(this));
         }
-        try caskVault.withdraw(_inputAsset, withdrawShares) {
-            // noop
-        } catch (bytes memory) {
-            caskDCA.managerSkipped(_dcaId, ICaskDCA.SkipReason.PaymentFailed);
-            return 0;
-        }
+        caskVault.withdraw(_inputAsset, withdrawShares);
 
         // calculate actual amount of inputAsset that was received from payment/withdraw
         uint256 amountIn = IERC20Metadata(_inputAsset).balanceOf(address(this)) - beforeBalance;
         require(amountIn > 0, "!INVALID(amountIn)");
 
-        uint256 optimalOutput;
+        uint256 minOutput = 0;
         if (dca.priceFeed != address(0)) {
-            optimalOutput = _convertPrice(inputAssetInfo, _outputAsset, dca.priceFeed, _amount);
+            minOutput = _convertPrice(inputAssetInfo, _outputAsset, dca.priceFeed, _amount - _protocolFee);
+        }
+        uint256[] memory amountOuts = IUniswapV2Router02(dca.router).getAmountsOut(_amount - _protocolFee, dca.path);
+        if (minOutput > 0) {
+            minOutput = minOutput - ((minOutput * dca.slippageBps) / 10000);
+            if (amountOuts[amountOuts.length-1] < minOutput) {
+
+                // undo withdraw and send shares back to user
+                IERC20Metadata(_inputAsset).safeIncreaseAllowance(address(caskVault), amountIn);
+                caskVault.deposit(_inputAsset, amountIn);
+                caskVault.transfer(dca.user, caskVault.balanceOf(address(this))); // refund full amount
+
+                caskDCA.managerSkipped(_dcaId, ICaskDCA.SkipReason.ExcessiveSlippage);
+
+                return 0;
+            }
         } else {
-            uint256[] memory amountOuts = IUniswapV2Router02(dca.router).getAmountsOut(_amount, dca.path);
-            optimalOutput = amountOuts[amountOuts.length-1];
+            minOutput = amountOuts[amountOuts.length-1] - ((amountOuts[amountOuts.length-1] * dca.slippageBps) / 10000);
         }
 
         // let swap router spend the amount of newly acquired inputAsset
@@ -209,15 +229,26 @@ ICaskDCAManager
         // perform swap
         try IUniswapV2Router02(dca.router).swapExactTokensForTokens(
             amountIn,
-            optimalOutput - ((optimalOutput * dca.slippageBps) / 10000), // adjust for slippage
+            minOutput,
             dca.path,
             dca.to,
             block.timestamp + 1 hours
         ) returns (uint256[] memory amounts) {
             require(amounts.length >= 2, "!INVALID(amounts)");
+
+            // any non-withdrawn shares are the fee portion - send to fee distributor
+            caskVault.transfer(feeDistributor, caskVault.balanceOf(address(this)));
+
             return amounts[amounts.length-1]; // last amount is final output amount
         } catch (bytes memory) {
+
+            // undo withdraw and send shares back to user
+            IERC20Metadata(_inputAsset).safeIncreaseAllowance(address(caskVault), amountIn);
+            caskVault.deposit(_inputAsset, amountIn);
+            caskVault.transfer(dca.user, caskVault.balanceOf(address(this))); // refund full amount
+
             caskDCA.managerSkipped(_dcaId, ICaskDCA.SkipReason.SwapFailed);
+
             return 0;
         }
     }
@@ -322,7 +353,8 @@ ICaskDCAManager
         uint256 _dcaFeeMin,
         uint256 _dcaMinValue,
         uint256 _maxPriceFeedAge,
-        uint32 _queueBucketSize
+        uint32 _queueBucketSize,
+        uint32 _maxQueueAge
     ) external onlyOwner {
         require(_dcaFeeBps < 10000, "!INVALID(dcaFeeBps)");
 
@@ -332,8 +364,16 @@ ICaskDCAManager
         dcaMinValue = _dcaMinValue;
         maxPriceFeedAge = _maxPriceFeedAge;
         queueBucketSize = _queueBucketSize;
+        maxQueueAge = _maxQueueAge;
 
         emit SetParameters();
+    }
+
+    function setFeeDistributor(
+        address _feeDistributor
+    ) external onlyOwner {
+        feeDistributor = _feeDistributor;
+        emit SetFeeDistributor(_feeDistributor);
     }
 
     function blacklistAssetspec(
@@ -351,4 +391,12 @@ ICaskDCAManager
 
         emit UnblacklistAssetSpec(_assetSpec);
     }
+
+    function recoverFunds(
+        address _asset,
+        address _dest
+    ) external onlyOwner {
+        IERC20Metadata(_asset).transfer(_dest, IERC20Metadata(_asset).balanceOf(address(this)));
+    }
+
 }
