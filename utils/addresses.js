@@ -16,7 +16,6 @@ addresses.mainnet_polygon = {};
 addresses.mainnet_polygon.DAI = "0x8f3cf7ad23cd3cadbd9735aff958023239c6a063";
 addresses.mainnet_polygon.USDC = "0x2791bca1f2de4661ed88a30c99a7a9449aa84174";
 addresses.mainnet_polygon.USDT = "0xc2132d05d31c914a87c6611c10748aeb04b58e8f";
-addresses.mainnet_polygon.UST = "0xe6469ba6d2fd6130788e0ea9c0a0515900563b59"
 addresses.mainnet_polygon.FRAX = "0x45c32fa6df82ead1e2ef74d17b76547eddfaff89"
 
 
@@ -24,7 +23,6 @@ addresses.mainnet_polygon.FRAX = "0x45c32fa6df82ead1e2ef74d17b76547eddfaff89"
 addresses.mainnet_polygon.DAI_USD = "0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D";
 addresses.mainnet_polygon.USDC_USD = "0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7";
 addresses.mainnet_polygon.USDT_USD = "0x0A6513e40db6EB1b165753AD52E80663aeA50545";
-addresses.mainnet_polygon.UST_USD = "0x2D455E55e8Ad3BA965E3e95e7AaB7dF1C671af19";
 addresses.mainnet_polygon.FRAX_USD = "0x00DBeB1e45485d53DF7C2F0dF1Aa0b6Dc30311d3";
 
 
@@ -36,7 +34,6 @@ addresses.mainnet_avalanche = {};
 addresses.mainnet_avalanche.DAI = "0xd586e7f844cea2f87f50152665bcbc2c279d8d70";
 addresses.mainnet_avalanche.USDC = "0xa7d7079b0fead91f3e65f86e8915cb59c1a4c664";
 addresses.mainnet_avalanche.USDT = "0xc7198437980c041c805a1edcba50c1ce5db95118";
-addresses.mainnet_avalanche.UST = "0xb599c3590f42f8f995ecfa0f85d2980b76862fc1"
 addresses.mainnet_avalanche.FRAX = "0xd24c2ad096400b6fbcd2ad8b24e7acbc21a1da64"
 
 
@@ -44,28 +41,29 @@ addresses.mainnet_avalanche.FRAX = "0xd24c2ad096400b6fbcd2ad8b24e7acbc21a1da64"
 addresses.mainnet_avalanche.DAI_USD = "0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300";
 addresses.mainnet_avalanche.USDC_USD = "0xF096872672F44d6EBA71458D74fe67F9a77a23B9";
 addresses.mainnet_avalanche.USDT_USD = "0xEBE676ee90Fe1112671f19b6B7459bC678B67e8a";
-addresses.mainnet_avalanche.UST_USD = "0xf58B78581c480caFf667C63feDd564eCF01Ef86b";
 addresses.mainnet_avalanche.FRAX_USD = "0xbBa56eF1565354217a3353a466edB82E8F25b08e";
 
 
 /* fantom addresses */
 addresses.mainnet_fantom = {};
-
-// Native stablecoins
-addresses.mainnet_fantom.DAI = "0x8d11ec38a3eb5e956b052f67da8bdc9bef8abf3e";
 addresses.mainnet_fantom.USDC = "0x04068da6c83afcfa0e13ba15a6696662335d5b75";
-addresses.mainnet_fantom.USDT = "0x049d68029688eabf473097a2fc38ef61633a3c7a";
-addresses.mainnet_fantom.UST = "0x846e4d51d7e2043c1a87e0ab7490b93fb940357b";
-addresses.mainnet_fantom.FRAX = "0xdc301622e621166bd8e82f2ca0a26c13ad0be355";
-
-
-// Chainlink feeds (https://docs.chain.link/docs/ethereum-addresses)
-addresses.mainnet_fantom.DAI_USD = "0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52";
 addresses.mainnet_fantom.USDC_USD = "0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c";
-addresses.mainnet_fantom.USDT_USD = "0xF64b636c5dFe1d3555A847341cDC449f612307d0";
-addresses.mainnet_fantom.UST_USD = "0x6F3DD0eC672871547Ea495DCF7aA963B8A179287";
-addresses.mainnet_fantom.FRAX_USD = "0xBaC409D670d996Ef852056f6d45eCA41A8D57FbD";
 
+/* celo addresses */
+addresses.mainnet_celo = {};
+addresses.mainnet_celo.USDC = "0x37f750b7cc259a2f741af45294f6a16572cf5cad";
+addresses.mainnet_celo.USDC_USD = "0xDA7a001b254CD22e46d3eAB04d937489c93174C3"; // band StdReferenceProxy
+addresses.mainnet_celo.USDC_PRICE_FEED_TYPE = 1; // celo uses band protocol oracles
+
+/* aurora addresses */
+addresses.mainnet_aurora = {};
+addresses.mainnet_aurora.USDC = "0xb12bfca5a55806aaf64e99521918a4bf0fc40802";
+addresses.mainnet_aurora.USDC_USD = "0x06b35392094610C8D21FB2409855e231869B287F"; // flux price feed
+
+/* moonbeam addresses */
+addresses.mainnet_moonbeam = {};
+addresses.mainnet_moonbeam.USDC = "0x818ec0a7fe18ff94269904fced6ae3dae6d6dc0b";
+addresses.mainnet_moonbeam.USDC_USD = "0xA122591F60115D63421f66F752EF9f6e0bc73abC";
 
 
 /******* TESTNET ADDRESSES *********/
