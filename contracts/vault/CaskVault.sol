@@ -78,7 +78,14 @@ ReentrancyGuardUpgradeable
         __ERC20_init("Cask Vault Tokens","MASH");
 
         require(IERC20Metadata(_baseAsset).decimals() > 0, "!INVALID(baseAsset)");
-        require(AggregatorV3Interface(_baseAssetPriceFeed).decimals() > 0, "!INVALID(baseAssetPriceFeed)");
+        if (_baseAssetPriceFeedType == PriceFeedType.Chainlink) {
+            require(AggregatorV3Interface(_baseAssetPriceFeed).decimals() > 0, "!INVALID(baseAssetPriceFeed)");
+        } else if (_baseAssetPriceFeedType == PriceFeedType.Band) {
+            require(bytes(_baseAssetBandSymbol).length > 0, "!INVALID(baseAssetBandSymbol)");
+        } else {
+            revert("unknown price feed type");
+        }
+        require(_feeDistributor != address(0), "!INVALID(feeDistributor)");
 
         Asset storage asset = assets[_baseAsset];
         asset.priceFeed = _baseAssetPriceFeed;
