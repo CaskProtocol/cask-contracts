@@ -6,6 +6,9 @@ const {
 
 const {
     isProtocolChain,
+    isDevnet,
+    isTestnet,
+    isInternal,
 } = require("../test/_networks");
 
 const { getNetworkAddresses } = require("../test/_helpers");
@@ -49,27 +52,25 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     );
     log("set minDeposit to 0.01 USDC");
 
-
-    // add supported assets to vault
-
-    await withConfirmation(
-        vault.connect(sDeployer).allowAsset(
-            networkAddresses.USDT, // address
-            networkAddresses.USDT_USD, //priceFeed
-            usdtUnits('100000000'), // depositLimit - 100M
-            10) // slippageBps - 0.1%
-    );
-    log("Allowed USDT in vault");
-
-    await withConfirmation(
-        vault.connect(sDeployer).allowAsset(
-            networkAddresses.DAI, // address
-            networkAddresses.DAI_USD, //priceFeed
-            daiUnits('100000000'), // depositLimit - 100M
-            10) // slippageBps - 0.1%
-    );
-    log("Allowed DAI in vault");
-
+    if (isDevnet || isTestnet || isInternal) {
+        // add testnet assets to vault
+        await withConfirmation(
+            vault.connect(sDeployer).allowAsset(
+                networkAddresses.USDT, // address
+                networkAddresses.USDT_USD, //priceFeed
+                usdtUnits('100000000'), // depositLimit - 100M
+                10) // slippageBps - 0.1%
+        );
+        log("Allowed USDT in vault");
+        await withConfirmation(
+            vault.connect(sDeployer).allowAsset(
+                networkAddresses.DAI, // address
+                networkAddresses.DAI_USD, //priceFeed
+                daiUnits('100000000'), // depositLimit - 100M
+                10) // slippageBps - 0.1%
+        );
+        log("Allowed DAI in vault");
+    }
 
     await withConfirmation(
         vault.transferOwnership(governorAddr)

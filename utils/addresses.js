@@ -65,6 +65,17 @@ addresses.mainnet_moonbeam = {};
 addresses.mainnet_moonbeam.USDC = "0x818ec0a7fe18ff94269904fced6ae3dae6d6dc0b";
 addresses.mainnet_moonbeam.USDC_USD = "0xA122591F60115D63421f66F752EF9f6e0bc73abC";
 
+/* gnosis addresses */
+addresses.mainnet_gnosis = {};
+addresses.mainnet_gnosis.USDC = "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83";
+addresses.mainnet_gnosis.USDC_USD = "0x26C31ac71010aF62E6B486D1132E266D6298857D";
+
+/* bsc addresses */
+addresses.mainnet_bsc = {};
+addresses.mainnet_bsc.USDC = "0x672147dd47674757c457eb155baa382cc10705dd";
+addresses.mainnet_bsc.USDC_USD = "0x51597f405303C4377E36123cBc172b13269EA163";
+
+
 
 /******* TESTNET ADDRESSES *********/
 
