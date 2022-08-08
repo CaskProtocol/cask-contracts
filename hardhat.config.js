@@ -32,14 +32,20 @@ const POLYGON_STRATEGIST = "0x0c91Ec7D8D74A7AffFEe0a53d4447C5b8807F305";
 const AVALANCHE_GOVERNOR = "0x65cf6394de068ca0301044f3bad050d925bA3Cfa";
 const AVALANCHE_STRATEGIST = "0x65cf6394de068ca0301044f3bad050d925bA3Cfa";
 
-const FANTOM_GOVERNOR = "";
-const FANTOM_STRATEGIST = "";
+const FANTOM_GOVERNOR = "0xd5F44Ebd3a1999AEFF7F9bdE39f37C699B3b304c";
+const FANTOM_STRATEGIST = "0xd5F44Ebd3a1999AEFF7F9bdE39f37C699B3b304c";
 
 const CELO_GOVERNOR = "0xB538e8DcD297450BdeF46222f3CeB33bB1e921b3";
 const CELO_STRATEGIST = "0xB538e8DcD297450BdeF46222f3CeB33bB1e921b3";
 
 const AURORA_GOVERNOR = "0xFeAc0a0D83577A29D74d6294A2CeD14e84eee0eC";
 const AURORA_STRATEGIST = "0xFeAc0a0D83577A29D74d6294A2CeD14e84eee0eC";
+
+const MOONBEAM_GOVERNOR = "0x57D9355C31b2685F6693A88B9b206E2d274C4b03";
+const MOONBEAM_STRATEGIST = "0x57D9355C31b2685F6693A88B9b206E2d274C4b03";
+
+const GNOSIS_GOVERNOR = "0xEF9c41A52920343c75c74b2A45b73DB1FB67b2f2";
+const GNOSIS_STRATEGIST = "0xEF9c41A52920343c75c74b2A45b73DB1FB67b2f2";
 
 // testnet networks - common across all testnets
 const TESTNET_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
@@ -70,7 +76,9 @@ task("debug:dca", "Print info about dca contracts and their configs", async (tas
 task("debug:vault", "Print info about vault contracts and their configs", async (taskArguments, hre) => {
   return debug(taskArguments, hre, 'vault');
 });
-task("debug", "Print info about all contracts and their configs", debug);
+task("debug", "Print info about all contracts and their configs", async (taskArguments, hre) => {
+  return debug(taskArguments, hre, 'all');
+});
 
 task("accounts", "Prints the list of accounts", async (taskArguments, hre) => {
   return accounts(taskArguments, hre, privateKeys);
@@ -157,15 +165,37 @@ module.exports = {
       timeout: 300000,
       gasPrice: parseInt(process.env.FANTOM_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
-    internal_mumbai: {
-      url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
+    mainnet_celo: {
+      url: `${process.env.CELO_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
-        process.env.INTERNAL_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
-        process.env.INTERNAL_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
+        process.env.CELO_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
       ],
       timeout: 300000,
-      gas: 2100000,
-      gasPrice: parseInt(process.env.MUMBAI_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+      gasPrice: parseInt(process.env.CELO_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+    },
+    mainnet_aurora: {
+      url: `${process.env.AURORA_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.AURORA_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+      gasPrice: parseInt(process.env.AURORA_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+    },
+    mainnet_moonbeam: {
+      url: `${process.env.MOONBEAM_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.MOONBEAM_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+      gasPrice: parseInt(process.env.MOONBEAM_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+    },
+    mainnet_gnosis: {
+      url: `${process.env.GNOSIS_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.GNOSIS_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+      gasPrice: parseInt(process.env.GNOSIS_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
     testnet_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -224,6 +254,16 @@ module.exports = {
       timeout: 300000,
       gasPrice: parseInt(process.env.AURORA_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
+    internal_mumbai: {
+      url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.INTERNAL_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.INTERNAL_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
+      ],
+      timeout: 300000,
+      gas: 2100000,
+      gasPrice: parseInt(process.env.MUMBAI_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+    },
     internal_fuji: {
       url: `${process.env.FUJI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
@@ -241,6 +281,10 @@ module.exports = {
       mainnet_polygon: DEPLOYER,
       mainnet_avalanche: DEPLOYER,
       mainnet_fantom: DEPLOYER,
+      mainnet_celo: DEPLOYER,
+      mainnet_aurora: DEPLOYER,
+      mainnet_moonbeam: DEPLOYER,
+      mainnet_gnosis: DEPLOYER,
 
       default: 0,
       localhost: 0,
@@ -260,6 +304,8 @@ module.exports = {
       mainnet_fantom: FANTOM_GOVERNOR,
       mainnet_celo: CELO_GOVERNOR,
       mainnet_aurora: AURORA_GOVERNOR,
+      mainnet_moonbeam: MOONBEAM_GOVERNOR,
+      mainnet_gnosis: GNOSIS_GOVERNOR,
 
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
@@ -279,6 +325,8 @@ module.exports = {
       mainnet_fantom: FANTOM_STRATEGIST,
       mainnet_celo: CELO_STRATEGIST,
       mainnet_aurora: AURORA_STRATEGIST,
+      mainnet_moonbeam: MOONBEAM_STRATEGIST,
+      mainnet_gnosis: GNOSIS_STRATEGIST,
 
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
@@ -329,6 +377,8 @@ module.exports = {
       mainnet_fantom: KEEPER,
       mainnet_celo: KEEPER,
       mainnet_aurora: KEEPER,
+      mainnet_moonbeam: KEEPER,
+      mainnet_gnosis: KEEPER,
 
       default: 11,
       localhost: process.env.FORK === "true" ? KEEPER : 11,
@@ -354,6 +404,7 @@ module.exports = {
       avalancheFujiTestnet: process.env.SNOWTRACE_API_KEY,
       aurora: process.env.AURORASCAN_API_KEY,
       celo: process.env.CELOSCAN_API_KEY,
+      moonbeam: process.env.MOONSCAN_API_KEY,
     },
     customChains: [
       {
