@@ -175,7 +175,7 @@ async function _debug_subscriptions(taskArguments, hre) {
     const paymentFeeRateMin = await subscriptionManager.paymentFeeRateMin();
     const paymentFeeRateMax = await subscriptionManager.paymentFeeRateMax();
 
-    console.log("\nProtocol Configuration");
+    console.log("\nSubscription Configuration");
     console.log("====================");
     console.log(`CaskSubscriptions subscriptionManager:          ${await subscriptions.subscriptionManager()}`);
     console.log(`CaskSubscriptions subscriptionPlans:            ${await subscriptions.subscriptionPlans()}`);
@@ -194,6 +194,20 @@ async function _debug_subscriptions(taskArguments, hre) {
     console.log(`CaskSubscriptionManagers processBucketSize:     ${await subscriptionManager.processBucketSize()} seconds`);
     console.log(`CaskSubscriptionManagers processBucketMaxAge:   ${await subscriptionManager.processBucketMaxAge()} seconds`);
     console.log(`CaskSubscriptionManagers paymentRetryDelay:     ${await subscriptionManager.paymentRetryDelay()} seconds`);
+
+    const now = new Date().getTime() / 1000;
+    const activeQueuePos = await subscriptionManager.queuePosition(1);
+    const activeQueueSize = await subscriptionManager.queueSize(1, activeQueuePos);
+    const pastDueQueuePos = await subscriptionManager.queuePosition(2);
+    const pastdueQueueSize = await subscriptionManager.queueSize(2, pastDueQueuePos);
+
+    console.log("\nSubscription Queue");
+    console.log("====================");
+    console.log(`CaskSubscriptionManagers active queuePosition:  ${new Date(activeQueuePos*1000).toISOString()} (${parseInt(now - activeQueuePos)} seconds old)`);
+    console.log(`CaskSubscriptionManagers active queueSize:      ${activeQueueSize}`);
+    console.log(`CaskSubscriptionManagers pastdue queuePosition: ${new Date(pastDueQueuePos*1000).toISOString()} (${parseInt(now - pastDueQueuePos)} seconds old)`);
+    console.log(`CaskSubscriptionManagers pastdue queueSize:     ${pastdueQueueSize}`);
+
 }
 
 async function _debug_dca(taskArguments, hre) {
@@ -260,6 +274,16 @@ async function _debug_dca(taskArguments, hre) {
     console.log(`CaskDCAManager maxPriceFeedAge:                 ${maxPriceFeedAge} seconds`);
     console.log(`CaskDCAManager queueBucketSize:                 ${queueBucketSize}`);
     console.log(`CaskDCAManager maxQueueAge:                     ${maxQueueAge}`);
+
+    const now = new Date().getTime() / 1000;
+    const queuePos = await dcaManager.queuePosition(1);
+    const queueSize = await dcaManager.queueSize(1, queuePos);
+
+    console.log("\nDCA Queue");
+    console.log("====================");
+    console.log(`CaskDCAManager queuePosition:                   ${new Date(queuePos*1000).toISOString()} (${parseInt(now - queuePos)} seconds old)`);
+    console.log(`CaskDCAManager queueSize:                       ${queueSize}`);
+
 }
 
 
