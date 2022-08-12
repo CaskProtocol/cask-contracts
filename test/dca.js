@@ -3,6 +3,7 @@ const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
     usdcUnits,
+    daiUnits,
     day,
 } = require("../utils/units");
 
@@ -729,6 +730,83 @@ describe("CaskDCA General", function () {
         expect(result.status).to.equal(DCAStatus.Active);
         expect(result.numSkips).to.equal(1);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
+    });
+
+    it("DCA with DAI input works", async function () {
+
+        const {
+            networkAddresses,
+            user,
+            vault,
+            dca,
+            abc,
+            dcaManifest,
+        } = await dcaWithLiquidityFixture();
+
+        const userVault = vault.connect(user);
+        const userDCA = dca.connect(user);
+
+
+        // deposit to vault
+        await userVault.deposit(networkAddresses.DAI, daiUnits('1000'));
+
+        // check initial balance
+        const initialUserBalance = await userVault.currentValueOf(user.address);
+        expect(initialUserBalance).to.equal(usdcUnits('1000'));
+
+        const assetInfo = dcaManifest.assets.find((a) => a.inputAssetSymbol === 'DAI' && a.outputAssetSymbol === 'ABC');
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
+
+        const assetSpec = [
+            assetInfo.router.toLowerCase(),
+            assetInfo.priceFeed.toLowerCase(),
+            ...assetInfo.path.map((a) => a.toLowerCase())
+        ];
+
+        let result;
+
+        // create DCA
+        const tx = await userDCA.createDCA(
+            assetSpec, // assetSpec
+            merkleProof, // merkleProof
+            user.address, // to
+            usdcUnits('100'), // amount
+            0, // totalAmount
+            7 * day, // period
+            100, // slippageBps
+            0, // minPrice
+            0 // maxPrice
+        );
+
+        const events = (await tx.wait()).events || [];
+        const createdEvent = events.find((e) => e.event === "DCACreated");
+        const dcaId = createdEvent.args.dcaId;
+        expect(dcaId).to.not.be.undefined;
+        expect(createdEvent.args.user).to.equal(user.address);
+        expect(createdEvent.args.to).to.equal(user.address);
+        expect(createdEvent.args.amount).to.equal(usdcUnits('100'));
+        expect(createdEvent.args.period).to.equal(7*day);
+
+        // confirm initial DCA was processed
+        expect(await userVault.currentValueOf(user.address)).to.be.closeTo(usdcUnits('900'), usdcUnits('1'));
+        expect(await abc.balanceOf(user.address)).to.be.closeTo(parseUnits('99.70', 18), parseUnits('1', 18));
+
+        await advanceTimeRunDCAKeeper(9, day);
+
+        // confirm second DCA was processed
+        result = await userDCA.getDCA(dcaId);
+        expect(result.status).to.equal(DCAStatus.Active);
+        expect(await userVault.currentValueOf(user.address)).to.be.closeTo(usdcUnits('800'), usdcUnits('1'));
+        expect(await abc.balanceOf(user.address)).to.be.closeTo(parseUnits('199.40', 18), parseUnits('1', 18));
+
+        await advanceTimeRunDCAKeeper(7, day);
+
+        // confirm third DCA was processed
+        result = await userDCA.getDCA(dcaId);
+        expect(result.status).to.equal(DCAStatus.Active);
+        expect(await userVault.currentValueOf(user.address)).to.be.closeTo(usdcUnits('700'), usdcUnits('1'));
+        expect(await abc.balanceOf(user.address)).to.be.closeTo(parseUnits('299.10', 18), parseUnits('1', 18));
+
     });
 
 });
