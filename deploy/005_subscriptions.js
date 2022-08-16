@@ -8,6 +8,7 @@ const {
     isMemnet,
     isDevnet,
     isTestnet,
+    isInternal,
 } = require("../test/_networks");
 
 const {
@@ -69,7 +70,7 @@ const deploySubscriptions = async ({ethers, getNamedAccounts}) => {
         log("Set CaskSubscriptionManager parameters for memnet");
     }
 
-    if (isDevnet || isTestnet) {
+    if (isDevnet || isTestnet || isInternal) {
         await withConfirmation(
             vault.connect(sGovernor).addProtocol(subscriptionManager.address)
         );
