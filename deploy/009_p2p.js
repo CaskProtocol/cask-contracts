@@ -7,6 +7,7 @@ const {
     isMemnet,
     isDevnet,
     isTestnet,
+    isInternal,
 } = require("../test/_networks");
 
 const {
@@ -57,7 +58,7 @@ const deployP2P = async ({ethers, getNamedAccounts}) => {
     );
     log(`Set CaskP2P manager to ${p2pManager.address}`);
 
-    if (isDevnet || isTestnet) {
+    if (isDevnet || isTestnet || isInternal) {
         await withConfirmation(
             vault.connect(sGovernor).addProtocol(p2pManager.address)
         );
