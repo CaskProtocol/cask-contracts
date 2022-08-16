@@ -22,6 +22,8 @@ const { dcaMerkleRoot, dcaLiquidity, dcaPublishManifests } = require("./tasks/dc
 // production
 const DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
 const KEEPER = "0xa942e8a09dF292Ef66F3d02755E5B5AB04b90709";
+const DCA_KEEPER = "0x4a83a3Cc100cE3F36d498dE2922cbd0e5200d493";
+const P2P_KEEPER = "0x810146EC490051817ae4399F383B9052569B6Ad7"
 
 // production networks - each chain has their own governor/strategist (multisigs)
 const ETHEREUM_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
