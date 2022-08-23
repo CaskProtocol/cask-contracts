@@ -256,6 +256,15 @@ module.exports = {
       timeout: 300000,
       gasPrice: parseInt(process.env.AURORA_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
+    testnet_ogoerli: {
+      url: `${process.env.OGOERLI_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.OGOERLI_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.OGOERLI_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
+      ],
+      timeout: 300000,
+      gasPrice: parseInt(process.env.OGOERLI_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+    },
     internal_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
@@ -298,6 +307,7 @@ module.exports = {
       testnet_alfajores: TESTNET_DEPLOYER,
       testnet_evmos: TESTNET_DEPLOYER,
       testnet_aurora: TESTNET_DEPLOYER,
+      testnet_ogoerli: TESTNET_DEPLOYER,
     },
     governorAddr: {
       ethereum: ETHEREUM_GOVERNOR,
@@ -320,6 +330,7 @@ module.exports = {
       testnet_alfajores: TESTNET_GOVERNOR,
       testnet_evmos: TESTNET_GOVERNOR,
       testnet_aurora: TESTNET_GOVERNOR,
+      testnet_ogoerli: TESTNET_GOVERNOR,
     },
     strategistAddr: {
       mainnet_polygon: POLYGON_STRATEGIST,
@@ -341,6 +352,7 @@ module.exports = {
       testnet_alfajores: TESTNET_STRATEGIST,
       testnet_evmos: TESTNET_STRATEGIST,
       testnet_aurora: TESTNET_STRATEGIST,
+      testnet_ogoerli: TESTNET_STRATEGIST,
     },
     consumerA: {
       default: 4
@@ -372,6 +384,7 @@ module.exports = {
       testnet_alfajores: TESTNET_FAUCET_ADMIN,
       testnet_evmos: TESTNET_FAUCET_ADMIN,
       testnet_aurora: TESTNET_FAUCET_ADMIN,
+      testnet_ogoerli: TESTNET_FAUCET_ADMIN,
     },
     keeperAddr: {
       mainnet_polygon: KEEPER,
@@ -393,6 +406,7 @@ module.exports = {
       testnet_alfajores: TESTNET_KEEPER,
       testnet_evmos: TESTNET_KEEPER,
       testnet_aurora: TESTNET_KEEPER,
+      testnet_ogoerli: TESTNET_KEEPER,
     },
   },
   etherscan: {
