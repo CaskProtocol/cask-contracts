@@ -100,16 +100,7 @@ task("keeper", "Run a keeper")
     .addOptionalParam("gasPrice", "gasPrice for keeper transaction")
     .setAction(keeper);
 
-task("dca:merkleroot", "Generate merkle root for DCA asset list")
-    .addParam("file", "Asset JSON file")
-    .addOptionalParam("execute", "Update on-chain merkle root", "false")
-    .setAction(dcaMerkleRoot);
-
 task("dca:liquidity", "Add liquidity to the mock uniswap router for DCA swaps", dcaLiquidity);
-
-task("dca:publishManifests", "Publishes the DCA manifests to IPFS")
-    .addOptionalParam("manifestDir", "Directory containing the DCA manifests", "./data/dca_assets")
-    .setAction(dcaPublishManifests);
 
 
 module.exports = {
