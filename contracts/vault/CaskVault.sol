@@ -92,6 +92,7 @@ ReentrancyGuardUpgradeable
 
         Asset storage asset = assets[_baseAsset];
         asset.priceFeed = _baseAssetPriceFeed;
+        asset.priceFeedType = PriceFeedType.Chainlink;
         asset.assetDecimals = IERC20Metadata(_baseAsset).decimals();
         if (_priceFeedType == PriceFeedType.Chainlink) {
             asset.priceFeedDecimals = AggregatorV3Interface(_baseAssetPriceFeed).decimals();
@@ -103,6 +104,7 @@ ReentrancyGuardUpgradeable
 
         asset.depositLimit = type(uint256).max;
         asset.slippageBps = 0;
+        asset.bandSymbol = _baseAssetBandSymbol;
         asset.allowed = true;
         allAssets.push(_baseAsset);
 
@@ -527,6 +529,8 @@ ReentrancyGuardUpgradeable
     function allowAsset(
         address _asset,
         address _priceFeed,
+        PriceFeedType _priceFeedType,
+        string calldata _bandSymbol,
         uint256 _depositLimit,
         uint256 _slippageBps
     ) external onlyOwner {
@@ -541,6 +545,8 @@ ReentrancyGuardUpgradeable
 
         asset.allowed = true;
         asset.priceFeed = _priceFeed;
+        asset.priceFeedType = _priceFeedType;
+        asset.bandSymbol = _bandSymbol;
         asset.depositLimit = _depositLimit;
         asset.slippageBps = _slippageBps;
         asset.assetDecimals = IERC20Metadata(_asset).decimals();
