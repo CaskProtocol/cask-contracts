@@ -119,11 +119,15 @@ ICaskP2PManager
     function setParameters(
         uint256 _maxSkips,
         uint256 _paymentFee,
-        uint32 _queueBucketSize
+        uint32 _queueBucketSize,
+        uint32 _maxQueueAge
     ) external onlyOwner {
         maxSkips = _maxSkips;
         paymentFee = _paymentFee;
         queueBucketSize = _queueBucketSize;
+        maxQueueAge = _maxQueueAge;
+
+        emit SetParameters();
     }
 
     function recoverFunds(
