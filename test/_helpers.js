@@ -131,6 +131,8 @@ const getNetworkAddresses = async (deployments) => {
                 (await deployments.get("MockChainlinkOracleFeedUSDT")).address,
             FRAX_USD: addresses[hre.network.name].FRAX_USD ||
                 (await deployments.get("MockChainlinkOracleFeedFRAX")).address,
+
+            PRICE_FEED_TYPE: addresses[hre.network.name].PRICE_FEED_TYPE || 0,
         };
     }
 };

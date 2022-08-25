@@ -58,8 +58,6 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
             vault.connect(sDeployer).allowAsset(
                 networkAddresses.USDT, // address
                 networkAddresses.USDT_USD, //priceFeed
-                0, // chainlink feed type
-                "USDT", // band symbol
                 usdtUnits('100000000'), // depositLimit - 100M
                 10) // slippageBps - 0.1%
         );
@@ -68,8 +66,6 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
             vault.connect(sDeployer).allowAsset(
                 networkAddresses.DAI, // address
                 networkAddresses.DAI_USD, //priceFeed
-                0, // chainlink feed type
-                "DAI", // band symbol
                 daiUnits('100000000'), // depositLimit - 100M
                 10) // slippageBps - 0.1%
         );

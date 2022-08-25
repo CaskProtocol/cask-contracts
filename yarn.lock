@@ -273,6 +273,11 @@
     uuid "^8.3.2"
     yarn "^1.22.18"
 
+"@celo-tools/celo-ethers-wrapper@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@celo-tools/celo-ethers-wrapper/-/celo-ethers-wrapper-0.3.0.tgz#14e19edde1c71da912927344590029e9ffcb3a97"
+  integrity sha512-qJgVQ3EeVYzM0uvGcVxPB4cH8BaEnoLMyG8k/gAWzSCjJFIgNTlRs05IFGzAb7U0GlbDKCDSualHSGMXq+OHEw==
+
 "@chainlink/contracts@^0.2.2":
   version "0.2.3"
   resolved "https://registry.yarnpkg.com/@chainlink/contracts/-/contracts-0.2.3.tgz#f4ef1750caef1682c537a99559b5b95629436303"

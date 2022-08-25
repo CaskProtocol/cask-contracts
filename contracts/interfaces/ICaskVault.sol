@@ -17,8 +17,6 @@ interface ICaskVault is IERC20MetadataUpgradeable {
         uint8 assetDecimals;
         uint8 priceFeedDecimals;
         bool allowed;
-        PriceFeedType priceFeedType;
-        string bandSymbol;
     }
 
     enum PriceFeedType {
@@ -232,6 +230,9 @@ interface ICaskVault is IERC20MetadataUpgradeable {
 
     /** @dev Emitted when a protocol is no longer allowed to use the vault */
     event RemoveProtocol(address indexed protocol);
+
+    /** @dev Emitted when the vault price feed type is changed */
+    event SetPriceFeedType(PriceFeedType priceFeedType);
 
     /** @dev Emitted when the vault fee distributor is changed */
     event SetFeeDistributor(address indexed feeDistributor);
