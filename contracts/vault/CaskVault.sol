@@ -10,8 +10,8 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
+import "../interfaces/IStdReference.sol";
 
 
 import "../interfaces/ICaskVault.sol";
@@ -68,6 +68,7 @@ ReentrancyGuardUpgradeable
     function initialize(
         address _baseAsset,
         address _baseAssetPriceFeed,
+        string calldata _baseAssetBandSymbol,
         address _feeDistributor
     ) public initializer {
         __Ownable_init();
@@ -80,10 +81,12 @@ ReentrancyGuardUpgradeable
 
         Asset storage asset = assets[_baseAsset];
         asset.priceFeed = _baseAssetPriceFeed;
+        asset.priceFeedType = PriceFeedType.Chainlink;
         asset.assetDecimals = IERC20Metadata(_baseAsset).decimals();
         asset.priceFeedDecimals = AggregatorV3Interface(_baseAssetPriceFeed).decimals();
         asset.depositLimit = type(uint256).max;
         asset.slippageBps = 0;
+        asset.bandSymbol = _baseAssetBandSymbol;
         asset.allowed = true;
         allAssets.push(_baseAsset);
 
@@ -500,11 +503,19 @@ ReentrancyGuardUpgradeable
     function allowAsset(
         address _asset,
         address _priceFeed,
+        PriceFeedType _priceFeedType,
+        string calldata _bandSymbol,
         uint256 _depositLimit,
         uint256 _slippageBps
     ) external onlyOwner {
         require(IERC20Metadata(_asset).decimals() > 0, "!INVALID(asset)");
-        require(AggregatorV3Interface(_priceFeed).decimals() > 0, "!INVALID(priceFeed)");
+        if (_priceFeedType == PriceFeedType.Chainlink) {
+            require(AggregatorV3Interface(_priceFeed).decimals() > 0, "!INVALID(priceFeed)");
+        } else if (_priceFeedType == PriceFeedType.Band) {
+            require(bytes(_bandSymbol).length > 0, "!INVALID(bandSymbol)");
+        } else {
+            revert("unknown price feed type");
+        }
 
         Asset storage asset = assets[_asset];
 
@@ -515,10 +526,16 @@ ReentrancyGuardUpgradeable
 
         asset.allowed = true;
         asset.priceFeed = _priceFeed;
+        asset.priceFeedType = _priceFeedType;
+        asset.bandSymbol = _bandSymbol;
         asset.depositLimit = _depositLimit;
         asset.slippageBps = _slippageBps;
         asset.assetDecimals = IERC20Metadata(_asset).decimals();
-        asset.priceFeedDecimals = AggregatorV3Interface(_priceFeed).decimals();
+        if (_priceFeedType == PriceFeedType.Chainlink) {
+            asset.priceFeedDecimals = AggregatorV3Interface(_priceFeed).decimals();
+        } else if (_priceFeedType == PriceFeedType.Band) {
+            asset.priceFeedDecimals = 18; // band prices are always in 1e18
+        }
 
         emit AllowedAsset(_asset);
     }
@@ -547,6 +564,41 @@ ReentrancyGuardUpgradeable
         uint256 _fromAmount
     ) internal view returns(uint256) {
         require(_fromAsset != _toAsset, "!SAME_ASSET");
+        if (assets[_fromAsset].priceFeedType == PriceFeedType.Chainlink) {
+            return _convertPriceChainlink(_fromAsset, _toAsset, _fromAmount);
+        } else if (assets[_fromAsset].priceFeedType == PriceFeedType.Band) {
+            return _convertPriceBand(_fromAsset, _toAsset, _fromAmount);
+        } else {
+            revert("unknown price feed types");
+        }
+    }
+
+    function _convertPriceBand(
+        address _fromAsset,
+        address _toAsset,
+        uint256 _fromAmount
+    ) internal view returns(uint256) {
+        require(bytes(assets[_fromAsset].bandSymbol).length > 0, "!BAND_SYMBOL(fromAsset)");
+        require(bytes(assets[_toAsset].bandSymbol).length > 0, "!BAND_SYMBOL(toAsset)");
+
+        IStdReference.ReferenceData memory result = IStdReference(assets[_fromAsset].priceFeed).getReferenceData(
+            assets[_fromAsset].bandSymbol,
+            assets[_toAsset].bandSymbol);
+
+        require(maxPriceFeedAge == 0 || block.timestamp - result.lastUpdatedBase <= maxPriceFeedAge, "!PRICE_OUTDATED");
+        require(maxPriceFeedAge == 0 || block.timestamp - result.lastUpdatedQuote <= maxPriceFeedAge, "!PRICE_OUTDATED");
+
+        return _scalePrice(_fromAmount *
+                _scalePrice(result.rate, assets[_fromAsset].priceFeedDecimals, assets[_fromAsset].assetDecimals),
+            assets[_fromAsset].assetDecimals * 2,
+            assets[_toAsset].assetDecimals);
+    }
+
+    function _convertPriceChainlink(
+        address _fromAsset,
+        address _toAsset,
+        uint256 _fromAmount
+    ) internal view returns(uint256) {
         require(assets[_fromAsset].priceFeed != address(0), "!INVALID(fromAsset)");
         require(assets[_toAsset].priceFeed != address(0), "!NOT_ALLOWED(toAsset)");
 

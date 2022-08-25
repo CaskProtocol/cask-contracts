@@ -17,6 +17,13 @@ interface ICaskVault is IERC20MetadataUpgradeable {
         uint8 assetDecimals;
         uint8 priceFeedDecimals;
         bool allowed;
+        PriceFeedType priceFeedType;
+        string bandSymbol;
+    }
+
+    enum PriceFeedType {
+        Chainlink,
+        Band
     }
 
     // sources for payments
