@@ -31,7 +31,7 @@ const deployVault = async ({deployments, ethers, getNamedAccounts}) => {
 
     const vault = await ethers.getContract("CaskVault");
     await withConfirmation(
-        vault.initialize(networkAddresses.USDC, networkAddresses.USDC_USD, governorAddr)
+        vault.initialize(networkAddresses.USDC, networkAddresses.USDC_USD, 1, governorAddr)
     );
     log("Initialized CaskVault");
 }
