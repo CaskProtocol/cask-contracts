@@ -168,7 +168,7 @@ BaseRelayRecipient
 
         dca.status = DCAStatus.Canceled;
 
-        emit DCAResumed(_dcaId, dca.user);
+        emit DCACanceled(_dcaId, dca.user);
     }
 
     function _verifyAssetSpec(
