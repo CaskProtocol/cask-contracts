@@ -6,10 +6,12 @@ async function dcaLiquidity(taskArguments, hre) {
     const {
         isFork,
         isLocalhost,
+        isInternal,
+        isTestnet,
     } = require("../test/_networks");
 
-    if (!isFork && !isLocalhost) {
-        throw new Error("Task can only be used on local or fork");
+    if (!isFork && !isLocalhost && !isInternal && !isTestnet) {
+        throw new Error("Task can only be used on local, testnets or a fork");
     }
 
     const router = await ethers.getContract("MockUniswapRouter");
