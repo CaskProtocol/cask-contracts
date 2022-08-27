@@ -139,7 +139,7 @@ BaseRelayRecipient
 
         p2p.status = P2PStatus.Canceled;
 
-        emit P2PResumed(_p2pId, p2p.user);
+        emit P2PCanceled(_p2pId, p2p.user);
     }
 
     function getP2P(
