@@ -270,7 +270,6 @@ async function _debug_dca(taskArguments, hre) {
     console.log(`CaskDCAManager dcaFeeBps:                       ${dcaFeeBps} bps (${dcaFeeBps / 100}%)`);
     console.log(`CaskDCAManager dcaFeeMin:                       ${dcaFeeMin} (${formatUnits(dcaFeeMin, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
     console.log(`CaskDCAManager dcaMinValue:                     ${dcaMinValue} (${formatUnits(dcaMinValue, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
-    console.log(`CaskDCAManager maxSkips:                        ${maxSkips}`);
     console.log(`CaskDCAManager maxPriceFeedAge:                 ${maxPriceFeedAge} seconds`);
     console.log(`CaskDCAManager queueBucketSize:                 ${queueBucketSize}`);
     console.log(`CaskDCAManager maxQueueAge:                     ${maxQueueAge}`);
@@ -283,6 +282,71 @@ async function _debug_dca(taskArguments, hre) {
     console.log("====================");
     console.log(`CaskDCAManager queuePosition:                   ${new Date(queuePos*1000).toISOString()} (${parseInt(now - queuePos)} seconds old)`);
     console.log(`CaskDCAManager queueSize:                       ${queueSize}`);
+
+}
+
+async function _debug_p2p(taskArguments, hre) {
+
+    const vault = await hre.ethers.getContract("CaskVault");
+    const p2p = await hre.ethers.getContract("CaskP2P");
+    const p2pManager = await hre.ethers.getContract("CaskP2PManager");
+    const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
+    const baseAssetContract = CaskSDK.contracts.ERC20({tokenAddress: baseAsset, provider: hre.ethers.provider});
+    const baseAssetSymbol = await baseAssetContract.symbol();
+
+    //
+    // Protocol Addresses
+    //
+    console.log("\nP2P Contract addresses");
+    console.log("====================");
+    console.log(`CaskP2P:                                        ${p2p.address}`);
+    console.log(`CaskP2P Proxy Admin:                            ${await hre.upgrades.erc1967.getAdminAddress(p2p.address)}`);
+    console.log(`CaskP2P Impl:                                   ${await hre.upgrades.erc1967.getImplementationAddress(p2p.address)}`);
+    console.log(`CaskP2P Owner:                                  ${await p2p.owner()}`);
+
+    console.log(`CaskP2PManager:                                 ${p2pManager.address}`);
+    console.log(`CaskP2PManager Proxy Admin:                     ${await hre.upgrades.erc1967.getAdminAddress(p2pManager.address)}`);
+    console.log(`CaskP2PManager Impl:                            ${await hre.upgrades.erc1967.getImplementationAddress(p2pManager.address)}`);
+    console.log(`CaskP2PManager Owner:                           ${await p2pManager.owner()}`);
+
+    console.log(`DefaultProxyAdmin:                              ${defaultProxyAdmin.address}`);
+    console.log(`DefaultProxyAdmin Owner:                        ${await defaultProxyAdmin.owner()}`);
+
+    //
+    // P2P Config
+    //
+    const minAmount = await p2p.minAmount();
+    const minPeriod = await p2p.minPeriod();
+
+    const maxSkips = await p2pManager.maxSkips();
+    const paymentFee = await p2pManager.paymentFee();
+    const queueBucketSize = await p2pManager.queueBucketSize();
+    const maxQueueAge = await p2pManager.maxQueueAge();
+
+
+    console.log("\nP2P Configuration");
+    console.log("====================");
+    console.log(`CaskP2P p2pManager:                             ${await p2p.p2pManager()}`);
+    console.log(`CaskP2P minAmount:                              ${minAmount} (${formatUnits(minAmount, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskP2P minPeriod:                              ${minPeriod} seconds`);
+
+    console.log(`CaskP2PManager caskVault:                       ${await p2pManager.caskVault()}`);
+    console.log(`CaskP2PManager caskP2P:                         ${await p2pManager.caskP2P()}`);
+    console.log(`CaskP2PManager maxSkips:                        ${maxSkips}`);
+    console.log(`CaskP2PManager paymentFee:                      ${paymentFee} (${formatUnits(paymentFee, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskP2PManager queueBucketSize:                 ${queueBucketSize}`);
+    console.log(`CaskP2PManager maxQueueAge:                     ${maxQueueAge}`);
+
+    const now = new Date().getTime() / 1000;
+    const queuePos = await p2pManager.queuePosition(1);
+    const queueSize = await p2pManager.queueSize(1, queuePos);
+
+    console.log("\nP2P Queue");
+    console.log("====================");
+    console.log(`CaskP2PManager queuePosition:                   ${new Date(queuePos*1000).toISOString()} (${parseInt(now - queuePos)} seconds old)`);
+    console.log(`CaskP2PManager queueSize:                       ${queueSize}`);
 
 }
 
@@ -310,6 +374,9 @@ async function debug(taskArguments, hre, protocol='all') {
         }
         if (protocol === 'all' || protocol === 'dca') {
             await _debug_dca(taskArguments, hre);
+        }
+        if (protocol === 'all' || protocol === 'p2p') {
+            await _debug_p2p(taskArguments, hre);
         }
     }
 }
