@@ -5,4 +5,7 @@ interface ICaskP2PManager {
 
     function registerP2P(bytes32 _p2pId) external;
 
+    /** @dev Emitted when manager parameters are changed. */
+    event SetParameters();
+
 }

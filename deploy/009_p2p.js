@@ -1,5 +1,5 @@
 const {
-    hour,
+    hour, day,
 } = require("../utils/units");
 
 const {
@@ -47,7 +47,8 @@ const deployP2P = async ({ethers, getNamedAccounts}) => {
             p2pManager.setParameters(
                 5, // maxSkips
                 500000, // 0.50 fee in USDC
-                24 * hour // queueBucketSize
+                24 * hour, // queueBucketSize
+                20 * day // maxQueueAge
             )
         );
         log("Set CaskP2PManager parameters for memnet");
