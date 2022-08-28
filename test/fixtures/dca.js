@@ -108,6 +108,18 @@ async function dcaWithLiquidityFixtureNoPricefeed() {
                 "chainId": 31337
             },
             {
+                "inputAssetSymbol": "DAI",
+                "outputAssetSymbol": "ABC",
+                "routerName": "MockRouter",
+                "router": fixture.router.address.toLowerCase(),
+                "priceFeed": "0x0000000000000000000000000000000000000000",
+                "path": [
+                    fixture.dai.address.toLowerCase(),
+                    fixture.abc.address.toLowerCase()
+                ],
+                "chainId": 31337
+            },
+            {
                 "inputAssetSymbol": "USDC",
                 "outputAssetSymbol": "ZZZ",
                 "routerName": "MockRouter",

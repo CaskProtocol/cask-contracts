@@ -136,7 +136,7 @@ ICaskDCAManager
             return;
         }
 
-        if (!_checkMinMaxPrice(_dcaId, inputAsset, outputAsset, amount, dca.priceFeed)) {
+        if (!_checkMinMaxPrice(_dcaId, inputAsset, outputAsset)) {
             scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
 
             try caskVault.protocolPayment(dca.user, address(this), dcaFeeMin) {
@@ -281,9 +281,7 @@ ICaskDCAManager
     function _checkMinMaxPrice(
         bytes32 _dcaId,
         address _inputAsset,
-        address _outputAsset,
-        uint256 _amount,
-        address _outputPriceFeed
+        address _outputAsset
     ) internal view returns(bool) {
         ICaskDCA.DCA memory dca = caskDCA.getDCA(_dcaId);
         ICaskVault.Asset memory inputAssetInfo = caskVault.getAsset(_inputAsset);
@@ -300,12 +298,14 @@ ICaskDCAManager
             pricePerOutputUnit =
                     outputAssetOneUnit *
                     outputAssetOneUnit /
-                    _convertPrice(inputAssetInfo, _outputAsset, _outputPriceFeed, uint256(10 ** inputAssetInfo.assetDecimals));
+                    _convertPrice(inputAssetInfo, _outputAsset, dca.priceFeed,
+                        uint256(10 ** inputAssetInfo.assetDecimals));
 
         } else { // use swap router price
-            uint256[] memory amountOuts = IUniswapV2Router02(dca.router).getAmountsOut(_amount, dca.path);
+            uint256[] memory amountOuts = IUniswapV2Router02(dca.router).getAmountsOut(
+                uint256(10 ** inputAssetInfo.assetDecimals), dca.path);
             pricePerOutputUnit =
-                    _scalePrice(_amount, inputAssetInfo.assetDecimals, outputAssetDecimals) *
+                    outputAssetOneUnit *
                     outputAssetOneUnit /
                     amountOuts[amountOuts.length-1];
         }

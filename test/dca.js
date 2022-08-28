@@ -809,4 +809,122 @@ describe("CaskDCA General", function () {
 
     });
 
+    it("DCA with DAI maxPrice goes above using LP price", async function () {
+
+        const {
+            networkAddresses,
+            user,
+            vault,
+            router,
+            dca,
+            dcaManifest,
+        } = await dcaWithLiquidityFixtureNoPricefeed();
+
+        const userVault = vault.connect(user);
+        const userDCA = dca.connect(user);
+
+
+        // deposit to vault
+        await userVault.deposit(networkAddresses.DAI, daiUnits('100'));
+
+        // check initial balance
+        const initialUserBalance = await userVault.currentValueOf(user.address);
+        expect(initialUserBalance).to.equal(usdcUnits('100'));
+
+        const assetInfo = dcaManifest.assets.find((a) => a.inputAssetSymbol === 'DAI' && a.outputAssetSymbol === 'ABC');
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
+
+        const assetSpec = [
+            assetInfo.router.toLowerCase(),
+            assetInfo.priceFeed.toLowerCase(),
+            ...assetInfo.path.map((a) => a.toLowerCase())
+        ];
+
+        let result;
+
+        // create DCA
+        const tx = await userDCA.createDCA(
+            assetSpec, // assetSpec
+            merkleProof, // merkleProof
+            user.address, // to
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            7 * day, // period
+            100, // slippageBps
+            0, // minPrice
+            parseUnits('1.1', 18) // maxPrice
+        );
+
+        const events = (await tx.wait()).events || [];
+        const createdEvent = events.find((e) => e.event === "DCACreated");
+        const dcaId = createdEvent.args.dcaId;
+        expect(dcaId).to.not.be.undefined;
+        expect(createdEvent.args.user).to.equal(user.address);
+        expect(createdEvent.args.to).to.equal(user.address);
+        expect(createdEvent.args.amount).to.equal(usdcUnits('10'));
+        expect(createdEvent.args.period).to.equal(7*day);
+
+        // confirm initial DCA was processed
+        expect(await userVault.currentValueOf(user.address)).to.be.closeTo(usdcUnits('90'), usdcUnits('0.02'));
+        result = await userDCA.getDCA(dcaId);
+        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.numSkips).to.equal(0);
+
+        // change price of ABC so its no longer in range
+        await router.setOutputBps(5000);  // set ABC price in LP to 2 USDC - below minPrice
+
+        await advanceTimeRunDCAKeeper(9, day);
+
+        // confirm second DCA was skipped
+        result = await userDCA.getDCA(dcaId);
+        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.numSkips).to.equal(1);
+        expect(await userVault.currentValueOf(user.address)).to.be.closeTo(usdcUnits('89.9'), usdcUnits('0.02'));  // minus minFee
+    });
+
+    it("DCA with DAI minPrice not met using LP price", async function () {
+
+        const {
+            networkAddresses,
+            user,
+            vault,
+            dca,
+            dcaManifest,
+        } = await dcaWithLiquidityFixtureNoPricefeed();
+
+        const userVault = vault.connect(user);
+        const userDCA = dca.connect(user);
+
+
+        // deposit to vault
+        await userVault.deposit(networkAddresses.DAI, daiUnits('100'));
+
+        // check initial balance
+        const initialUserBalance = await userVault.currentValueOf(user.address);
+        expect(initialUserBalance).to.equal(usdcUnits('100'));
+
+        const assetInfo = dcaManifest.assets.find((a) => a.inputAssetSymbol === 'DAI' && a.outputAssetSymbol === 'ABC');
+        const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
+
+        const assetSpec = [
+            assetInfo.router.toLowerCase(),
+            assetInfo.priceFeed.toLowerCase(),
+            ...assetInfo.path.map((a) => a.toLowerCase())
+        ];
+
+        // try and create DCA with minPrice above current price (1 USDC)
+        await expect(userDCA.createDCA(
+            assetSpec, // assetSpec
+            merkleProof, // merkleProof
+            user.address, // to
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            7 * day, // period
+            100, // slippageBps
+            parseUnits('2', 18), // minPrice
+            0 // maxPrice
+        )).to.be.revertedWith("!UNPROCESSABLE");
+
+    });
+
 });
