@@ -22,7 +22,23 @@ async function keeper(taskArguments, hre) {
         process.env[`${taskArguments.protocol.toUpperCase()}_KEEPER_PK`] ||
         process.env[`KEEPER_PK`];
 
-    const keeperWallet = new ethers.Wallet(keeperWalletPk, hre.ethers.provider);
+    let provider = hre.ethers.provider;
+    let keeperWallet;
+
+    if (hre.network.name.contains("celo")) {
+        const { CeloProvider } = require('@celo-tools/celo-ethers-wrapper')
+        const { CeloWallet } = require('@celo-tools/celo-ethers-wrapper')
+        provider = new CeloProvider(process.env.CELO_PROVIDER_URL);
+        keeperWallet = new CeloWallet(keeperWalletPk, provider);
+    } else if (hre.network.name.contains("alfajores")) {
+        const { CeloProvider } = require('@celo-tools/celo-ethers-wrapper')
+        const { CeloWallet } = require('@celo-tools/celo-ethers-wrapper')
+        provider = new CeloProvider(process.env.ALFAJORES_PROVIDER_URL);
+        keeperWallet = new CeloWallet(keeperWalletPk, provider);
+    } else {
+        keeperWallet = new ethers.Wallet(keeperWalletPk, provider);
+    }
+
     console.log(`Keeper ${keeperWallet.address} running with limit ${taskArguments.limit} on queue(s) ${queues} using gasPrice ${gasPrice}`)
 
     const keeperManager = keeperTarget.connect(keeperWallet);
