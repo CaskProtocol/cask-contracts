@@ -68,7 +68,7 @@ ReentrancyGuardUpgradeable
     // CELO SPECIFIC:
     // type of oracle to use for price conversions
     PriceFeedType public priceFeedType;
-    mapping(address => string) public assetSymbolOverride;
+    mapping(address => string) public bandAssetSymbol;
 
 
     function initialize(
@@ -565,6 +565,15 @@ ReentrancyGuardUpgradeable
         emit DisallowedAsset(_asset);
     }
 
+    function setBandAssetSymbol(
+        address _asset,
+        string calldata _symbol
+    ) external onlyOwner {
+        require(assets[_asset].allowed, "!ASSET_NOT_ALLOWED");
+
+        bandAssetSymbol[_asset] = _symbol;
+    }
+
     function convertPrice(
         address _fromAsset,
         address _toAsset,
@@ -591,8 +600,8 @@ ReentrancyGuardUpgradeable
     function _assetSymbol(
         address _asset
     ) internal view returns(string memory) {
-        if (bytes(assetSymbolOverride[_asset]).length > 0) {
-            return assetSymbolOverride[_asset];
+        if (bytes(bandAssetSymbol[_asset]).length > 0) {
+            return bandAssetSymbol[_asset];
         } else {
             return IERC20Metadata(_asset).symbol();
         }
