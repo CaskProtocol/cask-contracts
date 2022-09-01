@@ -8,6 +8,7 @@ const isEthereum = hre.network.name === 'ethereum';
 const isMainnet = hre.network.name.startsWith('mainnet_');
 const isTestnet = hre.network.name.startsWith('testnet_');
 const isInternal = hre.network.name.startsWith('internal_');
+const isBandOracle = hre.network.name.includes('celo') || hre.network.name.includes('alfajores');
 
 const isTest = process.env.IS_TEST === "true";
 
@@ -30,4 +31,5 @@ module.exports = {
     isRealChain,
     isDaoChain,
     isProtocolChain,
+    isBandOracle,
 };

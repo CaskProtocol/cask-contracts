@@ -123,6 +123,9 @@ const getNetworkAddresses = async (deployments) => {
             FRAX: addresses[hre.network.name].FRAX ||
                 (await deployments.get("MockFRAX")).address,
 
+            BAND_ORACLE: addresses[hre.network.name].BAND_ORACLE ||
+                (await deployments.get("MockBandOracleFeed")).address,
+
             DAI_USD: addresses[hre.network.name].DAI_USD ||
                 (await deployments.get("MockChainlinkOracleFeedDAI")).address,
             USDC_USD: addresses[hre.network.name].USDC_USD ||
@@ -132,7 +135,6 @@ const getNetworkAddresses = async (deployments) => {
             FRAX_USD: addresses[hre.network.name].FRAX_USD ||
                 (await deployments.get("MockChainlinkOracleFeedFRAX")).address,
 
-            PRICE_FEED_TYPE: addresses[hre.network.name].PRICE_FEED_TYPE || 0,
         };
     }
 };

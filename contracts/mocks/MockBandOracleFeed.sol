@@ -7,7 +7,7 @@ contract MockBandOracleFeed is IStdReference {
     uint256 price;
     uint256 age;
 
-    constructor(uint256 _price, uint8 _decimals) {
+    constructor(uint256 _price) {
         price = _price;
         age = 30;
     }

@@ -65,8 +65,10 @@ ReentrancyGuardUpgradeable
     // consumer funding profile
     mapping(address => FundingProfile) internal fundingProfiles;
 
+    // CELO SPECIFIC:
     // type of oracle to use for price conversions
     PriceFeedType public priceFeedType;
+    mapping(address => string) public assetSymbolOverride;
 
 
     function initialize(
@@ -586,14 +588,24 @@ ReentrancyGuardUpgradeable
         }
     }
 
+    function _assetSymbol(
+        address _asset
+    ) internal view returns(string memory) {
+        if (bytes(assetSymbolOverride[_asset]).length > 0) {
+            return assetSymbolOverride[_asset];
+        } else {
+            return IERC20Metadata(_asset).symbol();
+        }
+    }
+
     function _convertPriceBand(
         address _fromAsset,
         address _toAsset,
         uint256 _fromAmount
     ) internal view returns(uint256) {
         IStdReference.ReferenceData memory result = IStdReference(assets[_fromAsset].priceFeed).getReferenceData(
-            IERC20Metadata(_fromAsset).symbol(),
-            IERC20Metadata(_toAsset).symbol());
+            _assetSymbol(_fromAsset),
+            _assetSymbol(_toAsset));
 
         require(maxPriceFeedAge == 0 || block.timestamp - result.lastUpdatedBase <= maxPriceFeedAge, "!PRICE_OUTDATED");
         require(maxPriceFeedAge == 0 || block.timestamp - result.lastUpdatedQuote <= maxPriceFeedAge, "!PRICE_OUTDATED");

@@ -9,6 +9,7 @@ const {
     isDevnet,
     isTestnet,
     isInternal,
+    isBandOracle,
 } = require("../test/_networks");
 
 const { getNetworkAddresses } = require("../test/_helpers");
@@ -31,7 +32,12 @@ const deployVault = async ({deployments, ethers, getNamedAccounts}) => {
 
     const vault = await ethers.getContract("CaskVault");
     await withConfirmation(
-        vault.initialize(networkAddresses.USDC, networkAddresses.USDC_USD, 1, governorAddr)
+        vault.initialize(
+            networkAddresses.USDC, // base asset
+            isBandOracle ? networkAddresses.BAND_ORACLE : networkAddresses.USDC_USD, // base asset price feed
+            isBandOracle ? 1 : 0,  // oracle type
+            governorAddr // governor
+        )
     );
     log("Initialized CaskVault");
 }
@@ -57,7 +63,7 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
         await withConfirmation(
             vault.connect(sDeployer).allowAsset(
                 networkAddresses.USDT, // address
-                networkAddresses.USDT_USD, //priceFeed
+                isBandOracle ? networkAddresses.BAND_ORACLE : networkAddresses.USDT_USD, //priceFeed
                 usdtUnits('100000000'), // depositLimit - 100M
                 10) // slippageBps - 0.1%
         );
@@ -65,7 +71,7 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
         await withConfirmation(
             vault.connect(sDeployer).allowAsset(
                 networkAddresses.DAI, // address
-                networkAddresses.DAI_USD, //priceFeed
+                isBandOracle ? networkAddresses.BAND_ORACLE : networkAddresses.DAI_USD, //priceFeed
                 daiUnits('100000000'), // depositLimit - 100M
                 10) // slippageBps - 0.1%
         );

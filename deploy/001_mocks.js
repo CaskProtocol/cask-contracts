@@ -39,6 +39,8 @@ const deployMocks = async ({ethers, getNamedAccounts}) => {
             ],
             "MockChainlinkOracleFeed");
     }
+
+    await deployWithConfirmation("MockBandOracleFeed", [ethers.utils.parseUnits("1", 18)]);
 };
 
 const deployMockDiscountTokens = async () => {

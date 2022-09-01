@@ -63,7 +63,7 @@ addresses.mainnet_fantom.USDC_USD = "0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c"
 /* celo addresses */
 addresses.mainnet_celo = {};
 addresses.mainnet_celo.USDC = "0x37f750b7cc259a2f741af45294f6a16572cf5cad";
-addresses.mainnet_celo.USDC_USD = "0xDA7a001b254CD22e46d3eAB04d937489c93174C3"; // band StdReferenceProxy
+addresses.mainnet_celo.BAND_ORACLE = "0xDA7a001b254CD22e46d3eAB04d937489c93174C3"; // band StdReferenceProxy
 
 /* aurora addresses */
 addresses.mainnet_aurora = {};
@@ -113,10 +113,7 @@ addresses.testnet_fuji.link_swap_router = "0xd7f655e3376ce2d7a2b08ff01eb3b102319
 
 /* alfajores testnet addresses */
 addresses.testnet_alfajores = {};
-addresses.testnet_alfajores.USDC_USD = "0x660cBc25F0cFD31F0Bdcaa43525f0bACC6DB2ABc";
-addresses.testnet_alfajores.USDT_USD = "0x660cBc25F0cFD31F0Bdcaa43525f0bACC6DB2ABc";
-addresses.testnet_alfajores.DAI_USD = "0x660cBc25F0cFD31F0Bdcaa43525f0bACC6DB2ABc";
-
+addresses.testnet_alfajores.BAND_ORACLE = "0x660cBc25F0cFD31F0Bdcaa43525f0bACC6DB2ABc";
 
 
 /******* INTERNAL ADDRESSES *********/
