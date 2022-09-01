@@ -25,12 +25,12 @@ async function keeper(taskArguments, hre) {
     let provider = hre.ethers.provider;
     let keeperWallet;
 
-    if (hre.network.name.contains("celo")) {
+    if (hre.network.name.includes("celo")) {
         const { CeloProvider } = require('@celo-tools/celo-ethers-wrapper')
         const { CeloWallet } = require('@celo-tools/celo-ethers-wrapper')
         provider = new CeloProvider(process.env.CELO_PROVIDER_URL);
         keeperWallet = new CeloWallet(keeperWalletPk, provider);
-    } else if (hre.network.name.contains("alfajores")) {
+    } else if (hre.network.name.includes("alfajores")) {
         const { CeloProvider } = require('@celo-tools/celo-ethers-wrapper')
         const { CeloWallet } = require('@celo-tools/celo-ethers-wrapper')
         provider = new CeloProvider(process.env.ALFAJORES_PROVIDER_URL);
