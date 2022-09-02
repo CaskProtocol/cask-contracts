@@ -121,6 +121,35 @@ const getNetworkAddresses = async (deployments) => {
     }
 };
 
+const getChainlinkAddresses = async (deployments) => {
+    if (isMainnet) {
+        return addresses[hre.network.name];
+    } else {
+        if (!addresses[hre.network.name]) {
+            addresses[hre.network.name] = {};
+        }
+        return {
+            keeper_registry: addresses[hre.network.name].keeper_registry ||
+                (await deployments.get("MockKeeperRegistry")).address,
+            keeper_swap_router: addresses[hre.network.name].keeper_swap_router ||
+                (await deployments.get("MockUniswapRouterUSDCLINK")).address,
+            ERC20LINK: addresses[hre.network.name].ERC20LINK ||
+                (await deployments.get("MockERC20LINK")).address,
+            ERC677LINK: addresses[hre.network.name].ERC677LINK ||
+                (await deployments.get("MockERC677LINK")).address,
+            LINK_USD: addresses[hre.network.name].LINK_USD ||
+                (await deployments.get("MockChainlinkOracleFeedLINK")).address,
+            keeper_swap_path: addresses[hre.network.name].keeper_swap_path ||
+                [
+                    (await deployments.get("MockUSDC")).address,
+                    (await deployments.get("MockERC677LINK")).address
+                ],
+            keeper_peg_swap: addresses[hre.network.name].keeper_peg_swap ||
+                (await deployments.get("MockPegSwap")).address,
+        };
+    }
+};
+
 const subscriptionCheckUpkeep = async(checkData) => {
     const subscriptionManager = await ethers.getContract("CaskSubscriptionManager");
     return subscriptionManager.checkUpkeep(checkData);
@@ -245,6 +274,7 @@ module.exports = {
     advanceBlocks,
     impersonateAccount,
     getNetworkAddresses,
+    getChainlinkAddresses,
 
     // subscriptions keeper
     runSubscriptionKeeper,

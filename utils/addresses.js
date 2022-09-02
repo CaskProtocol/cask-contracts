@@ -36,6 +36,17 @@ addresses.mainnet_avalanche.USDC = "0xa7d7079b0fead91f3e65f86e8915cb59c1a4c664";
 addresses.mainnet_avalanche.USDT = "0xc7198437980c041c805a1edcba50c1ce5db95118";
 addresses.mainnet_avalanche.FRAX = "0xd24c2ad096400b6fbcd2ad8b24e7acbc21a1da64"
 
+addresses.mainnet_avalanche.keeper_registry = "0x02777053d6764996e594c3E88AF1D58D5363a2e6";
+addresses.mainnet_avalanche.ERC20LINK = "0x0000000000000000000000000000000000000000";
+addresses.mainnet_avalanche.ERC677LINK = "0x5947BB275c521040051D82396192181b413227A3";
+addresses.mainnet_avalanche.LINK_USD = "0x49ccd9ca821EfEab2b98c60dC60F518E765EDe9a";
+addresses.mainnet_avalanche.keeper_swap_router = "0x60ae616a2155ee3d9a68541ba4544862310933d4";
+addresses.mainnet_avalanche.keeper_swap_path = [
+    "0xa7d7079b0fead91f3e65f86e8915cb59c1a4c664",
+    "0x5947BB275c521040051D82396192181b413227A3"
+];
+addresses.mainnet_avalanche.keeper_peg_swap = "0x0000000000000000000000000000000000000000";
+
 
 // Chainlink feeds (https://docs.chain.link/docs/ethereum-addresses)
 addresses.mainnet_avalanche.DAI_USD = "0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300";
