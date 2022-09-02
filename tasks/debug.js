@@ -70,63 +70,40 @@ async function _debug_dao(taskArguments, hre) {
     console.log(`InvestorVestedEscrow lockedSupply:              ${caskUnitsFormat(await investorVestedEscrow.lockedSupply())}`);
 
 }
-
-async function _debug_protocol(taskArguments, hre) {
-
+async function _debug_vault(taskArguments, hre) {
     const vault = await hre.ethers.getContract("CaskVault");
-    const subscriptionPlans = await hre.ethers.getContract("CaskSubscriptionPlans");
-    const subscriptions = await hre.ethers.getContract("CaskSubscriptions");
-    const subscriptionManager = await hre.ethers.getContract("CaskSubscriptionManager");
-    const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
 
     //
-    // Protocol Addresses
+    // Vault Addresses
     //
-    console.log("\nProtocol Contract addresses");
+    console.log("\nVault Contract addresses");
     console.log("====================");
     console.log(`CaskVault:                                      ${vault.address}`);
     console.log(`CaskVault Proxy Admin:                          ${await hre.upgrades.erc1967.getAdminAddress(vault.address)}`);
     console.log(`CaskVault Impl:                                 ${await hre.upgrades.erc1967.getImplementationAddress(vault.address)}`);
     console.log(`CaskVault Owner:                                ${await vault.owner()}`);
 
-    console.log(`CaskSubscriptionPlans:                          ${subscriptionPlans.address}`);
-    console.log(`CaskSubscriptionPlans Proxy Admin:              ${await hre.upgrades.erc1967.getAdminAddress(subscriptionPlans.address)}`);
-    console.log(`CaskSubscriptionPlans Impl:                     ${await hre.upgrades.erc1967.getImplementationAddress(subscriptionPlans.address)}`);
-    console.log(`CaskSubscriptionPlans Owner:                    ${await subscriptionPlans.owner()}`);
-
-    console.log(`CaskSubscriptions:                              ${subscriptions.address}`);
-    console.log(`CaskSubscriptions Proxy Admin:                  ${await hre.upgrades.erc1967.getAdminAddress(subscriptions.address)}`);
-    console.log(`CaskSubscriptions Impl:                         ${await hre.upgrades.erc1967.getImplementationAddress(subscriptions.address)}`);
-    console.log(`CaskSubscriptions Owner:                        ${await subscriptions.owner()}`);
-
-    console.log(`CaskSubscriptionManager:                        ${subscriptionManager.address}`);
-    console.log(`CaskSubscriptionManager Proxy Admin:            ${await hre.upgrades.erc1967.getAdminAddress(subscriptionManager.address)}`);
-    console.log(`CaskSubscriptionManager Impl:                   ${await hre.upgrades.erc1967.getImplementationAddress(subscriptionManager.address)}`);
-    console.log(`CaskSubscriptionManager Owner:                  ${await subscriptionManager.owner()}`);
-
-    console.log(`DefaultProxyAdmin:                              ${defaultProxyAdmin.address}`);
-    console.log(`DefaultProxyAdmin Owner:                        ${await defaultProxyAdmin.owner()}`);
-
-
-    //
-    // Vault Config
-    //
     const baseAsset = await vault.getBaseAsset();
     const baseAssetInfo = await vault.getAsset(baseAsset);
     const baseAssetContract = CaskSDK.contracts.ERC20({tokenAddress: baseAsset, provider: hre.ethers.provider});
     const baseAssetSymbol = await baseAssetContract.symbol();
 
+    //
+    // Vault Config
+    //
     console.log("\nVault Configuration");
     console.log("====================");
     console.log(`paused:                                         ${await vault.paused()}`);
-    console.log(`CaskVault baseAsset:                            ${baseAsset} (${baseAssetSymbol})`);
-    console.log(`CaskVault baseAsset decimals:                   ${baseAssetInfo.assetDecimals}`);
+    console.log(`baseAsset:                                      ${baseAsset} (${baseAssetSymbol})`);
+    console.log(`baseAsset decimals:                             ${baseAssetInfo.assetDecimals}`);
+    console.log(`feeDistributor:                                 ${await vault.feeDistributor()}`);
     const protocolCount = await vault.protocolCount();
     console.log(`CaskVault protocolCount:                        ${protocolCount}`);
     for (let i = 0; i < protocolCount; i++) {
         console.log(`   protocol ${i}:                                  ${await vault.protocols(i)}`);
     }
-
+    console.log(`minDeposit:                                     ${formatUnits(await vault.minDeposit(), baseAssetInfo.assetDecimals)}`);
+    console.log(`maxPriceFeedAge:                                ${await vault.maxPriceFeedAge()}`);
     console.log(`totalSupply:                                    ${await vault.totalSupply()}`);
     console.log(`totalValue:                                     ${formatUnits(await vault.totalValue(), baseAssetInfo.assetDecimals)}`);
     console.log(`pricePerShare:                                  ${await vault.pricePerShare()}`);
@@ -152,6 +129,42 @@ async function _debug_protocol(taskArguments, hre) {
         console.log(`   Oracle:                                      ${assetInfo.priceFeed}`);
         console.log(`   Slippage:                                    ${assetInfo.slippageBps} bps (${assetInfo.slippageBps / 100}%)`);
     }
+}
+
+async function _debug_subscriptions(taskArguments, hre) {
+
+    const vault = await hre.ethers.getContract("CaskVault");
+    const subscriptionPlans = await hre.ethers.getContract("CaskSubscriptionPlans");
+    const subscriptions = await hre.ethers.getContract("CaskSubscriptions");
+    const subscriptionManager = await hre.ethers.getContract("CaskSubscriptionManager");
+    const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
+    const baseAssetContract = CaskSDK.contracts.ERC20({tokenAddress: baseAsset, provider: hre.ethers.provider});
+    const baseAssetSymbol = await baseAssetContract.symbol();
+
+    //
+    // Protocol Addresses
+    //
+    console.log("\nSubscription Contract addresses");
+    console.log("====================");
+    console.log(`CaskSubscriptionPlans:                          ${subscriptionPlans.address}`);
+    console.log(`CaskSubscriptionPlans Proxy Admin:              ${await hre.upgrades.erc1967.getAdminAddress(subscriptionPlans.address)}`);
+    console.log(`CaskSubscriptionPlans Impl:                     ${await hre.upgrades.erc1967.getImplementationAddress(subscriptionPlans.address)}`);
+    console.log(`CaskSubscriptionPlans Owner:                    ${await subscriptionPlans.owner()}`);
+
+    console.log(`CaskSubscriptions:                              ${subscriptions.address}`);
+    console.log(`CaskSubscriptions Proxy Admin:                  ${await hre.upgrades.erc1967.getAdminAddress(subscriptions.address)}`);
+    console.log(`CaskSubscriptions Impl:                         ${await hre.upgrades.erc1967.getImplementationAddress(subscriptions.address)}`);
+    console.log(`CaskSubscriptions Owner:                        ${await subscriptions.owner()}`);
+
+    console.log(`CaskSubscriptionManager:                        ${subscriptionManager.address}`);
+    console.log(`CaskSubscriptionManager Proxy Admin:            ${await hre.upgrades.erc1967.getAdminAddress(subscriptionManager.address)}`);
+    console.log(`CaskSubscriptionManager Impl:                   ${await hre.upgrades.erc1967.getImplementationAddress(subscriptionManager.address)}`);
+    console.log(`CaskSubscriptionManager Owner:                  ${await subscriptionManager.owner()}`);
+
+    console.log(`DefaultProxyAdmin:                              ${defaultProxyAdmin.address}`);
+    console.log(`DefaultProxyAdmin Owner:                        ${await defaultProxyAdmin.owner()}`);
 
 
     //
@@ -162,7 +175,7 @@ async function _debug_protocol(taskArguments, hre) {
     const paymentFeeRateMin = await subscriptionManager.paymentFeeRateMin();
     const paymentFeeRateMax = await subscriptionManager.paymentFeeRateMax();
 
-    console.log("\nProtocol Configuration");
+    console.log("\nSubscription Configuration");
     console.log("====================");
     console.log(`CaskSubscriptions subscriptionManager:          ${await subscriptions.subscriptionManager()}`);
     console.log(`CaskSubscriptions subscriptionPlans:            ${await subscriptions.subscriptionPlans()}`);
@@ -179,14 +192,34 @@ async function _debug_protocol(taskArguments, hre) {
     console.log(`CaskSubscriptionManagers paymentFeeRateMax:     ${paymentFeeRateMax} bps (${paymentFeeRateMax / 100}%)`);
     console.log(`CaskSubscriptionManagers stakeTargetFactor:     ${await subscriptionManager.stakeTargetFactor()}`);
     console.log(`CaskSubscriptionManagers processBucketSize:     ${await subscriptionManager.processBucketSize()} seconds`);
+    console.log(`CaskSubscriptionManagers processBucketMaxAge:   ${await subscriptionManager.processBucketMaxAge()} seconds`);
+    console.log(`CaskSubscriptionManagers paymentRetryDelay:     ${await subscriptionManager.paymentRetryDelay()} seconds`);
+
+    const now = new Date().getTime() / 1000;
+    const activeQueuePos = await subscriptionManager.queuePosition(1);
+    const activeQueueSize = await subscriptionManager.queueSize(1, activeQueuePos);
+    const pastDueQueuePos = await subscriptionManager.queuePosition(2);
+    const pastdueQueueSize = await subscriptionManager.queueSize(2, pastDueQueuePos);
+
+    console.log("\nSubscription Queue");
+    console.log("====================");
+    console.log(`CaskSubscriptionManagers active queuePosition:  ${new Date(activeQueuePos*1000).toISOString()} (${parseInt(now - activeQueuePos)} seconds old)`);
+    console.log(`CaskSubscriptionManagers active queueSize:      ${activeQueueSize}`);
+    console.log(`CaskSubscriptionManagers pastdue queuePosition: ${new Date(pastDueQueuePos*1000).toISOString()} (${parseInt(now - pastDueQueuePos)} seconds old)`);
+    console.log(`CaskSubscriptionManagers pastdue queueSize:     ${pastdueQueueSize}`);
 
 }
 
 async function _debug_dca(taskArguments, hre) {
 
+    const vault = await hre.ethers.getContract("CaskVault");
     const dca = await hre.ethers.getContract("CaskDCA");
     const dcaManager = await hre.ethers.getContract("CaskDCAManager");
     const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
+    const baseAssetContract = CaskSDK.contracts.ERC20({tokenAddress: baseAsset, provider: hre.ethers.provider});
+    const baseAssetSymbol = await baseAssetContract.symbol();
 
     //
     // Protocol Addresses
@@ -206,26 +239,114 @@ async function _debug_dca(taskArguments, hre) {
     console.log(`DefaultProxyAdmin:                              ${defaultProxyAdmin.address}`);
     console.log(`DefaultProxyAdmin Owner:                        ${await defaultProxyAdmin.owner()}`);
 
-
     //
     // DCA Config
     //
+    const minAmount = await dca.minAmount();
+    const minPeriod = await dca.minPeriod();
+    const minSlippage = await dca.minSlippage();
+
     const maxSkips = await dcaManager.maxSkips();
-    const feeBps = await dcaManager.feeBps();
+    const dcaFeeBps = await dcaManager.dcaFeeBps();
+    const dcaFeeMin = await dcaManager.dcaFeeMin();
+    const dcaMinValue = await dcaManager.dcaMinValue();
     const maxPriceFeedAge = await dcaManager.maxPriceFeedAge();
     const queueBucketSize = await dcaManager.queueBucketSize();
+    const maxQueueAge = await dcaManager.maxQueueAge();
+
 
     console.log("\nDCA Configuration");
     console.log("====================");
     console.log(`CaskDCA dcaManager:                             ${await dca.dcaManager()}`);
     console.log(`CaskDCA assetsMerkleRoot:                       ${await dca.assetsMerkleRoot()}`);
+    console.log(`CaskDCA minAmount:                              ${minAmount} (${formatUnits(minAmount, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskDCA minPeriod:                              ${minPeriod} seconds`);
+    console.log(`CaskDCA minSlippage:                            ${minSlippage} bps (${minSlippage / 100}%)`);
 
     console.log(`CaskDCAManager caskVault:                       ${await dcaManager.caskVault()}`);
     console.log(`CaskDCAManager caskDCA:                         ${await dcaManager.caskDCA()}`);
+    console.log(`CaskDCAManager feeDistributor:                  ${await dcaManager.feeDistributor()}`);
     console.log(`CaskDCAManager maxSkips:                        ${maxSkips}`);
-    console.log(`CaskDCAManager feeBps:                          ${feeBps} bps (${feeBps / 100}%)`);
+    console.log(`CaskDCAManager dcaFeeBps:                       ${dcaFeeBps} bps (${dcaFeeBps / 100}%)`);
+    console.log(`CaskDCAManager dcaFeeMin:                       ${dcaFeeMin} (${formatUnits(dcaFeeMin, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskDCAManager dcaMinValue:                     ${dcaMinValue} (${formatUnits(dcaMinValue, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
     console.log(`CaskDCAManager maxPriceFeedAge:                 ${maxPriceFeedAge} seconds`);
     console.log(`CaskDCAManager queueBucketSize:                 ${queueBucketSize}`);
+    console.log(`CaskDCAManager maxQueueAge:                     ${maxQueueAge}`);
+
+    const now = new Date().getTime() / 1000;
+    const queuePos = await dcaManager.queuePosition(1);
+    const queueSize = await dcaManager.queueSize(1, queuePos);
+
+    console.log("\nDCA Queue");
+    console.log("====================");
+    console.log(`CaskDCAManager queuePosition:                   ${new Date(queuePos*1000).toISOString()} (${parseInt(now - queuePos)} seconds old)`);
+    console.log(`CaskDCAManager queueSize:                       ${queueSize}`);
+
+}
+
+async function _debug_p2p(taskArguments, hre) {
+
+    const vault = await hre.ethers.getContract("CaskVault");
+    const p2p = await hre.ethers.getContract("CaskP2P");
+    const p2pManager = await hre.ethers.getContract("CaskP2PManager");
+    const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
+    const baseAssetContract = CaskSDK.contracts.ERC20({tokenAddress: baseAsset, provider: hre.ethers.provider});
+    const baseAssetSymbol = await baseAssetContract.symbol();
+
+    //
+    // Protocol Addresses
+    //
+    console.log("\nP2P Contract addresses");
+    console.log("====================");
+    console.log(`CaskP2P:                                        ${p2p.address}`);
+    console.log(`CaskP2P Proxy Admin:                            ${await hre.upgrades.erc1967.getAdminAddress(p2p.address)}`);
+    console.log(`CaskP2P Impl:                                   ${await hre.upgrades.erc1967.getImplementationAddress(p2p.address)}`);
+    console.log(`CaskP2P Owner:                                  ${await p2p.owner()}`);
+
+    console.log(`CaskP2PManager:                                 ${p2pManager.address}`);
+    console.log(`CaskP2PManager Proxy Admin:                     ${await hre.upgrades.erc1967.getAdminAddress(p2pManager.address)}`);
+    console.log(`CaskP2PManager Impl:                            ${await hre.upgrades.erc1967.getImplementationAddress(p2pManager.address)}`);
+    console.log(`CaskP2PManager Owner:                           ${await p2pManager.owner()}`);
+
+    console.log(`DefaultProxyAdmin:                              ${defaultProxyAdmin.address}`);
+    console.log(`DefaultProxyAdmin Owner:                        ${await defaultProxyAdmin.owner()}`);
+
+    //
+    // P2P Config
+    //
+    const minAmount = await p2p.minAmount();
+    const minPeriod = await p2p.minPeriod();
+
+    const maxSkips = await p2pManager.maxSkips();
+    const paymentFee = await p2pManager.paymentFee();
+    const queueBucketSize = await p2pManager.queueBucketSize();
+    const maxQueueAge = await p2pManager.maxQueueAge();
+
+
+    console.log("\nP2P Configuration");
+    console.log("====================");
+    console.log(`CaskP2P p2pManager:                             ${await p2p.p2pManager()}`);
+    console.log(`CaskP2P minAmount:                              ${minAmount} (${formatUnits(minAmount, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskP2P minPeriod:                              ${minPeriod} seconds`);
+
+    console.log(`CaskP2PManager caskVault:                       ${await p2pManager.caskVault()}`);
+    console.log(`CaskP2PManager caskP2P:                         ${await p2pManager.caskP2P()}`);
+    console.log(`CaskP2PManager maxSkips:                        ${maxSkips}`);
+    console.log(`CaskP2PManager paymentFee:                      ${paymentFee} (${formatUnits(paymentFee, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskP2PManager queueBucketSize:                 ${queueBucketSize}`);
+    console.log(`CaskP2PManager maxQueueAge:                     ${maxQueueAge}`);
+
+    const now = new Date().getTime() / 1000;
+    const queuePos = await p2pManager.queuePosition(1);
+    const queueSize = await p2pManager.queueSize(1, queuePos);
+
+    console.log("\nP2P Queue");
+    console.log("====================");
+    console.log(`CaskP2PManager queuePosition:                   ${new Date(queuePos*1000).toISOString()} (${parseInt(now - queuePos)} seconds old)`);
+    console.log(`CaskP2PManager queueSize:                       ${queueSize}`);
 
 }
 
@@ -233,7 +354,7 @@ async function _debug_dca(taskArguments, hre) {
 /**
  * Prints information about deployed contracts and their config.
  */
-async function debug(taskArguments, hre) {
+async function debug(taskArguments, hre, protocol='all') {
     const {
         isDaoChain,
         isProtocolChain,
@@ -245,8 +366,18 @@ async function debug(taskArguments, hre) {
     }
 
     if (isProtocolChain) {
-        await _debug_protocol(taskArguments, hre);
-        await _debug_dca(taskArguments, hre);
+        if (protocol === 'all' || protocol === 'vault') {
+            await _debug_vault(taskArguments, hre);
+        }
+        if (protocol === 'all' || protocol === 'subscriptions') {
+            await _debug_subscriptions(taskArguments, hre);
+        }
+        if (protocol === 'all' || protocol === 'dca') {
+            await _debug_dca(taskArguments, hre);
+        }
+        if (protocol === 'all' || protocol === 'p2p') {
+            await _debug_p2p(taskArguments, hre);
+        }
     }
 }
 

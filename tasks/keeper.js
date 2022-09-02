@@ -1,19 +1,14 @@
 async function keeper(taskArguments, hre) {
 
     let keeperTarget;
-    let keeperWalletPk;
-
     if (taskArguments.protocol === 'subscriptions') {
         keeperTarget = await ethers.getContract("CaskSubscriptionManager");
-        keeperWalletPk = process.env.SUBSCRIPTIONS_KEEPER_PK || process.env.KEEPER_PK;
         console.log(`Starting keeper targeting CaskSubscriptionManager at ${keeperTarget.address}`);
     } else if (taskArguments.protocol === 'dca') {
         keeperTarget = await ethers.getContract("CaskDCAManager");
-        keeperWalletPk = process.env.DCA_KEEPER_PK || process.env.KEEPER_PK;
         console.log(`Starting keeper targeting CaskDCAManager at ${keeperTarget.address}`);
     } else if (taskArguments.protocol === 'p2p') {
         keeperTarget = await ethers.getContract("CaskP2PManager");
-        keeperWalletPk = process.env.P2P_KEEPER_PK || process.env.KEEPER_PK;
         console.log(`Starting keeper targeting CaskP2PManager at ${keeperTarget.address}`);
     } else {
         throw new Error(`Unknown protocol target: ${taskArguments.protocol}`);
@@ -22,20 +17,15 @@ async function keeper(taskArguments, hre) {
     const queues = taskArguments.queue.split(/\s*,\s*/);
     const gasPrice = parseInt(taskArguments.gasPrice) || hre.network.config.gasPrice;
 
-    let keeperWallet;
+    const networkType = hre.network.name.split('_')[0];
+    const keeperWalletPk = process.env[`${networkType.toUpperCase()}_${taskArguments.protocol.toUpperCase()}_KEEPER_PK`] ||
+        process.env[`${taskArguments.protocol.toUpperCase()}_KEEPER_PK`] ||
+        process.env[`KEEPER_PK`];
 
-    if (hre.network.name.includes('testnet_')) {
-        keeperWallet = new ethers.Wallet(process.env.TESTNET_KEEPER_PK, hre.ethers.provider);
-    } else if (hre.network.name.includes('internal_')) {
-        keeperWallet = new ethers.Wallet(process.env.INTERNAL_KEEPER_PK || process.env.TESTNET_KEEPER_PK,
-            hre.ethers.provider);
-    } else {
-        keeperWallet = new ethers.Wallet(keeperWalletPk, hre.ethers.provider);
-    }
+    const keeperWallet = new ethers.Wallet(keeperWalletPk, hre.ethers.provider);
+    console.log(`Keeper ${keeperWallet.address} running with limit ${taskArguments.limit} on queue(s) ${queues} using gasPrice ${gasPrice}`)
 
     const keeperManager = keeperTarget.connect(keeperWallet);
-
-    console.log(`Keeper ${keeperWallet.address} running with limit ${taskArguments.limit} on queue(s) ${queues} using gasPrice ${gasPrice}`)
 
     while(true) {
 

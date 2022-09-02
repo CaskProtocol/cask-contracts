@@ -1,5 +1,6 @@
 const {
     usdcUnits,
+    daiUnits,
 } = require("../../utils/units");
 
 const {
@@ -18,9 +19,13 @@ async function dcaFixture() {
     fixture.router = await ethers.getContract("MockUniswapRouter");
     fixture.priceFeed = await ethers.getContract("MockChainlinkOracleFeedABC");
     fixture.usdc = await ethers.getContract("MockUSDC");
+    fixture.dai = await ethers.getContract("MockDAI");
     fixture.abc = await ethers.getContract("MockABC");
 
-    await fixture.router.connect(fixture.governor).initialize([fixture.usdc.address], [fixture.abc.address]);
+    await fixture.router.connect(fixture.governor).initialize(
+        [fixture.usdc.address, fixture.dai.address],
+        [fixture.abc.address, fixture.abc.address]
+    );
 
     return fixture;
 }
@@ -29,8 +34,9 @@ async function dcaWithLiquidityFixture() {
     const fixture = await dcaFixture();
 
     await fixture.usdc.connect(fixture.deployer).mint(fixture.router.address, usdcUnits('100000.0'));
+    await fixture.dai.connect(fixture.deployer).mint(fixture.router.address, daiUnits('100000.0'));
     await fixture.abc.connect(fixture.deployer).mint(fixture.router.address,
-        hre.ethers.utils.parseUnits('100000.0', 18));
+        hre.ethers.utils.parseUnits('200000.0', 18));
 
     fixture.dcaManifest = {
         assets:[
@@ -42,6 +48,18 @@ async function dcaWithLiquidityFixture() {
                 "priceFeed": fixture.priceFeed.address.toLowerCase(),
                 "path": [
                     fixture.usdc.address.toLowerCase(),
+                    fixture.abc.address.toLowerCase()
+                ],
+                "chainId": 31337
+            },
+            {
+                "inputAssetSymbol": "DAI",
+                "outputAssetSymbol": "ABC",
+                "routerName": "MockRouter",
+                "router": fixture.router.address.toLowerCase(),
+                "priceFeed": fixture.priceFeed.address.toLowerCase(),
+                "path": [
+                    fixture.dai.address.toLowerCase(),
                     fixture.abc.address.toLowerCase()
                 ],
                 "chainId": 31337
@@ -85,6 +103,18 @@ async function dcaWithLiquidityFixtureNoPricefeed() {
                 "priceFeed": "0x0000000000000000000000000000000000000000",
                 "path": [
                     fixture.usdc.address.toLowerCase(),
+                    fixture.abc.address.toLowerCase()
+                ],
+                "chainId": 31337
+            },
+            {
+                "inputAssetSymbol": "DAI",
+                "outputAssetSymbol": "ABC",
+                "routerName": "MockRouter",
+                "router": fixture.router.address.toLowerCase(),
+                "priceFeed": "0x0000000000000000000000000000000000000000",
+                "path": [
+                    fixture.dai.address.toLowerCase(),
                     fixture.abc.address.toLowerCase()
                 ],
                 "chainId": 31337

@@ -1,12 +1,15 @@
 const {
     usdcUnits,
     hour,
+    day,
 } = require("../utils/units");
 
 const {
     isProtocolChain,
     isMemnet,
     isDevnet,
+    isTestnet,
+    isInternal,
 } = require("../test/_networks");
 
 const {
@@ -39,7 +42,7 @@ const deployDCA = async ({ethers, getNamedAccounts}) => {
 
     const dcaManager = await ethers.getContract("CaskDCAManager");
     await withConfirmation(
-        dcaManager.initialize(dca.address, vault.address)
+        dcaManager.initialize(dca.address, vault.address, governorAddr)
     );
     log("Initialized CaskDCAManager");
 
@@ -51,7 +54,8 @@ const deployDCA = async ({ethers, getNamedAccounts}) => {
                 usdcUnits('0.1'), // dcaFeeMin
                 usdcUnits('1.00'), // dcaMinValue
                 86400+3600, // maxPriceFeedAge (1 day + 1 hour)
-                24 * hour // queueBucketSize
+                24 * hour, // queueBucketSize
+                20 * day // maxQueueAge
             )
         );
         log("Set CaskDCAManager parameters for memnet");
@@ -62,7 +66,7 @@ const deployDCA = async ({ethers, getNamedAccounts}) => {
     );
     log(`Set CaskDCA manager to ${dcaManager.address}`);
 
-    if (isDevnet) {
+    if (isDevnet || isTestnet || isInternal) {
         await withConfirmation(
             vault.connect(sGovernor).addProtocol(dcaManager.address)
         );

@@ -119,11 +119,21 @@ ICaskP2PManager
     function setParameters(
         uint256 _maxSkips,
         uint256 _paymentFee,
-        uint32 _queueBucketSize
+        uint32 _queueBucketSize,
+        uint32 _maxQueueAge
     ) external onlyOwner {
         maxSkips = _maxSkips;
         paymentFee = _paymentFee;
         queueBucketSize = _queueBucketSize;
+        maxQueueAge = _maxQueueAge;
+
+        emit SetParameters();
     }
-    
+
+    function recoverFunds(
+        address _asset,
+        address _dest
+    ) external onlyOwner {
+        IERC20Metadata(_asset).transfer(_dest, IERC20Metadata(_asset).balanceOf(address(this)));
+    }
 }

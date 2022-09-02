@@ -1,11 +1,13 @@
 const {
-    hour,
+    hour, day,
 } = require("../utils/units");
 
 const {
     isProtocolChain,
     isMemnet,
     isDevnet,
+    isTestnet,
+    isInternal,
 } = require("../test/_networks");
 
 const {
@@ -45,7 +47,8 @@ const deployP2P = async ({ethers, getNamedAccounts}) => {
             p2pManager.setParameters(
                 5, // maxSkips
                 500000, // 0.50 fee in USDC
-                24 * hour // queueBucketSize
+                24 * hour, // queueBucketSize
+                20 * day // maxQueueAge
             )
         );
         log("Set CaskP2PManager parameters for memnet");
@@ -56,7 +59,7 @@ const deployP2P = async ({ethers, getNamedAccounts}) => {
     );
     log(`Set CaskP2P manager to ${p2pManager.address}`);
 
-    if (isDevnet) {
+    if (isDevnet || isTestnet || isInternal) {
         await withConfirmation(
             vault.connect(sGovernor).addProtocol(p2pManager.address)
         );
