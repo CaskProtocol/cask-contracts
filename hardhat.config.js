@@ -429,6 +429,7 @@ module.exports = {
       aurora: process.env.AURORASCAN_API_KEY,
       celo: process.env.CELOSCAN_API_KEY,
       moonbeam: process.env.MOONSCAN_API_KEY,
+      gnosis: process.env.GNOSISSCAN_API_KEY,
     },
     customChains: [
       {
@@ -437,6 +438,14 @@ module.exports = {
         urls: {
           apiURL: "https://api.celoscan.xyz/api",
           browserURL: "https://celoscan.xyz"
+        }
+      },
+      {
+        network: "gnosis",
+        chainId: 100,
+        urls: {
+          apiURL: "https://api.gnosisscan.io/api",
+          browserURL: "https://gnosisscan.io"
         }
       }
     ]
