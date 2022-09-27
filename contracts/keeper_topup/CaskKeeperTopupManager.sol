@@ -56,6 +56,8 @@ ICaskKeeperTopupManager
 
     uint256 public maxTopupsPerRun;
 
+    uint256 public maxSwapSlippageBps;
+
 
     function initialize(
         address _caskKeeperTopup,
@@ -84,6 +86,7 @@ ICaskKeeperTopupManager
         topupFeeMin = 0;
         maxPriceFeedAge = 0;
         maxTopupsPerRun = 1;
+        maxSwapSlippageBps = 100;
 
         __CaskJobQueue_init(12 hours);
     }
@@ -195,20 +198,27 @@ ICaskKeeperTopupManager
             return false;
         }
 
-        // calculate actual amount of inputAsset that was received from payment/withdraw
+        // calculate actual amount of baseAsset that was received from payment/withdraw
         uint256 amountIn = IERC20Metadata(caskVault.getBaseAsset()).balanceOf(address(this)) - beforeBalance;
         require(amountIn > 0, "!INVALID(amountIn)");
 
-        // let swap router spend the amount of newly acquired inputAsset
+        // let swap router spend the amount of newly acquired baseAsset
         IERC20Metadata(caskVault.getBaseAsset()).safeIncreaseAllowance(address(linkSwapRouter), amountIn);
 
-        // TODO: convert amountIn to linkToken price (minus some slippage)
         uint256 amountOutEst = 0;
+        if (address(linkPriceFeed) != address(0)) {
+            amountOutEst = _convertPrice(
+                caskVault.getAsset(caskVault.getBaseAsset()),
+                linkSwapPath[linkSwapPath.length - 1],
+                address(linkPriceFeed),
+                amountIn);
+        }
+        amountOutEst = amountOutEst - ((amountOutEst * maxSwapSlippageBps) / 10000);
 
         // perform swap
         try linkSwapRouter.swapExactTokensForTokens(
             amountIn,
-            amountOutEst, // adjust for slippage
+            amountOutEst,
             linkSwapPath,
             address(this),
             block.timestamp + 1 hours
@@ -297,6 +307,7 @@ ICaskKeeperTopupManager
         uint256 _topupFeeMin,
         uint256 _maxPriceFeedAge,
         uint256 _maxTopupsPerRun,
+        uint256 _maxSwapSlippageBps,
         uint32 _queueBucketSize,
         uint32 _maxQueueAge
     ) external onlyOwner {
@@ -305,6 +316,7 @@ ICaskKeeperTopupManager
         topupFeeMin = _topupFeeMin;
         maxPriceFeedAge = _maxPriceFeedAge;
         maxTopupsPerRun = _maxTopupsPerRun;
+        maxSwapSlippageBps = _maxSwapSlippageBps;
         queueBucketSize = _queueBucketSize;
         maxQueueAge = _maxQueueAge;
     }

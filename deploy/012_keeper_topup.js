@@ -67,6 +67,7 @@ const deployKeeperTopup = async ({ethers, getNamedAccounts}) => {
                 usdcUnits('0.1'), // topupFeeMin
                 86400+3600, // maxPriceFeedAge (1 day + 1 hour)
                 1, // maxTopupsPerRun
+                100, // maxSwapSlippageBps
                 24 * hour, // queueBucketSize
                 20 * day // maxQueueAge
             )
