@@ -75,6 +75,11 @@ addresses.mainnet_bsc = {};
 addresses.mainnet_bsc.USDC = "0x672147dd47674757c457eb155baa382cc10705dd";
 addresses.mainnet_bsc.USDC_USD = "0x51597f405303C4377E36123cBc172b13269EA163";
 
+/* arbitrum addresses */
+addresses.mainnet_arbitrum = {};
+addresses.mainnet_arbitrum.USDC = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
+addresses.mainnet_arbitrum.USDC_USD = "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3";
+
 
 
 /******* TESTNET ADDRESSES *********/
