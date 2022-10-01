@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-interface IERC677 is IERC20 {
+interface IERC677 {
     function transferAndCall(
         address to,
         uint value,

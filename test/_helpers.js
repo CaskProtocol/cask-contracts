@@ -259,6 +259,42 @@ const advanceTimeRunP2PKeeper = async (times, seconds, keeperLimit=10) => {
     return result;
 }
 
+const ktuCheckUpkeep = async(checkData) => {
+    const ktuManager = await ethers.getContract("CaskKeeperTopupManager");
+    return ktuManager.checkUpkeep(checkData);
+};
+
+const ktuPerformUpkeep = async(performData) => {
+    const ktuManager = await ethers.getContract("CaskKeeperTopupManager");
+    return ktuManager.performUpkeep(performData);
+};
+
+const runKTUKeeper = async(limit= 10, minDepth = 0) => {
+    await runKTUKeeperType(1, limit, minDepth);
+};
+
+const runKTUKeeperType = async(queueId, limit= 10, minDepth = 0) => {
+    const checkData = ethers.utils.defaultAbiCoder.encode(
+        ['uint256','uint256','uint8'],
+        [limit, minDepth, queueId]);
+    const checkUpkeep = await ktuCheckUpkeep(checkData);
+
+    if (checkUpkeep.upkeepNeeded) {
+        return ktuPerformUpkeep(checkUpkeep.performData);
+    } else {
+        return false;
+    }
+}
+
+const advanceTimeRunKTUKeeper = async (times, seconds, keeperLimit=10) => {
+    let result;
+    for (let i = 0; i < times; i++) {
+        await advanceTime(seconds);
+        result = await runKTUKeeper(keeperLimit);
+    }
+    return result;
+}
+
 
 module.exports = {
 

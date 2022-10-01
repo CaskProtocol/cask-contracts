@@ -2,6 +2,7 @@ const { expect } = require("chai");
 
 const {
     usdcUnits,
+    linkUnits,
     day,
 } = require("../utils/units");
 
@@ -10,8 +11,7 @@ const {
 } = require("ethers").utils;
 
 const {
-    advanceTimeRunDCAKeeper,
-    DCAStatus,
+    advanceTimeRunKTUKeeper,
 } = require("./_helpers");
 
 const {
@@ -19,7 +19,7 @@ const {
 } = require("./fixtures/keeper_topup");
 
 
-describe("CaskDCA General", function () {
+describe("CaskKeeperTopup General", function () {
 
     it("Basic KeeperTopup lifecycle", async function () {
 
@@ -27,7 +27,10 @@ describe("CaskDCA General", function () {
             networkAddresses,
             user,
             vault,
+            keeperRegistry,
+            erc677Link,
             ktu,
+            ktuManager,
         } = await ktuFixture();
 
         const userVault = vault.connect(user);
@@ -43,41 +46,25 @@ describe("CaskDCA General", function () {
 
         let result;
 
-        // create DCA
+        // create keeper topup
         const tx = await userKTU.createKeeperTopup(
             12345, // keeperId
-            ethers.utils.parseUnits('10', 18), // lowBalance
-            usdcUnits(10) // topupAmount
+            linkUnits('5'), // lowBalance
+            usdcUnits('10') // topupAmount
         );
 
         const events = (await tx.wait()).events || [];
-        const createdEvent = events.find((e) => e.event === "DCACreated");
-        const dcaId = createdEvent.args.dcaId;
-        expect(dcaId).to.not.be.undefined;
+        const createdEvent = events.find((e) => e.event === "KeeperTopupCreated");
+        const ktuId = createdEvent.args.keeperTopupId;
+        expect(ktuId).to.not.be.undefined;
         expect(createdEvent.args.user).to.equal(user.address);
-        expect(createdEvent.args.to).to.equal(user.address);
-        expect(createdEvent.args.amount).to.equal(usdcUnits('100'));
-        expect(createdEvent.args.period).to.equal(7*day);
 
-        // confirm initial DCA was processed
-        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('900'));
-        expect(await abc.balanceOf(user.address)).to.equal(parseUnits('99.70', 18));
+        await keeperRegistry.spendFunds(ktuId, linkUnits('2'));
+        expect(await erc677Link.balanceOf(user.address)).to.equal(linkUnits('3'));
 
-        await advanceTimeRunDCAKeeper(9, day);
+        await advanceTimeRunKTUKeeper(1, day);
 
-        // confirm second DCA was processed
-        result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
-        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('800'));
-        expect(await abc.balanceOf(user.address)).to.equal(parseUnits('199.40', 18));
-
-        await advanceTimeRunDCAKeeper(7, day);
-
-        // confirm third DCA was processed
-        result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
-        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('700'));
-        expect(await abc.balanceOf(user.address)).to.equal(parseUnits('299.10', 18));
+        // expect(await abc.balanceOf(user.address)).to.equal(linkUnits('3'));
 
     });
 

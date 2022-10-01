@@ -55,6 +55,14 @@ function fraxUnitsFormat(amount) {
     return formatUnits(amount, 18);
 }
 
+function linkUnits(amount) {
+    return parseUnits(amount, 18);
+}
+
+function linkUnitsFormat(amount) {
+    return formatUnits(amount, 18);
+}
+
 module.exports = {
     now,
     hour,
@@ -68,10 +76,12 @@ module.exports = {
     daiUnits,
     ustUnits,
     fraxUnits,
+    linkUnits,
     caskUnitsFormat,
     daiUnitsFormat,
     usdcUnitsFormat,
     usdtUnitsFormat,
     ustUnitsFormat,
     fraxUnitsFormat,
+    linkUnitsFormat,
 };

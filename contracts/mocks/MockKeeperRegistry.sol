@@ -5,6 +5,9 @@ import "../keeper_topup/KeeperRegistryBaseInterface.sol";
 
 contract MockKeeperRegistry is KeeperRegistryBaseInterface {
 
+    mapping(uint256 => uint96) public upkeepBalance;
+    uint256 public upkeepCount;
+
     function registerUpkeep(
         address target,
         uint32 gasLimit,
@@ -23,12 +26,33 @@ contract MockKeeperRegistry is KeeperRegistryBaseInterface {
 
     function cancelUpkeep(
         uint256 id
-    ) external {}
+    ) external {
+        if (upkeepBalance[id] > 0 && upkeepCount > 0) {
+            upkeepCount -= 1;
+        }
+        upkeepBalance[id] = 0;
+    }
 
     function addFunds(
         uint256 id,
         uint96 amount
-    ) external {}
+    ) external {
+        if (upkeepBalance[id] == 0) {
+            upkeepCount += 1;
+        }
+        upkeepBalance[id] += amount;
+    }
+
+    function spendFunds(
+        uint256 id,
+        uint96 amount
+    ) external {
+        require(amount <= upkeepBalance[id], "!balance");
+        upkeepBalance[id] -= amount;
+        if (upkeepBalance[id] == 0 && upkeepCount > 0) {
+            upkeepCount -= 1;
+        }
+    }
 
     function getUpkeep(uint256 id)
     external view returns (
@@ -39,10 +63,10 @@ contract MockKeeperRegistry is KeeperRegistryBaseInterface {
         address lastKeeper,
         address admin,
         uint64 maxValidBlocknumber
-    ) {return (address(0), 0, bytes(""), 0, address(0), address(0), type(uint64).max);}
+    ) {return (address(0), 0, bytes(""), upkeepBalance[id], address(0), address(0), type(uint64).max);}
 
     function getUpkeepCount()
-    external view returns (uint256) {return 0;}
+    external view returns (uint256) {return upkeepCount;}
 
     function getCanceledUpkeepList()
     external view returns (uint256[] memory) {return new uint256[](0);}

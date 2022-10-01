@@ -43,6 +43,7 @@ BaseRelayRecipient
         __Ownable_init();
         __Pausable_init();
 
+        currentGroup = 1;
         groupSize = _groupSize;
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -112,7 +113,7 @@ BaseRelayRecipient
     }
 
     function _findGroupId() internal returns(uint256) {
-        uint256 keeperTopupGroupId = 0;
+        uint256 keeperTopupGroupId;
         if (backfillGroups.length > 0) {
             keeperTopupGroupId = backfillGroups[backfillGroups.length-1];
             backfillGroups.pop();

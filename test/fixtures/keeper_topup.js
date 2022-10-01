@@ -1,5 +1,6 @@
 const {
     usdcUnits,
+    linkUnits,
 } = require("../../utils/units");
 
 const {
@@ -7,10 +8,11 @@ const {
 } = require("./vault");
 
 
-async function dcaFixture() {
+async function ktuFixture() {
     const fixture = await fundedFixture();
 
     fixture.user = fixture.consumerA;
+    fixture.keeperRegistry = await ethers.getContract("MockKeeperRegistry");
     fixture.ktu = await ethers.getContract("CaskKeeperTopup");
     fixture.ktuManager = await ethers.getContract("CaskKeeperTopupManager");
     fixture.router = await ethers.getContract("MockUniswapRouterUSDCLINK");
@@ -28,18 +30,21 @@ async function dcaFixture() {
     return fixture;
 }
 
-async function ktuFixture() {
-    const fixture = await dcaFixture();
+async function ktuFundedFixture() {
+    const fixture = await ktuFixture();
 
+    // LP pools
     await fixture.usdc.connect(fixture.deployer).mint(fixture.router.address, usdcUnits('200000.0'));
-    await fixture.erc20Link.connect(fixture.deployer).mint(fixture.router.address,
-        hre.ethers.utils.parseUnits('100000.0', 18));
-    await fixture.erc677Link.connect(fixture.deployer).mint(fixture.router.address,
-        hre.ethers.utils.parseUnits('100000.0', 18));
+    await fixture.erc20Link.connect(fixture.deployer).mint(fixture.router.address, linkUnits('100000.0'));
+    await fixture.erc677Link.connect(fixture.deployer).mint(fixture.router.address, linkUnits('100000.0'));
+
+    // user
+    await fixture.erc677Link.connect(fixture.deployer).mint(fixture.user.address, linkUnits('10.0'));
 
     return fixture;
 }
 
 module.exports = {
     ktuFixture,
+    ktuFundedFixture,
 }
