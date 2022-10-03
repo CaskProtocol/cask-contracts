@@ -49,6 +49,9 @@ const MOONBEAM_STRATEGIST = "0x57D9355C31b2685F6693A88B9b206E2d274C4b03";
 const GNOSIS_GOVERNOR = "0xEF9c41A52920343c75c74b2A45b73DB1FB67b2f2";
 const GNOSIS_STRATEGIST = "0xEF9c41A52920343c75c74b2A45b73DB1FB67b2f2";
 
+const ARBITRUM_GOVERNOR = "0xdd5873a087e0c15EE0F017FEf3335eb1E59f9fA0";
+const ARBITRUM_STRATEGIST = "0xdd5873a087e0c15EE0F017FEf3335eb1E59f9fA0";
+
 // testnet networks - common across all testnets
 const TESTNET_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
 const TESTNET_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
@@ -193,6 +196,14 @@ module.exports = {
       timeout: 300000,
       gasPrice: parseInt(process.env.GNOSIS_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
+    mainnet_arbitrum: {
+      url: `${process.env.ARBITRUM_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.ARBITRUM_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+      gasPrice: parseInt(process.env.ARBITRUM_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+    },
     testnet_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
@@ -299,6 +310,7 @@ module.exports = {
       mainnet_aurora: DEPLOYER,
       mainnet_moonbeam: DEPLOYER,
       mainnet_gnosis: DEPLOYER,
+      mainnet_arbitrum: DEPLOYER,
 
       default: 0,
       localhost: 0,
@@ -322,6 +334,7 @@ module.exports = {
       mainnet_aurora: AURORA_GOVERNOR,
       mainnet_moonbeam: MOONBEAM_GOVERNOR,
       mainnet_gnosis: GNOSIS_GOVERNOR,
+      mainnet_arbitrum: ARBITRUM_GOVERNOR,
 
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
@@ -345,6 +358,7 @@ module.exports = {
       mainnet_aurora: AURORA_STRATEGIST,
       mainnet_moonbeam: MOONBEAM_STRATEGIST,
       mainnet_gnosis: GNOSIS_STRATEGIST,
+      mainnet_arbitrum: ARBITRUM_STRATEGIST,
 
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
@@ -401,6 +415,7 @@ module.exports = {
       mainnet_aurora: KEEPER,
       mainnet_moonbeam: KEEPER,
       mainnet_gnosis: KEEPER,
+      mainnet_arbitrum: KEEPER,
 
       default: 11,
       localhost: process.env.FORK === "true" ? KEEPER : 11,
@@ -430,6 +445,7 @@ module.exports = {
       celo: process.env.CELOSCAN_API_KEY,
       moonbeam: process.env.MOONSCAN_API_KEY,
       gnosis: process.env.GNOSISSCAN_API_KEY,
+      arbitrumOne: process.env.ARBSCAN_API_KEY,
     },
     customChains: [
       {
