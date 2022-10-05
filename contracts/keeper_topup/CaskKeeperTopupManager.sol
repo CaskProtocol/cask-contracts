@@ -107,21 +107,29 @@ ICaskKeeperTopupManager
         ICaskKeeperTopup.KeeperTopupGroup memory keeperTopupGroup =
             caskKeeperTopup.getKeeperTopupGroup(uint256(_keeperTopupGroupId));
 
+        uint32 timestamp = uint32(block.timestamp);
+
+        // not time to process yet, re-queue for processAt time
+        if (keeperTopupGroup.processAt > timestamp) {
+            scheduleWorkUnit(_queueId, _keeperTopupGroupId, bucketAt(keeperTopupGroup.processAt));
+            return;
+        }
+
         uint256 count = 0;
 
-        for (uint256 i = 0; i < keeperTopupGroup.keeperTopups.length || count < maxTopupsPerRun; i++) {
+        for (uint256 i = 0; i < keeperTopupGroup.keeperTopups.length && count < maxTopupsPerRun; i++) {
             if (_processKeeperTopup(keeperTopupGroup.keeperTopups[i])) {
                 count += 1;
             }
         }
 
-        if (count >= maxTopupsPerRun) { // possibly more topups to process in this group - schedule immediate recheck
+        if (count < keeperTopupGroup.keeperTopups.length) { // possibly more topups to process in this group - schedule immediate recheck
             scheduleWorkUnit(_queueId, _keeperTopupGroupId, bucketAt(currentBucket()));
         } else {
-
             // everything in this group has been processed - move group to next check period
             if (keeperTopupGroup.count > 0) { // stop processing empty groups
                 scheduleWorkUnit(_queueId, _keeperTopupGroupId, bucketAt(keeperTopupGroup.processAt + queueBucketSize));
+                caskKeeperTopup.managerProcessedGroup(uint256(_keeperTopupGroupId), keeperTopupGroup.processAt + queueBucketSize);
             }
         }
     }
@@ -138,7 +146,7 @@ ICaskKeeperTopupManager
 
         uint96 balance;
         uint64 maxValidBlocknumber;
-        (,,, balance,,,maxValidBlocknumber) = keeperRegistry.getUpkeep(keeperTopup.keeperId);
+        (,,, balance,,,maxValidBlocknumber) = keeperRegistry.getUpkeep(keeperTopup.upkeepId);
 
         // upkeep not active
         if (maxValidBlocknumber != type(uint64).max) {
@@ -232,6 +240,7 @@ ICaskKeeperTopupManager
         if (address(pegswap) != address(0)) {
             uint256 amountBridgeOut = linkBridgeToken.balanceOf(address(this));
 
+            IERC20Metadata(address(linkBridgeToken)).safeIncreaseAllowance(address(pegswap), amountBridgeOut);
             try pegswap.swap(amountBridgeOut, address(linkBridgeToken), address(link677Token)) {
                 // noop
             } catch (bytes memory) {
@@ -242,7 +251,7 @@ ICaskKeeperTopupManager
 
         uint256 amount677Out = link677Token.balanceOf(address(this));
 
-        try link677Token.transferAndCall(address(keeperRegistry), amount677Out, abi.encode(keeperTopup.keeperId)) {
+        try link677Token.transferAndCall(address(keeperRegistry), amount677Out, abi.encode(keeperTopup.upkeepId)) {
             // noop
         } catch (bytes memory) {
             caskKeeperTopup.managerSkipped(_keeperTopupId, ICaskKeeperTopup.SkipReason.KeeperFundingFailure);

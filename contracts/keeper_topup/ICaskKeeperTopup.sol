@@ -27,7 +27,7 @@ interface ICaskKeeperTopup {
     struct KeeperTopup {
         address user;
         uint256 groupId;
-        uint256 keeperId;
+        uint256 upkeepId;
         uint256 lowBalance;
         uint256 topupAmount;
         uint256 currentAmount;
@@ -44,7 +44,7 @@ interface ICaskKeeperTopup {
     }
 
     function createKeeperTopup(
-        uint256 _keeperId,
+        uint256 _upkeepId,
         uint256 _lowBalance,
         uint256 _topupAmount
     ) external returns(bytes32);
@@ -69,17 +69,19 @@ interface ICaskKeeperTopup {
 
     function managerSkipped(bytes32 _keeperTopupId, SkipReason _skipReason) external;
 
+    function managerProcessedGroup(uint256 _keeperTopupGroupId, uint32 _nextProcessAt) external;
 
-    event KeeperTopupCreated(bytes32 indexed keeperTopupId, address indexed user, uint256 indexed keeperId);
+    event KeeperTopupCreated(bytes32 indexed keeperTopupId, address indexed user, uint256 indexed upkeepId);
 
-    event KeeperTopupPaused(bytes32 indexed keeperTopupId, uint256 indexed keeperId);
+    event KeeperTopupPaused(bytes32 indexed keeperTopupId, uint256 indexed upkeepId);
 
-    event KeeperTopupResumed(bytes32 indexed keeperTopupId, uint256 indexed keeperId);
+    event KeeperTopupResumed(bytes32 indexed keeperTopupId, uint256 indexed upkeepId);
 
-    event KeeperTopupSkipped(bytes32 indexed keeperTopupId, uint256 indexed keeperId, SkipReason skipReason);
+    event KeeperTopupSkipped(bytes32 indexed keeperTopupId, uint256 indexed upkeepId, SkipReason skipReason);
 
-    event KeeperTopupProcessed(bytes32 indexed keeperTopupId, uint256 indexed keeperId);
+    event KeeperTopupProcessed(bytes32 indexed keeperTopupId, uint256 indexed upkeepId);
 
-    event KeeperTopupCanceled(bytes32 indexed keeperTopupId, uint256 indexed keeperId);
+    event KeeperTopupCanceled(bytes32 indexed keeperTopupId, uint256 indexed upkeepId);
 
+    event KeeperTopupGroupProcessed(uint256 indexed keeperTopupGroupId);
 }

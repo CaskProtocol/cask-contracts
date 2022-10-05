@@ -7,15 +7,11 @@ const {
 } = require("../utils/units");
 
 const {
-    parseUnits
-} = require("ethers").utils;
-
-const {
     advanceTimeRunKTUKeeper,
 } = require("./_helpers");
 
 const {
-    ktuFixture,
+    ktuFundedFixture,
 } = require("./fixtures/keeper_topup");
 
 
@@ -31,11 +27,11 @@ describe("CaskKeeperTopup General", function () {
             erc677Link,
             ktu,
             ktuManager,
-        } = await ktuFixture();
+        } = await ktuFundedFixture();
 
         const userVault = vault.connect(user);
         const userKTU = ktu.connect(user);
-
+        const userERC77Link = erc677Link.connect(user);
 
         // deposit to vault
         await userVault.deposit(networkAddresses.USDC, usdcUnits('1000'));
@@ -46,9 +42,17 @@ describe("CaskKeeperTopup General", function () {
 
         let result;
 
+        const upkeepId = 1;
+        await keeperRegistry.registerUpkeep(user.address, 5000000, user.address, 0);
+
+        await userERC77Link.transferAndCall(keeperRegistry.address, linkUnits('7.0'),
+            ethers.utils.defaultAbiCoder.encode(['uint256'],[upkeepId]));
+        result = await keeperRegistry.getUpkeep(upkeepId);
+        expect(result.balance).to.equal(linkUnits('7.0')); // confirm ERC677 funding worked
+
         // create keeper topup
         const tx = await userKTU.createKeeperTopup(
-            12345, // keeperId
+            upkeepId, // keeperId
             linkUnits('5'), // lowBalance
             usdcUnits('10') // topupAmount
         );
@@ -59,12 +63,17 @@ describe("CaskKeeperTopup General", function () {
         expect(ktuId).to.not.be.undefined;
         expect(createdEvent.args.user).to.equal(user.address);
 
-        await keeperRegistry.spendFunds(ktuId, linkUnits('2'));
-        expect(await erc677Link.balanceOf(user.address)).to.equal(linkUnits('3'));
+        await keeperRegistry.spendFunds(upkeepId, linkUnits('1')); // spend down to 6 LINK
+        await advanceTimeRunKTUKeeper(2, day);
 
-        await advanceTimeRunKTUKeeper(1, day);
+        result = await keeperRegistry.getUpkeep(upkeepId);
+        expect(result.balance).to.equal(linkUnits('6')); // confirm 1 LINK was spent
 
-        // expect(await abc.balanceOf(user.address)).to.equal(linkUnits('3'));
+        await keeperRegistry.spendFunds(upkeepId, linkUnits('2')); // spend down to 4 LINK
+        await advanceTimeRunKTUKeeper(3, day); // top-up 100 USDC worth since LINK is < 5
+
+        result = await keeperRegistry.getUpkeep(upkeepId);
+        expect(result.balance).to.equal(linkUnits('13.9')); // confirm topup happened (4+10 minus 0.1 fee)
 
     });
 

@@ -2,10 +2,13 @@
 pragma solidity ^0.8.0;
 
 import "../keeper_topup/KeeperRegistryBaseInterface.sol";
+import "../erc677/IERC677Receiver.sol";
 
-contract MockKeeperRegistry is KeeperRegistryBaseInterface {
+contract MockKeeperRegistry is KeeperRegistryBaseInterface, IERC677Receiver {
 
+    mapping(uint256 => address) public upkeepAdmins;
     mapping(uint256 => uint96) public upkeepBalance;
+    mapping(uint256 => uint256) public upkeepPerforms;
     uint256 public upkeepCount;
 
     function registerUpkeep(
@@ -13,33 +16,38 @@ contract MockKeeperRegistry is KeeperRegistryBaseInterface {
         uint32 gasLimit,
         address admin,
         bytes calldata checkData
-    ) external returns (
-        uint256 id
-    ){return 0;}
+    ) external returns(uint256) {
+        upkeepCount += 1;
+
+        upkeepAdmins[upkeepCount] = admin;
+        return upkeepCount;
+    }
 
     function performUpkeep(
         uint256 id,
         bytes calldata performData
     ) external returns (
         bool success
-    ) {return true;}
+    ) {
+        require(upkeepAdmins[id] != address(0), "!invalid");
+        upkeepPerforms[id] += 1;
+        return true;
+    }
 
     function cancelUpkeep(
         uint256 id
     ) external {
-        if (upkeepBalance[id] > 0 && upkeepCount > 0) {
-            upkeepCount -= 1;
-        }
+        require(upkeepAdmins[id] != address(0), "!invalid");
+        upkeepCount -= 1;
         upkeepBalance[id] = 0;
+        upkeepAdmins[id] = address(0);
     }
 
     function addFunds(
         uint256 id,
         uint96 amount
     ) external {
-        if (upkeepBalance[id] == 0) {
-            upkeepCount += 1;
-        }
+        require(upkeepAdmins[id] != address(0), "!invalid");
         upkeepBalance[id] += amount;
     }
 
@@ -47,11 +55,9 @@ contract MockKeeperRegistry is KeeperRegistryBaseInterface {
         uint256 id,
         uint96 amount
     ) external {
+        require(upkeepAdmins[id] != address(0), "!invalid");
         require(amount <= upkeepBalance[id], "!balance");
         upkeepBalance[id] -= amount;
-        if (upkeepBalance[id] == 0 && upkeepCount > 0) {
-            upkeepCount -= 1;
-        }
     }
 
     function getUpkeep(uint256 id)
@@ -63,7 +69,7 @@ contract MockKeeperRegistry is KeeperRegistryBaseInterface {
         address lastKeeper,
         address admin,
         uint64 maxValidBlocknumber
-    ) {return (address(0), 0, bytes(""), upkeepBalance[id], address(0), address(0), type(uint64).max);}
+    ) {return (address(0), 0, bytes(""), upkeepBalance[id], address(0), upkeepAdmins[id], type(uint64).max);}
 
     function getUpkeepCount()
     external view returns (uint256) {return upkeepCount;}
@@ -91,4 +97,15 @@ contract MockKeeperRegistry is KeeperRegistryBaseInterface {
         uint256 fallbackGasPrice,
         uint256 fallbackLinkPrice
     ) {return (0, 0, 0, 0, 0, 0, 0);}
+
+    function onTokenTransfer(
+        address sender,
+        uint256 amount,
+        bytes calldata data
+    ) external {
+        uint256 id = abi.decode(data, (uint256));
+
+        require(upkeepAdmins[id] != address(0), "!invalid");
+        upkeepBalance[id] += uint96(amount);
+    }
 }

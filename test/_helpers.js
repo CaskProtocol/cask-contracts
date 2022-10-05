@@ -144,8 +144,9 @@ const getChainlinkAddresses = async (deployments) => {
                     (await deployments.get("MockUSDC")).address,
                     (await deployments.get("MockERC677LINK")).address
                 ],
-            keeper_peg_swap: addresses[hre.network.name].keeper_peg_swap ||
-                (await deployments.get("MockPegSwap")).address,
+            // keeper_peg_swap: addresses[hre.network.name].keeper_peg_swap ||
+            //     (await deployments.get("MockPegSwap")).address,
+            keeper_peg_swap: addresses.zero,
         };
     }
 };
@@ -329,4 +330,10 @@ module.exports = {
     p2pCheckUpkeep,
     p2pPerformUpkeep,
     advanceTimeRunP2PKeeper,
+
+    // Keeper topup keeper
+    runKTUKeeper,
+    ktuCheckUpkeep,
+    ktuPerformUpkeep,
+    advanceTimeRunKTUKeeper,
 };
