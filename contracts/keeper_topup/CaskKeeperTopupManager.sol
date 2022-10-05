@@ -220,8 +220,8 @@ ICaskKeeperTopupManager
                 linkSwapPath[linkSwapPath.length - 1],
                 address(linkPriceFeed),
                 amountIn);
+            amountOutEst = amountOutEst - ((amountOutEst * maxSwapSlippageBps) / 10000);
         }
-        amountOutEst = amountOutEst - ((amountOutEst * maxSwapSlippageBps) / 10000);
 
         // perform swap
         try linkSwapRouter.swapExactTokensForTokens(
@@ -251,6 +251,7 @@ ICaskKeeperTopupManager
 
         uint256 amount677Out = link677Token.balanceOf(address(this));
 
+        // fund upkeep using ERC677 transferAndCall to registry with upkeepId
         try link677Token.transferAndCall(address(keeperRegistry), amount677Out, abi.encode(keeperTopup.upkeepId)) {
             // noop
         } catch (bytes memory) {
