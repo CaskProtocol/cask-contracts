@@ -39,7 +39,7 @@ async function ktuFundedFixture() {
     await fixture.router.setOutputBps(20000); // set LP output to give 2 LINK for every 1 USDC (ie, 0.5 price) to match price feed
 
     // user
-    await fixture.erc677Link.connect(fixture.deployer).mint(fixture.user.address, linkUnits('10.0'));
+    await fixture.erc677Link.connect(fixture.deployer).mint(fixture.user.address, linkUnits('1000.0'));
 
     return fixture;
 }
