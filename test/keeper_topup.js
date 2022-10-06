@@ -297,7 +297,7 @@ describe("CaskKeeperTopup General", function () {
         let tx;
         let result;
 
-        // create 10 upkeeps & topups
+        // create 10 upkeeps & topups for group 1
         for (let i = 1; i <= 10; i++) {
             await keeperRegistry.registerUpkeep(user.address, 5000000, user.address, 0);
 
@@ -341,6 +341,8 @@ describe("CaskKeeperTopup General", function () {
         result = await ktu.getKeeperTopup(ktuId);
         expect(result.numSkips).to.equal(0);
         expect(result.numTopups).to.equal(1);
+        result = await keeperRegistry.getUpkeep(upkeepId);
+        expect(result.balance).to.equal(linkUnits('23.8')); // == 4 + ((10 - 0.1 fee) / 0.5 LINK price))
         result = await userVault.currentValueOf(user.address);
         expect(result).to.equal(usdcUnits('990')); // charged
     });
