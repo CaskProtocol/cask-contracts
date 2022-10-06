@@ -26,7 +26,6 @@ describe("CaskKeeperTopup General", function () {
             keeperRegistry,
             erc677Link,
             ktu,
-            ktuManager,
         } = await ktuFundedFixture();
 
         const userVault = vault.connect(user);
@@ -73,13 +72,19 @@ describe("CaskKeeperTopup General", function () {
         await keeperRegistry.spendFunds(upkeepId, linkUnits('2')); // spend down to 4 LINK
         await advanceTimeRunKTUKeeper(1, day);
 
+        // confirm topup happened
         result = await ktu.getKeeperTopup(ktuId);
         expect(result.numTopups).to.equal(1);
         expect(result.numSkips).to.equal(0);
         result = await keeperRegistry.getUpkeep(upkeepId);
-        expect(result.balance).to.equal(linkUnits('23.8')); // confirm topup happened = 4 + ((10 - 0.1 fee) / 0.5 LINK price))
+        expect(result.balance).to.equal(linkUnits('23.8')); // == 4 + ((10 - 0.1 fee) / 0.5 LINK price))
         result = await userVault.currentValueOf(user.address);
-        expect(result).to.equal(usdcUnits('990'));
+        expect(result).to.equal(usdcUnits('990')); // == 1000 - 10
+
+        await advanceTimeRunKTUKeeper(5, day);
+
+        result = await keeperRegistry.getUpkeep(upkeepId);
+        expect(result.balance).to.equal(linkUnits('23.8'));
 
         await advanceTimeRunKTUKeeper(5, day);
 
@@ -87,19 +92,19 @@ describe("CaskKeeperTopup General", function () {
         expect(result.balance).to.equal(linkUnits('23.8'));
 
         await keeperRegistry.spendFunds(upkeepId, linkUnits('20')); // spend down to 3.8 LINK
-
         result = await keeperRegistry.getUpkeep(upkeepId);
         expect(result.balance).to.equal(linkUnits('3.8'));
 
-        await advanceTimeRunKTUKeeper(2, day);
+        await advanceTimeRunKTUKeeper(1, day);
 
+        // confirm 2nd topup happened
         result = await ktu.getKeeperTopup(ktuId);
         expect(result.numTopups).to.equal(2);
         expect(result.numSkips).to.equal(0);
         result = await keeperRegistry.getUpkeep(upkeepId);
-        expect(result.balance).to.equal(linkUnits('23.6')); // confirm 2nd topup happened = 3.8 + ((10 - 0.1 fee) / 0.5 LINK price))
+        expect(result.balance).to.equal(linkUnits('23.6')); // == 3.8 + ((10 - 0.1 fee) / 0.5 LINK price))
         result = await userVault.currentValueOf(user.address);
-        expect(result).to.equal(usdcUnits('980'));
+        expect(result).to.equal(usdcUnits('980')); // == 990 - 10
 
     });
 
