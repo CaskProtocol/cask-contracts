@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../keeper_topup/KeeperRegistryBaseInterface.sol";
+import "../keeper_topup/LinkTokenInterface.sol";
 import "../erc677/IERC677Receiver.sol";
 
 contract MockKeeperRegistry is KeeperRegistryBaseInterface, IERC677Receiver {
@@ -10,6 +11,14 @@ contract MockKeeperRegistry is KeeperRegistryBaseInterface, IERC677Receiver {
     mapping(uint256 => uint96) public upkeepBalance;
     mapping(uint256 => uint256) public upkeepPerforms;
     uint256 public upkeepCount;
+
+    LinkTokenInterface public linkToken;
+
+    function initialize(
+        address _linkToken
+    ) external {
+        linkToken = LinkTokenInterface(_linkToken);
+    }
 
     function registerUpkeep(
         address target,
@@ -48,6 +57,7 @@ contract MockKeeperRegistry is KeeperRegistryBaseInterface, IERC677Receiver {
         uint96 amount
     ) external {
         require(upkeepAdmins[id] != address(0), "!invalid");
+        linkToken.transferFrom(msg.sender, address(this), amount);
         upkeepBalance[id] += amount;
     }
 

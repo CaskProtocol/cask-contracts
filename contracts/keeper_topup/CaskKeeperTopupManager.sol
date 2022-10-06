@@ -123,15 +123,18 @@ ICaskKeeperTopupManager
             }
         }
 
-        if (count < keeperTopupGroup.keeperTopups.length) { // possibly more topups to process in this group - schedule immediate recheck
-            scheduleWorkUnit(_queueId, _keeperTopupGroupId, bucketAt(currentBucket()));
-        } else {
+        if (count >= keeperTopupGroup.keeperTopups.length || count < maxTopupsPerRun) {
             // everything in this group has been processed - move group to next check period
             if (keeperTopupGroup.count > 0) { // stop processing empty groups
                 scheduleWorkUnit(_queueId, _keeperTopupGroupId, bucketAt(keeperTopupGroup.processAt + queueBucketSize));
-                caskKeeperTopup.managerProcessedGroup(uint256(_keeperTopupGroupId), keeperTopupGroup.processAt + queueBucketSize);
+                caskKeeperTopup.managerProcessedGroup(uint256(_keeperTopupGroupId),
+                    keeperTopupGroup.processAt + queueBucketSize);
             }
+        } else {
+            // still more to do - schedule an immediate re-run
+            scheduleWorkUnit(_queueId, _keeperTopupGroupId, bucketAt(currentBucket()));
         }
+
     }
 
     function _processKeeperTopup(
@@ -251,8 +254,8 @@ ICaskKeeperTopupManager
 
         uint256 amount677Out = link677Token.balanceOf(address(this));
 
-        // fund upkeep using ERC677 transferAndCall to registry with upkeepId
-        try link677Token.transferAndCall(address(keeperRegistry), amount677Out, abi.encode(keeperTopup.upkeepId)) {
+        IERC20Metadata(address(link677Token)).safeIncreaseAllowance(address(keeperRegistry), amount677Out);
+        try keeperRegistry.addFunds(keeperTopup.upkeepId, uint96(amount677Out)) {
             // noop
         } catch (bytes memory) {
             caskKeeperTopup.managerSkipped(_keeperTopupId, ICaskKeeperTopup.SkipReason.KeeperFundingFailure);

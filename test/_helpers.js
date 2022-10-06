@@ -162,8 +162,10 @@ const subscriptionPerformUpkeep = async(performData) => {
 };
 
 const runSubscriptionKeeper = async(limit= 10, minDepth = 0) => {
-    await runSubscriptionKeeperType(1, limit, minDepth); // active
-    await runSubscriptionKeeperType(2, limit, minDepth); // past due
+    const results = [];
+    results.push(runSubscriptionKeeperType(1, limit, minDepth)); // active
+    results.push(runSubscriptionKeeperType(2, limit, minDepth)); // past due
+    return results;
 };
 
 const runSubscriptionKeeperType = async(checkType, limit= 10, minDepth = 0) => {
@@ -180,12 +182,10 @@ const runSubscriptionKeeperType = async(checkType, limit= 10, minDepth = 0) => {
 }
 
 const advanceTimeRunSubscriptionKeeper = async (times, seconds, keeperLimit=10) => {
-    let result;
     for (let i = 0; i < times; i++) {
         await advanceTime(seconds);
-        result = await runSubscriptionKeeper(keeperLimit);
+        await Promise.all(runSubscriptionKeeper(keeperLimit));
     }
-    return result;
 }
 
 const dcaCheckUpkeep = async(checkData) => {
@@ -199,7 +199,7 @@ const dcaPerformUpkeep = async(performData) => {
 };
 
 const runDCAKeeper = async(limit= 10, minDepth = 0) => {
-    await runDCAKeeperType(1, limit, minDepth);
+    return runDCAKeeperType(1, limit, minDepth);
 };
 
 const runDCAKeeperType = async(queueId, limit= 10, minDepth = 0) => {
@@ -216,12 +216,10 @@ const runDCAKeeperType = async(queueId, limit= 10, minDepth = 0) => {
 }
 
 const advanceTimeRunDCAKeeper = async (times, seconds, keeperLimit=10) => {
-    let result;
     for (let i = 0; i < times; i++) {
         await advanceTime(seconds);
-        result = await runDCAKeeper(keeperLimit);
+        await runDCAKeeper(keeperLimit);
     }
-    return result;
 }
 
 const p2pCheckUpkeep = async(checkData) => {
@@ -235,7 +233,7 @@ const p2pPerformUpkeep = async(performData) => {
 };
 
 const runP2PKeeper = async(limit= 10, minDepth = 0) => {
-    await runP2PKeeperType(1, limit, minDepth);
+    return runP2PKeeperType(1, limit, minDepth);
 };
 
 const runP2PKeeperType = async(queueId, limit= 10, minDepth = 0) => {
@@ -252,12 +250,10 @@ const runP2PKeeperType = async(queueId, limit= 10, minDepth = 0) => {
 }
 
 const advanceTimeRunP2PKeeper = async (times, seconds, keeperLimit=10) => {
-    let result;
     for (let i = 0; i < times; i++) {
         await advanceTime(seconds);
-        result = await runP2PKeeper(keeperLimit);
+        await runP2PKeeper(keeperLimit);
     }
-    return result;
 }
 
 const ktuCheckUpkeep = async(checkData) => {
@@ -271,7 +267,7 @@ const ktuPerformUpkeep = async(performData) => {
 };
 
 const runKTUKeeper = async(limit= 10, minDepth = 0) => {
-    await runKTUKeeperType(1, limit, minDepth);
+    return runKTUKeeperType(1, limit, minDepth);
 };
 
 const runKTUKeeperType = async(queueId, limit= 10, minDepth = 0) => {
@@ -288,12 +284,10 @@ const runKTUKeeperType = async(queueId, limit= 10, minDepth = 0) => {
 }
 
 const advanceTimeRunKTUKeeper = async (times, seconds, keeperLimit=10) => {
-    let result;
     for (let i = 0; i < times; i++) {
         await advanceTime(seconds);
-        result = await runKTUKeeper(keeperLimit);
+        await runKTUKeeper(keeperLimit);
     }
-    return result;
 }
 
 

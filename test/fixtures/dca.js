@@ -22,10 +22,7 @@ async function dcaFixture() {
     fixture.dai = await ethers.getContract("MockDAI");
     fixture.abc = await ethers.getContract("MockABC");
 
-    await fixture.router.connect(fixture.governor).initialize(
-        [fixture.usdc.address, fixture.dai.address],
-        [fixture.abc.address, fixture.abc.address]
-    );
+    await fixture.router.connect(fixture.governor).initialize();
 
     return fixture;
 }

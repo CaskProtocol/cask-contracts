@@ -102,7 +102,7 @@ BaseRelayRecipient
         keeperTopupGroup.keeperTopups.push(keeperTopupId);
         keeperTopupGroup.count += 1;
 
-        if (keeperTopupGroup.count == 1) { // register only if new group
+        if (keeperTopupGroup.count == 1) { // register only if new/reinitialized group
             keeperTopupManager.registerKeeperTopupGroup(keeperTopupGroupId);
         }
 

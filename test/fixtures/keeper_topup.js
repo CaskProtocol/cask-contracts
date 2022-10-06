@@ -21,22 +21,16 @@ async function ktuFixture() {
     fixture.usdc = await ethers.getContract("MockUSDC");
     fixture.erc20Link = await ethers.getContract("MockERC20LINK");
     fixture.erc677Link = await ethers.getContract("MockERC677LINK");
-    //
-    // await fixture.router.connect(fixture.governor).initialize(
-    //     // [fixture.usdc.address, fixture.erc20Link.address],
-    //     [fixture.usdc.address, fixture.erc677Link.address]
-    // );
+
+    // set 1 LINK to be 0.5 USDC
+    await fixture.priceFeed.setPrice(ethers.utils.parseUnits('0.5', 8)); // set price feed to 0.5 USDC per LINK
+    await fixture.router.setOutputBps(20000); // set LP output to give 2 LINK for every 1 USDC (ie, 0.5 price) to match price feed
 
     return fixture;
 }
 
 async function ktuFundedFixture() {
     const fixture = await ktuFixture();
-
-    // LP pools
-    // await fixture.usdc.connect(fixture.deployer).mint(fixture.router.address, usdcUnits('200000.0'));
-    // await fixture.erc20Link.connect(fixture.deployer).mint(fixture.router.address, linkUnits('100000.0'));
-    // await fixture.erc677Link.connect(fixture.deployer).mint(fixture.router.address, linkUnits('200000.0'));
 
     // user
     await fixture.erc677Link.connect(fixture.deployer).mint(fixture.user.address, linkUnits('10.0'));
