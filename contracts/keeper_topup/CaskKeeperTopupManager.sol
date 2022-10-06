@@ -259,7 +259,6 @@ ICaskKeeperTopupManager
 
         if (address(pegswap) != address(0)) {
             uint256 amountBridgeOut = linkBridgeToken.balanceOf(address(this));
-
             IERC20Metadata(address(linkBridgeToken)).safeIncreaseAllowance(address(pegswap), amountBridgeOut);
             pegswap.swap(amountBridgeOut, address(linkBridgeToken), address(link677Token));
         }
