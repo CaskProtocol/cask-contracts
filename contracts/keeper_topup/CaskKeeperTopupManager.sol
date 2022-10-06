@@ -48,15 +48,21 @@ ICaskKeeperTopupManager
     /** @dev max number of failed KeeperTopup purchases before KeeperTopup is permanently canceled. */
     uint256 public maxSkips;
 
-    /** @dev KeeperTopup transaction fee. */
+    /** @dev KeeperTopup transaction fee bps and min. */
     uint256 public topupFeeBps;
     uint256 public topupFeeMin;
 
+    /** @dev max allowable age for price feed data. */
     uint256 public maxPriceFeedAge;
 
-    uint256 public maxTopupsPerRun;
+    /** @dev max number of topups to do per each run of a group. */
+    uint256 public maxTopupsPerGroupRun;
 
+    /** @dev max slippage allowed when buying LINK on the DEX for a topup. */
     uint256 public maxSwapSlippageBps;
+
+    /** @dev Address to receive DCA fees. */
+    address public feeDistributor;
 
 
     function initialize(
@@ -68,7 +74,8 @@ ICaskKeeperTopupManager
         address _linkPriceFeed,
         address _linkSwapRouter,
         address[] calldata _linkSwapPath,
-        address _pegswap
+        address _pegswap,
+        address _feeDistributor
     ) public initializer {
         caskKeeperTopup = ICaskKeeperTopup(_caskKeeperTopup);
         caskVault = ICaskVault(_caskVault);
@@ -80,12 +87,13 @@ ICaskKeeperTopupManager
         linkSwapRouter = IUniswapV2Router02(_linkSwapRouter);
         linkSwapPath = _linkSwapPath;
         pegswap = IPegSwap(_pegswap);
+        feeDistributor = _feeDistributor;
 
         maxSkips = 0;
         topupFeeBps = 0;
         topupFeeMin = 0;
         maxPriceFeedAge = 0;
-        maxTopupsPerRun = 1;
+        maxTopupsPerGroupRun = 1;
         maxSwapSlippageBps = 100;
 
         __CaskJobQueue_init(12 hours);
@@ -117,13 +125,13 @@ ICaskKeeperTopupManager
 
         uint256 count = 0;
 
-        for (uint256 i = 0; i < keeperTopupGroup.keeperTopups.length && count < maxTopupsPerRun; i++) {
+        for (uint256 i = 0; i < keeperTopupGroup.keeperTopups.length && count < maxTopupsPerGroupRun; i++) {
             if (_processKeeperTopup(keeperTopupGroup.keeperTopups[i])) {
                 count += 1;
             }
         }
 
-        if (count >= keeperTopupGroup.keeperTopups.length || count < maxTopupsPerRun) {
+        if (count >= keeperTopupGroup.keeperTopups.length || count < maxTopupsPerGroupRun) {
             // everything in this group has been processed - move group to next check period
             if (keeperTopupGroup.count > 0) { // stop processing empty groups
                 scheduleWorkUnit(_queueId, _keeperTopupGroupId, bucketAt(keeperTopupGroup.processAt + queueBucketSize));
@@ -189,8 +197,8 @@ ICaskKeeperTopupManager
             topupFee = topupFeeMin;
         }
 
-        // perform a 'payment' to this contract, fee goes to vault
-        try caskVault.protocolPayment(keeperTopup.user, address(this), keeperTopup.topupAmount, topupFee) {
+        // perform a 'payment' to this contract, fee is taken out manually after a successful swap
+        try caskVault.protocolPayment(keeperTopup.user, address(this), keeperTopup.topupAmount, 0) {
             // noop
         } catch (bytes memory) {
             caskKeeperTopup.managerSkipped(_keeperTopupId, ICaskKeeperTopup.SkipReason.PaymentFailed);
@@ -202,12 +210,7 @@ ICaskKeeperTopupManager
         if (withdrawShares > caskVault.balanceOf(address(this))) {
             withdrawShares = caskVault.balanceOf(address(this));
         }
-        try caskVault.withdraw(caskVault.getBaseAsset(), withdrawShares) {
-            // noop
-        } catch (bytes memory) {
-            caskKeeperTopup.managerSkipped(_keeperTopupId, ICaskKeeperTopup.SkipReason.PaymentFailed);
-            return false;
-        }
+        caskVault.withdraw(caskVault.getBaseAsset(), withdrawShares);
 
         // calculate actual amount of baseAsset that was received from payment/withdraw
         uint256 amountIn = IERC20Metadata(caskVault.getBaseAsset()).balanceOf(address(this)) - beforeBalance;
@@ -216,26 +219,40 @@ ICaskKeeperTopupManager
         // let swap router spend the amount of newly acquired baseAsset
         IERC20Metadata(caskVault.getBaseAsset()).safeIncreaseAllowance(address(linkSwapRouter), amountIn);
 
-        uint256 amountOutEst = 0;
+        uint256 amountOutMin = 0;
+
+        // if there is a pricefeed calc max slippage
         if (address(linkPriceFeed) != address(0)) {
-            amountOutEst = _convertPrice(
+            amountOutMin = _convertPrice(
                 caskVault.getAsset(caskVault.getBaseAsset()),
                 linkSwapPath[linkSwapPath.length - 1],
                 address(linkPriceFeed),
                 amountIn);
-            amountOutEst = amountOutEst - ((amountOutEst * maxSwapSlippageBps) / 10000);
+            amountOutMin = amountOutMin - ((amountOutMin * maxSwapSlippageBps) / 10000);
         }
+
+        uint256 amount677before = link677Token.balanceOf(address(this));
 
         // perform swap
         try linkSwapRouter.swapExactTokensForTokens(
             amountIn,
-            amountOutEst,
+            amountOutMin,
             linkSwapPath,
             address(this),
             block.timestamp + 1 hours
         ) returns (uint256[] memory amounts) {
             require(amounts.length >= 2, "!INVALID(amounts)");
+
+            // any non-withdrawn shares are the fee portion - send to fee distributor
+            caskVault.transfer(feeDistributor, caskVault.balanceOf(address(this)));
+
         } catch (bytes memory) {
+
+            // undo withdraw and send shares back to user
+            IERC20Metadata(caskVault.getBaseAsset()).safeIncreaseAllowance(address(caskVault), amountIn);
+            caskVault.deposit(caskVault.getBaseAsset(), amountIn);
+            caskVault.transfer(keeperTopup.user, caskVault.balanceOf(address(this))); // refund full amount
+
             caskKeeperTopup.managerSkipped(_keeperTopupId, ICaskKeeperTopup.SkipReason.SwapFailed);
             return false;
         }
@@ -244,23 +261,12 @@ ICaskKeeperTopupManager
             uint256 amountBridgeOut = linkBridgeToken.balanceOf(address(this));
 
             IERC20Metadata(address(linkBridgeToken)).safeIncreaseAllowance(address(pegswap), amountBridgeOut);
-            try pegswap.swap(amountBridgeOut, address(linkBridgeToken), address(link677Token)) {
-                // noop
-            } catch (bytes memory) {
-                caskKeeperTopup.managerSkipped(_keeperTopupId, ICaskKeeperTopup.SkipReason.SwapFailed);
-                return false;
-            }
+            pegswap.swap(amountBridgeOut, address(linkBridgeToken), address(link677Token));
         }
 
-        uint256 amount677Out = link677Token.balanceOf(address(this));
-
+        uint256 amount677Out = link677Token.balanceOf(address(this)) - amount677before;
         IERC20Metadata(address(link677Token)).safeIncreaseAllowance(address(keeperRegistry), amount677Out);
-        try keeperRegistry.addFunds(keeperTopup.upkeepId, uint96(amount677Out)) {
-            // noop
-        } catch (bytes memory) {
-            caskKeeperTopup.managerSkipped(_keeperTopupId, ICaskKeeperTopup.SkipReason.KeeperFundingFailure);
-            return false;
-        }
+        keeperRegistry.addFunds(keeperTopup.upkeepId, uint96(amount677Out));
 
         return true;
     }
@@ -319,7 +325,7 @@ ICaskKeeperTopupManager
         uint256 _topupFeeBps,
         uint256 _topupFeeMin,
         uint256 _maxPriceFeedAge,
-        uint256 _maxTopupsPerRun,
+        uint256 _maxTopupsPerGroupRun,
         uint256 _maxSwapSlippageBps,
         uint32 _queueBucketSize,
         uint32 _maxQueueAge
@@ -328,7 +334,7 @@ ICaskKeeperTopupManager
         topupFeeBps = _topupFeeBps;
         topupFeeMin = _topupFeeMin;
         maxPriceFeedAge = _maxPriceFeedAge;
-        maxTopupsPerRun = _maxTopupsPerRun;
+        maxTopupsPerGroupRun = _maxTopupsPerGroupRun;
         maxSwapSlippageBps = _maxSwapSlippageBps;
         queueBucketSize = _queueBucketSize;
         maxQueueAge = _maxQueueAge;
@@ -350,6 +356,13 @@ ICaskKeeperTopupManager
         linkSwapRouter = IUniswapV2Router02(_linkSwapRouter);
         linkSwapPath = _linkSwapPath;
         pegswap = IPegSwap(_pegswap);
+    }
+
+    function setFeeDistributor(
+        address _feeDistributor
+    ) external onlyOwner {
+        feeDistributor = _feeDistributor;
+        emit SetFeeDistributor(_feeDistributor);
     }
 
 }

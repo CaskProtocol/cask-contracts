@@ -20,8 +20,7 @@ interface ICaskKeeperTopup {
     enum SkipReason {
         None,
         PaymentFailed,
-        SwapFailed,
-        KeeperFundingFailure
+        SwapFailed
     }
 
     struct KeeperTopup {

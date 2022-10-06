@@ -5,4 +5,6 @@ interface ICaskKeeperTopupManager {
 
     function registerKeeperTopupGroup(uint256 _keeperTopupId) external;
 
+    /** @dev Emitted the feeDistributor is changed. */
+    event SetFeeDistributor(address feeDistributor);
 }

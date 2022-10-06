@@ -6,19 +6,9 @@ const {
 
 const {
     deployWithConfirmation,
-    withConfirmation,
-    log
 } = require("../utils/deploy");
 
-const {
-    usdcUnits,
-    linkUnits,
-} = require("../utils/units");
-
-const deployKeeperTopupMocks = async ({ethers, getNamedAccounts}) => {
-
-    const {deployerAddr, faucetAdmin} = await hre.getNamedAccounts();
-    const deployer = await ethers.provider.getSigner(deployerAddr);
+const deployKeeperTopupMocks = async ({ethers}) => {
 
     await deployWithConfirmation("MockERC20LINK");
     await deployWithConfirmation("MockERC677LINK");
@@ -33,20 +23,11 @@ const deployKeeperTopupMocks = async ({ethers, getNamedAccounts}) => {
     await deployWithConfirmation("MockUniswapRouterUSDCLINK", null, "MockUniswapRouter");
 
     const router = await ethers.getContract("MockUniswapRouterUSDCLINK");
-    const usdc = await ethers.getContract("MockUSDC");
-    const erc20Link = await ethers.getContract("MockERC20LINK");
     const erc677Link = await ethers.getContract("MockERC677LINK");
     const registry = await ethers.getContract("MockKeeperRegistry");
 
     await router.initialize();
     await registry.initialize(erc677Link.address);
-
-    // mint swap liquidity to mock router
-    await usdc.connect(deployer).mint(router.address, usdcUnits('100000.0'));
-    await erc677Link.connect(deployer).mint(router.address, linkUnits('200000.0', 18));
-    await erc20Link.connect(deployer).mint(router.address, linkUnits('200000.0', 18));
-
-    log(`Initialized and funded mock keeper topup router with USDC, ERC677LINK and ERC20LINK at ${router.address}`);
 
 };
 

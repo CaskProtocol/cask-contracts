@@ -54,7 +54,8 @@ const deployKeeperTopup = async ({ethers, getNamedAccounts}) => {
             chainlinkAddresses.LINK_USD,
             chainlinkAddresses.keeper_swap_router,
             chainlinkAddresses.keeper_swap_path,
-            chainlinkAddresses.keeper_peg_swap
+            chainlinkAddresses.keeper_peg_swap,
+            governorAddr
         )
     );
     log("Initialized CaskKeeperTopupManager");
