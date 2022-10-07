@@ -19,7 +19,7 @@ const {
 
 describe("CaskChainlinkTopup General", function () {
 
-    it("Basic ChainlinkTopup lifecycle", async function () {
+    it("Basic automation topup lifecycle", async function () {
 
         const {
             networkAddresses,
@@ -112,7 +112,7 @@ describe("CaskChainlinkTopup General", function () {
 
     });
 
-    it("Payment failed", async function () {
+    it("Automation topup payment failed", async function () {
 
         const {
             networkAddresses,
@@ -189,7 +189,7 @@ describe("CaskChainlinkTopup General", function () {
 
     });
 
-    it("ChainlinkTopup handles excess slippage", async function () {
+    it("Automation topup handles excess slippage", async function () {
 
         const {
             networkAddresses,
@@ -279,7 +279,7 @@ describe("CaskChainlinkTopup General", function () {
 
     });
 
-    it("ChainlinkTopup multiple groups", async function () {
+    it("Automation topup multiple groups", async function () {
 
         const {
             networkAddresses,
