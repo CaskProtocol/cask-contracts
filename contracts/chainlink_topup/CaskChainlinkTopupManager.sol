@@ -341,13 +341,10 @@ ICaskChainlinkTopupManager
             caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
-            // we dont use the ERC677 interface here because arbitrum LINK is not ERC677
-            AutomationRegistryBaseInterface automationRegistry = AutomationRegistryBaseInterface(chainlinkTopup.registry);
-            IERC20Metadata(address(linkFundingToken)).safeIncreaseAllowance(chainlinkTopup.registry, _amount);
-            automationRegistry.addFunds(chainlinkTopup.targetId, uint96(_amount));
+            linkFundingToken.transferAndCall(chainlinkTopup.registry, _amount,
+                abi.encode(chainlinkTopup.targetId));
 
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
-            VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
             linkFundingToken.transferAndCall(chainlinkTopup.registry, _amount,
                 abi.encode(uint64(chainlinkTopup.targetId)));
         }
