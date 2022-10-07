@@ -10,29 +10,29 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "../interfaces/ICaskVault.sol";
 import "../job_queue/CaskJobQueue.sol";
-import "./ICaskKeeperTopupManager.sol";
-import "./ICaskKeeperTopup.sol";
+import "./ICaskChainlinkTopupManager.sol";
+import "./ICaskChainlinkTopup.sol";
 import "./KeeperRegistryBaseInterface.sol";
 import "./VRFCoordinatorV2Interface.sol";
 import "./LinkTokenInterface.sol";
 import "./IPegSwap.sol";
 
 
-contract CaskKeeperTopupManager is
+contract CaskChainlinkTopupManager is
 Initializable,
 ReentrancyGuardUpgradeable,
 CaskJobQueue,
-ICaskKeeperTopupManager
+ICaskChainlinkTopupManager
 {
     using SafeERC20 for IERC20Metadata;
 
     uint8 private constant QUEUE_ID_KEEPER_TOPUP = 1;
 
 
-    /** @dev Pointer to CaskKeeperTopup contract */
-    ICaskKeeperTopup public caskKeeperTopup;
+    /** @dev Pointer to CaskChainlinkTopup contract */
+    ICaskChainlinkTopup public caskChainlinkTopup;
 
-    /** @dev vault to use for KeeperTopup funding. */
+    /** @dev vault to use for ChainlinkTopup funding. */
     ICaskVault public caskVault;
 
     IERC20Metadata public linkBridgeToken;
@@ -45,10 +45,10 @@ ICaskKeeperTopupManager
 
     /************************** PARAMETERS **************************/
 
-    /** @dev max number of failed KeeperTopup purchases before KeeperTopup is permanently canceled. */
+    /** @dev max number of failed ChainlinkTopup purchases before ChainlinkTopup is permanently canceled. */
     uint256 public maxSkips;
 
-    /** @dev KeeperTopup transaction fee bps and min. */
+    /** @dev ChainlinkTopup transaction fee bps and min. */
     uint256 public topupFeeBps;
     uint256 public topupFeeMin;
 
@@ -66,7 +66,7 @@ ICaskKeeperTopupManager
 
 
     function initialize(
-        address _caskKeeperTopup,
+        address _caskChainlinkTopup,
         address _caskVault,
         address _linkBridgeToken,
         address _linkFundingToken,
@@ -76,7 +76,7 @@ ICaskKeeperTopupManager
         address _pegswap,
         address _feeDistributor
     ) public initializer {
-        caskKeeperTopup = ICaskKeeperTopup(_caskKeeperTopup);
+        caskChainlinkTopup = ICaskChainlinkTopup(_caskChainlinkTopup);
         caskVault = ICaskVault(_caskVault);
 
         linkBridgeToken = IERC20Metadata(_linkBridgeToken);
@@ -99,106 +99,106 @@ ICaskKeeperTopupManager
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function registerKeeperTopupGroup(
-        uint256 _keeperTopupGroupId
+    function registerChainlinkTopupGroup(
+        uint256 _chainlinkTopupGroupId
     ) override external nonReentrant whenNotPaused {
-        processWorkUnit(QUEUE_ID_KEEPER_TOPUP, bytes32(_keeperTopupGroupId));
+        processWorkUnit(QUEUE_ID_KEEPER_TOPUP, bytes32(_chainlinkTopupGroupId));
     }
 
     function processWorkUnit(
         uint8 _queueId,
-        bytes32 _keeperTopupGroupId
+        bytes32 _chainlinkTopupGroupId
     ) override internal {
 
-        ICaskKeeperTopup.KeeperTopupGroup memory keeperTopupGroup =
-            caskKeeperTopup.getKeeperTopupGroup(uint256(_keeperTopupGroupId));
+        ICaskChainlinkTopup.ChainlinkTopupGroup memory chainlinkTopupGroup =
+            caskChainlinkTopup.getChainlinkTopupGroup(uint256(_chainlinkTopupGroupId));
 
         uint32 timestamp = uint32(block.timestamp);
 
         // not time to process yet, re-queue for processAt time
-        if (keeperTopupGroup.processAt > timestamp) {
-            scheduleWorkUnit(_queueId, _keeperTopupGroupId, bucketAt(keeperTopupGroup.processAt));
+        if (chainlinkTopupGroup.processAt > timestamp) {
+            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(chainlinkTopupGroup.processAt));
             return;
         }
 
         uint256 count = 0;
 
-        for (uint256 i = 0; i < keeperTopupGroup.keeperTopups.length && count < maxTopupsPerGroupRun; i++) {
-            if (_processKeeperTopup(keeperTopupGroup.keeperTopups[i])) {
+        for (uint256 i = 0; i < chainlinkTopupGroup.chainlinkTopups.length && count < maxTopupsPerGroupRun; i++) {
+            if (_processChainlinkTopup(chainlinkTopupGroup.chainlinkTopups[i])) {
                 count += 1;
             }
         }
 
-        if (count >= keeperTopupGroup.keeperTopups.length || count < maxTopupsPerGroupRun) {
+        if (count >= chainlinkTopupGroup.chainlinkTopups.length || count < maxTopupsPerGroupRun) {
             // everything in this group has been processed - move group to next check period
-            if (keeperTopupGroup.count > 0) { // stop processing empty groups
-                scheduleWorkUnit(_queueId, _keeperTopupGroupId, bucketAt(keeperTopupGroup.processAt + queueBucketSize));
-                caskKeeperTopup.managerProcessedGroup(uint256(_keeperTopupGroupId),
-                    keeperTopupGroup.processAt + queueBucketSize);
+            if (chainlinkTopupGroup.count > 0) { // stop processing empty groups
+                scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(chainlinkTopupGroup.processAt + queueBucketSize));
+                caskChainlinkTopup.managerProcessedGroup(uint256(_chainlinkTopupGroupId),
+                    chainlinkTopupGroup.processAt + queueBucketSize);
             }
         } else {
             // still more to do - schedule an immediate re-run
-            scheduleWorkUnit(_queueId, _keeperTopupGroupId, bucketAt(currentBucket()));
+            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(currentBucket()));
         }
 
     }
 
-    function _processKeeperTopup(
-        bytes32 _keeperTopupId
+    function _processChainlinkTopup(
+        bytes32 _chainlinkTopupId
     ) internal returns(bool) {
-        ICaskKeeperTopup.KeeperTopup memory keeperTopup = caskKeeperTopup.getKeeperTopup(_keeperTopupId);
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup = caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
-        if (keeperTopup.status != ICaskKeeperTopup.KeeperTopupStatus.Active){
+        if (chainlinkTopup.status != ICaskChainlinkTopup.ChainlinkTopupStatus.Active){
             return false;
         }
 
         // topup target not active
-        if (!_topupValid(_keeperTopupId)) {
-            caskKeeperTopup.managerCommand(_keeperTopupId, ICaskKeeperTopup.ManagerCommand.Cancel);
+        if (!_topupValid(_chainlinkTopupId)) {
+            caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Cancel);
             return false;
         }
 
         // balance is ok - check again next period
-        if (_topupBalance(_keeperTopupId) >= keeperTopup.lowBalance) {
+        if (_topupBalance(_chainlinkTopupId) >= chainlinkTopup.lowBalance) {
             return false;
         }
 
         // did a topup happen successfully?
-        if (_performKeeperTopup(_keeperTopupId)) {
-            caskKeeperTopup.managerProcessed(_keeperTopupId);
+        if (_performChainlinkTopup(_chainlinkTopupId)) {
+            caskChainlinkTopup.managerProcessed(_chainlinkTopupId);
         } else {
-            if (maxSkips > 0 && keeperTopup.numSkips >= maxSkips) {
-                caskKeeperTopup.managerCommand(_keeperTopupId, ICaskKeeperTopup.ManagerCommand.Pause);
+            if (maxSkips > 0 && chainlinkTopup.numSkips >= maxSkips) {
+                caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Pause);
             } else {
-                caskKeeperTopup.managerCommand(_keeperTopupId, ICaskKeeperTopup.ManagerCommand.Skip);
+                caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Skip);
             }
         }
 
         return true;
     }
 
-    function _performKeeperTopup(
-        bytes32 _keeperTopupId
+    function _performChainlinkTopup(
+        bytes32 _chainlinkTopupId
     ) internal returns(bool) {
-        ICaskKeeperTopup.KeeperTopup memory keeperTopup = caskKeeperTopup.getKeeperTopup(_keeperTopupId);
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup = caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         uint256 beforeBalance = IERC20Metadata(address(caskVault.getBaseAsset())).balanceOf(address(this));
 
-        uint256 topupFee = (keeperTopup.topupAmount * topupFeeBps) / 10000;
+        uint256 topupFee = (chainlinkTopup.topupAmount * topupFeeBps) / 10000;
         if (topupFee < topupFeeMin) {
             topupFee = topupFeeMin;
         }
 
         // perform a 'payment' to this contract, fee is taken out manually after a successful swap
-        try caskVault.protocolPayment(keeperTopup.user, address(this), keeperTopup.topupAmount, 0) {
+        try caskVault.protocolPayment(chainlinkTopup.user, address(this), chainlinkTopup.topupAmount, 0) {
             // noop
         } catch (bytes memory) {
-            caskKeeperTopup.managerSkipped(_keeperTopupId, ICaskKeeperTopup.SkipReason.PaymentFailed);
+            caskChainlinkTopup.managerSkipped(_chainlinkTopupId, ICaskChainlinkTopup.SkipReason.PaymentFailed);
             return false;
         }
 
         // then withdraw the MASH received above as input asset to fund swap
-        uint256 withdrawShares = caskVault.sharesForValue(keeperTopup.topupAmount - topupFee);
+        uint256 withdrawShares = caskVault.sharesForValue(chainlinkTopup.topupAmount - topupFee);
         if (withdrawShares > caskVault.balanceOf(address(this))) {
             withdrawShares = caskVault.balanceOf(address(this));
         }
@@ -243,9 +243,9 @@ ICaskKeeperTopupManager
             // undo withdraw and send shares back to user
             IERC20Metadata(caskVault.getBaseAsset()).safeIncreaseAllowance(address(caskVault), amountIn);
             caskVault.deposit(caskVault.getBaseAsset(), amountIn);
-            caskVault.transfer(keeperTopup.user, caskVault.balanceOf(address(this))); // refund full amount
+            caskVault.transfer(chainlinkTopup.user, caskVault.balanceOf(address(this))); // refund full amount
 
-            caskKeeperTopup.managerSkipped(_keeperTopupId, ICaskKeeperTopup.SkipReason.SwapFailed);
+            caskChainlinkTopup.managerSkipped(_chainlinkTopupId, ICaskChainlinkTopup.SkipReason.SwapFailed);
             return false;
         }
 
@@ -257,45 +257,45 @@ ICaskKeeperTopupManager
 
         uint256 amountFundingTokenOut = linkFundingToken.balanceOf(address(this)) - amountFundingTokenBefore;
 
-        _doTopup(_keeperTopupId, amountFundingTokenOut);
+        _doTopup(_chainlinkTopupId, amountFundingTokenOut);
 
         return true;
     }
 
     function _topupBalance(
-        bytes32 _keeperTopupId
+        bytes32 _chainlinkTopupId
     ) internal view returns(uint256) {
-        ICaskKeeperTopup.KeeperTopup memory keeperTopup = caskKeeperTopup.getKeeperTopup(_keeperTopupId);
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup = caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         uint96 balance = type(uint96).max;
 
-        if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.Automation) {
-            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(keeperTopup.registry);
-            (,,,balance,,,) = keeperRegistry.getUpkeep(keeperTopup.targetId);
+        if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
+            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(chainlinkTopup.registry);
+            (,,,balance,,,) = keeperRegistry.getUpkeep(chainlinkTopup.targetId);
 
-        } else if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.VRF) {
-            VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(keeperTopup.registry);
-            (balance,,,) = coordinator.getSubscription(uint64(keeperTopup.targetId));
+        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
+            VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
+            (balance,,,) = coordinator.getSubscription(uint64(chainlinkTopup.targetId));
         }
 
         return uint256(balance);
     }
 
     function _topupValid(
-        bytes32 _keeperTopupId
+        bytes32 _chainlinkTopupId
     ) internal view returns(bool) {
-        ICaskKeeperTopup.KeeperTopup memory keeperTopup = caskKeeperTopup.getKeeperTopup(_keeperTopupId);
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup = caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
-        if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.Automation) {
-            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(keeperTopup.registry);
+        if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
+            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(chainlinkTopup.registry);
             uint64 maxValidBlocknumber;
-            (,,,,,,maxValidBlocknumber) = keeperRegistry.getUpkeep(keeperTopup.targetId);
+            (,,,,,,maxValidBlocknumber) = keeperRegistry.getUpkeep(chainlinkTopup.targetId);
             return maxValidBlocknumber == type(uint64).max;
 
-        } else if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.VRF) {
-            VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(keeperTopup.registry);
+        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
+            VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
             address owner;
-            (,,owner,) = coordinator.getSubscription(uint64(keeperTopup.targetId));
+            (,,owner,) = coordinator.getSubscription(uint64(chainlinkTopup.targetId));
             return owner != address(0);
         }
 
@@ -303,20 +303,20 @@ ICaskKeeperTopupManager
     }
 
     function _doTopup(
-        bytes32 _keeperTopupId,
+        bytes32 _chainlinkTopupId,
         uint256 _amount
     ) internal {
-        ICaskKeeperTopup.KeeperTopup memory keeperTopup = caskKeeperTopup.getKeeperTopup(_keeperTopupId);
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup = caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
-        if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.Automation) {
+        if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
             // we dont use the ERC677 interface here because arbitrum LINK is not ERC677
-            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(keeperTopup.registry);
-            IERC20Metadata(address(linkFundingToken)).safeIncreaseAllowance(keeperTopup.registry, _amount);
-            keeperRegistry.addFunds(keeperTopup.targetId, uint96(_amount));
+            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(chainlinkTopup.registry);
+            IERC20Metadata(address(linkFundingToken)).safeIncreaseAllowance(chainlinkTopup.registry, _amount);
+            keeperRegistry.addFunds(chainlinkTopup.targetId, uint96(_amount));
 
-        } else if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.VRF) {
-            VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(keeperTopup.registry);
-            linkFundingToken.transferAndCall(keeperTopup.registry, _amount, abi.encode(uint64(keeperTopup.targetId)));
+        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
+            VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
+            linkFundingToken.transferAndCall(chainlinkTopup.registry, _amount, abi.encode(uint64(chainlinkTopup.targetId)));
         }
     }
 

@@ -8,7 +8,7 @@ const {
     deployWithConfirmation,
 } = require("../utils/deploy");
 
-const deployKeeperTopupMocks = async ({ethers}) => {
+const deployChainlinkTopupMocks = async ({ethers}) => {
 
     await deployWithConfirmation("MockERC20LINK");
     await deployWithConfirmation("MockERC677LINK");
@@ -33,14 +33,14 @@ const deployKeeperTopupMocks = async ({ethers}) => {
 
 
 const main = async (hre) => {
-    console.log("Running 011_keeper_topup_mocks deployment...");
-    await deployKeeperTopupMocks(hre);
-    console.log("011_keeper_topup_mocks deploy done.");
+    console.log("Running 011_chainlink_topup_mocks deployment...");
+    await deployChainlinkTopupMocks(hre);
+    console.log("011_chainlink_topup_mocks deploy done.");
     return true;
 };
 
-main.id = "011_keeper_topup_mocks";
-main.tags = ["keeper_topup_mocks"];
+main.id = "011_chainlink_topup_mocks";
+main.tags = ["chainlink_topup_mocks"];
 main.skip = () => (!isDevnet && !isTestnet &&!isInternal);
 
 module.exports = main

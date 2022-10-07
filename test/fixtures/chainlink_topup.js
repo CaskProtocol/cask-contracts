@@ -6,16 +6,15 @@ const {
 const {
     fundedFixture,
 } = require("./vault");
-const {log} = require("../../utils/deploy");
 
 
-async function ktuFixture() {
+async function cltuFixture() {
     const fixture = await fundedFixture();
 
     fixture.user = fixture.consumerA;
     fixture.keeperRegistry = await ethers.getContract("MockKeeperRegistry");
-    fixture.ktu = await ethers.getContract("CaskKeeperTopup");
-    fixture.ktuManager = await ethers.getContract("CaskKeeperTopupManager");
+    fixture.cltu = await ethers.getContract("CaskChainlinkTopup");
+    fixture.cltuManager = await ethers.getContract("CaskChainlinkTopupManager");
     fixture.router = await ethers.getContract("MockUniswapRouterUSDCLINK");
     fixture.priceFeed = await ethers.getContract("MockChainlinkOracleFeedLINK");
     fixture.pegSwap = await ethers.getContract("MockPegSwap");
@@ -26,8 +25,8 @@ async function ktuFixture() {
     return fixture;
 }
 
-async function ktuFundedFixture() {
-    const fixture = await ktuFixture();
+async function cltuFundedFixture() {
+    const fixture = await cltuFixture();
 
     // mint swap liquidity to mock router
     await fixture.usdc.connect(fixture.deployer).mint(fixture.router.address, usdcUnits('100000.0'));
@@ -44,8 +43,8 @@ async function ktuFundedFixture() {
     return fixture;
 }
 
-async function ktuExcessSlippageFixture() {
-    const fixture = await ktuFundedFixture();
+async function cltuExcessSlippageFixture() {
+    const fixture = await cltuFundedFixture();
 
     // set 1 LINK to be 0.5 USDC
     await fixture.priceFeed.setPrice(ethers.utils.parseUnits('0.5', 8));
@@ -57,7 +56,7 @@ async function ktuExcessSlippageFixture() {
 }
 
 module.exports = {
-    ktuFixture,
-    ktuFundedFixture,
-    ktuExcessSlippageFixture,
+    cltuFixture,
+    cltuFundedFixture,
+    cltuExcessSlippageFixture,
 }

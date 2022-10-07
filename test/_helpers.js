@@ -136,7 +136,7 @@ const getChainlinkAddresses = async (deployments) => {
             addresses[hre.network.name] = {};
         }
         return {
-            keeper_swap_router: addresses[hre.network.name].keeper_swap_router ||
+            link_swap_router: addresses[hre.network.name].link_swap_router ||
                 (await deployments.get("MockUniswapRouterUSDCLINK")).address,
             ERC20LINK: addresses[hre.network.name].ERC20LINK ||
                 (await deployments.get("MockERC20LINK")).address,
@@ -144,14 +144,14 @@ const getChainlinkAddresses = async (deployments) => {
                 (await deployments.get("MockERC677LINK")).address,
             LINK_USD: addresses[hre.network.name].LINK_USD ||
                 (await deployments.get("MockChainlinkOracleFeedLINK")).address,
-            keeper_swap_path: addresses[hre.network.name].keeper_swap_path ||
+            link_swap_path: addresses[hre.network.name].link_swap_path ||
                 [
                     (await deployments.get("MockUSDC")).address,
                     (await deployments.get("MockERC677LINK")).address
                 ],
-            // keeper_peg_swap: addresses[hre.network.name].keeper_peg_swap ||
+            // link_peg_swap: addresses[hre.network.name].link_peg_swap ||
             //     (await deployments.get("MockPegSwap")).address,
-            keeper_peg_swap: addresses.zero,
+            link_peg_swap: addresses.zero,
         };
     }
 };
@@ -261,37 +261,37 @@ const advanceTimeRunP2PKeeper = async (times, seconds, keeperLimit=10) => {
     }
 }
 
-const ktuCheckUpkeep = async(checkData) => {
-    const ktuManager = await ethers.getContract("CaskKeeperTopupManager");
-    return ktuManager.checkUpkeep(checkData);
+const cltuCheckUpkeep = async(checkData) => {
+    const cltuManager = await ethers.getContract("CaskChainlinkTopupManager");
+    return cltuManager.checkUpkeep(checkData);
 };
 
-const ktuPerformUpkeep = async(performData) => {
-    const ktuManager = await ethers.getContract("CaskKeeperTopupManager");
-    return ktuManager.performUpkeep(performData);
+const cltuPerformUpkeep = async(performData) => {
+    const cltuManager = await ethers.getContract("CaskChainlinkTopupManager");
+    return cltuManager.performUpkeep(performData);
 };
 
-const runKTUKeeper = async(limit= 10, minDepth = 0) => {
-    return runKTUKeeperType(1, limit, minDepth);
+const runCLTUKeeper = async(limit= 10, minDepth = 0) => {
+    return runCLTUKeeperType(1, limit, minDepth);
 };
 
-const runKTUKeeperType = async(queueId, limit= 10, minDepth = 0) => {
+const runCLTUKeeperType = async(queueId, limit= 10, minDepth = 0) => {
     const checkData = ethers.utils.defaultAbiCoder.encode(
         ['uint256','uint256','uint8'],
         [limit, minDepth, queueId]);
-    const checkUpkeep = await ktuCheckUpkeep(checkData);
+    const checkUpkeep = await cltuCheckUpkeep(checkData);
 
     if (checkUpkeep.upkeepNeeded) {
-        return ktuPerformUpkeep(checkUpkeep.performData);
+        return cltuPerformUpkeep(checkUpkeep.performData);
     } else {
         return false;
     }
 }
 
-const advanceTimeRunKTUKeeper = async (times, seconds, keeperLimit=10) => {
+const advanceTimeRunCLTUKeeper = async (times, seconds, keeperLimit=10) => {
     for (let i = 0; i < times; i++) {
         await advanceTime(seconds);
-        await runKTUKeeper(keeperLimit);
+        await runCLTUKeeper(keeperLimit);
     }
 }
 
@@ -332,8 +332,8 @@ module.exports = {
     advanceTimeRunP2PKeeper,
 
     // Keeper topup keeper
-    runKTUKeeper,
-    ktuCheckUpkeep,
-    ktuPerformUpkeep,
-    advanceTimeRunKTUKeeper,
+    runCLTUKeeper,
+    cltuCheckUpkeep,
+    cltuPerformUpkeep,
+    advanceTimeRunCLTUKeeper,
 };

@@ -23,27 +23,27 @@ const {
 } = require("../utils/deploy");
 
 
-const deployKeeperTopup = async ({ethers, getNamedAccounts}) => {
+const deployChainlinkTopup = async ({ethers, getNamedAccounts}) => {
 
     const {deployerAddr, governorAddr} = await getNamedAccounts();
     const sDeployer = await ethers.provider.getSigner(deployerAddr);
     const sGovernor = await ethers.provider.getSigner(governorAddr);
     const chainlinkAddresses = await getChainlinkAddresses(deployments);
 
-    log(`Deploying KeeperTopup contracts`);
+    log(`Deploying ChainlinkTopup contracts`);
 
-    await deployProxyWithConfirmation('CaskKeeperTopup');
-    await deployProxyWithConfirmation('CaskKeeperTopupManager');
+    await deployProxyWithConfirmation('CaskChainlinkTopup');
+    await deployProxyWithConfirmation('CaskChainlinkTopupManager');
 
     const vault = await ethers.getContract("CaskVault");
 
-    const ktu = await ethers.getContract("CaskKeeperTopup");
+    const ktu = await ethers.getContract("CaskChainlinkTopup");
     await withConfirmation(
         ktu.initialize(10) // group size
     );
-    log("Initialized CaskKeeperTopup");
+    log("Initialized CaskChainlinkTopup");
 
-    const ktuManager = await ethers.getContract("CaskKeeperTopupManager");
+    const ktuManager = await ethers.getContract("CaskChainlinkTopupManager");
     await withConfirmation(
         ktuManager.initialize(
             ktu.address,
@@ -51,13 +51,13 @@ const deployKeeperTopup = async ({ethers, getNamedAccounts}) => {
             chainlinkAddresses.ERC20LINK,
             chainlinkAddresses.ERC677LINK,
             chainlinkAddresses.LINK_USD,
-            chainlinkAddresses.keeper_swap_router,
-            chainlinkAddresses.keeper_swap_path,
-            chainlinkAddresses.keeper_peg_swap,
+            chainlinkAddresses.link_swap_router,
+            chainlinkAddresses.link_swap_path,
+            chainlinkAddresses.link_peg_swap,
             governorAddr
         )
     );
-    log("Initialized CaskKeeperTopupManager");
+    log("Initialized CaskChainlinkTopupManager");
 
     if (isMemnet) {
         await withConfirmation(
@@ -72,21 +72,21 @@ const deployKeeperTopup = async ({ethers, getNamedAccounts}) => {
                 20 * day // maxQueueAge
             )
         );
-        log("Set CaskKeeperTopupManager parameters for memnet");
+        log("Set CaskChainlinkTopupManager parameters for memnet");
     }
 
     await withConfirmation(
         ktu.connect(sDeployer).setManager(ktuManager.address)
     );
-    log(`Set CaskKeeperTopup manager to ${ktuManager.address}`);
+    log(`Set CaskChainlinkTopup manager to ${ktuManager.address}`);
 
     if (isDevnet || isTestnet || isInternal) {
         await withConfirmation(
             vault.connect(sGovernor).addProtocol(ktuManager.address)
         );
-        log(`Authorized CaskVault protocol ${ktuManager.address} for CaskKeeperTopupManager`);
+        log(`Authorized CaskVault protocol ${ktuManager.address} for CaskChainlinkTopupManager`);
     } else {
-        log(`Please authorize CaskKeeperTopupManager (${ktuManager.address}) as an approved CaskVault protocol`);
+        log(`Please authorize CaskChainlinkTopupManager (${ktuManager.address}) as an approved CaskVault protocol`);
     }
 }
 
@@ -97,8 +97,8 @@ const transferOwnerships = async ({ethers, getNamedAccounts}) => {
 
     const {governorAddr} = await getNamedAccounts();
 
-    const ktu = await ethers.getContract("CaskKeeperTopup");
-    const ktuManager = await ethers.getContract("CaskKeeperTopupManager");
+    const ktu = await ethers.getContract("CaskChainlinkTopup");
+    const ktuManager = await ethers.getContract("CaskChainlinkTopupManager");
 
     await withConfirmation(
         ktu.transferOwnership(governorAddr)
@@ -106,21 +106,21 @@ const transferOwnerships = async ({ethers, getNamedAccounts}) => {
     await withConfirmation(
         ktuManager.transferOwnership(governorAddr)
     );
-    log(`KeeperTopup contracts ownership transferred to ${governorAddr}`);
+    log(`ChainlinkTopup contracts ownership transferred to ${governorAddr}`);
 
 }
 
 const main = async (hre) => {
-    console.log("Running 012_keeper_topup deployment...");
-    await deployKeeperTopup(hre);
+    console.log("Running 012_link_topup deployment...");
+    await deployChainlinkTopup(hre);
     await transferOwnerships(hre);
-    console.log("012_keeper_topup deploy done.");
+    console.log("012_link_topup deploy done.");
     return true;
 };
 
-main.id = "012_keeper_topup";
-main.tags = ["keeper_topup"];
-main.dependencies = ["vault","keeper_topup_mocks"];
+main.id = "012_link_topup";
+main.tags = ["link_topup"];
+main.dependencies = ["vault","link_topup_mocks"];
 main.skip = () => !isProtocolChain;
 
 module.exports = main;

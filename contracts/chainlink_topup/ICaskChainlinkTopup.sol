@@ -1,0 +1,98 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+interface ICaskChainlinkTopup {
+
+    enum ChainlinkTopupStatus {
+        None,
+        Active,
+        Paused,
+        Canceled
+    }
+
+    enum ManagerCommand {
+        None,
+        Cancel,
+        Skip,
+        Pause
+    }
+
+    enum SkipReason {
+        None,
+        PaymentFailed,
+        SwapFailed
+    }
+
+    enum TopupType {
+        None,
+        Automation,
+        VRF
+    }
+
+    struct ChainlinkTopup {
+        address user;
+        uint256 groupId;
+        uint256 lowBalance;
+        uint256 topupAmount;
+        uint256 currentAmount;
+        uint256 numTopups;
+        uint256 numSkips;
+        uint32 createdAt;
+        uint256 targetId;
+        address registry;
+        TopupType topupType;
+        ChainlinkTopupStatus status;
+    }
+
+    struct ChainlinkTopupGroup {
+        uint256 count;
+        bytes32[] chainlinkTopups;
+        uint32 processAt;
+    }
+
+    function createChainlinkTopup(
+        uint256 _lowBalance,
+        uint256 _topupAmount,
+        uint256 _targetId,
+        address _registry,
+        TopupType _topupType
+    ) external returns(bytes32);
+
+    function getChainlinkTopup(bytes32 _chainlinkTopupId) external view returns (ChainlinkTopup memory);
+
+    function getChainlinkTopupGroup(uint256 _chainlinkTopupGroupId) external view returns (ChainlinkTopupGroup memory);
+
+    function getUserChainlinkTopup(address _user, uint256 _idx) external view returns (bytes32);
+
+    function getUserChainlinkTopupCount(address _user) external view returns (uint256);
+
+    function cancelChainlinkTopup(bytes32 _chainlinkTopupId) external;
+
+    function pauseChainlinkTopup(bytes32 _chainlinkTopupId) external;
+
+    function resumeChainlinkTopup(bytes32 _chainlinkTopupId) external;
+
+    function managerCommand(bytes32 _chainlinkTopupId, ManagerCommand _command) external;
+
+    function managerProcessed(bytes32 _chainlinkTopupId) external;
+
+    function managerSkipped(bytes32 _chainlinkTopupId, SkipReason _skipReason) external;
+
+    function managerProcessedGroup(uint256 _chainlinkTopupGroupId, uint32 _nextProcessAt) external;
+
+    event ChainlinkTopupCreated(bytes32 indexed chainlinkTopupId, address indexed user,
+        uint256 targetId, address registry, TopupType topupType);
+
+    event ChainlinkTopupPaused(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry, TopupType topupType);
+
+    event ChainlinkTopupResumed(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry, TopupType topupType);
+
+    event ChainlinkTopupSkipped(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry, TopupType topupType,
+        SkipReason skipReason);
+
+    event ChainlinkTopupProcessed(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry, TopupType topupType);
+
+    event ChainlinkTopupCanceled(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry, TopupType topupType);
+
+    event ChainlinkTopupGroupProcessed(uint256 indexed chainlinkTopupGroupId);
+}
