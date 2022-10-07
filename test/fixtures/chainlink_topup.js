@@ -12,7 +12,8 @@ async function cltuFixture() {
     const fixture = await fundedFixture();
 
     fixture.user = fixture.consumerA;
-    fixture.keeperRegistry = await ethers.getContract("MockKeeperRegistry");
+    fixture.automationRegistry = await ethers.getContract("MockAutomationRegistry");
+    fixture.vrfCoordinator = await ethers.getContract("MockVRFCoordinator");
     fixture.cltu = await ethers.getContract("CaskChainlinkTopup");
     fixture.cltuManager = await ethers.getContract("CaskChainlinkTopupManager");
     fixture.router = await ethers.getContract("MockUniswapRouterUSDCLINK");
@@ -21,6 +22,9 @@ async function cltuFixture() {
     fixture.usdc = await ethers.getContract("MockUSDC");
     fixture.erc20Link = await ethers.getContract("MockERC20LINK");
     fixture.erc677Link = await ethers.getContract("MockERC677LINK");
+
+    await fixture.cltuManager.connect(fixture.governor).allowRegistry(fixture.automationRegistry.address);
+    await fixture.cltuManager.connect(fixture.governor).allowRegistry(fixture.vrfCoordinator.address);
 
     return fixture;
 }

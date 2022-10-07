@@ -82,6 +82,7 @@ BaseRelayRecipient
         require(_topupAmount >= minTopupAmount, "!INVALID(topupAmount)");
         require(_topupType == TopupType.Automation ||
                 _topupType == TopupType.VRF, "!INVALID(topupType)");
+        require(chainlinkTopupManager.registryAllowed(_registry), "!INVALID(registry)");
 
         bytes32 chainlinkTopupId = keccak256(abi.encodePacked(_msgSender(), _targetId, _registry, block.number, block.timestamp));
 

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.0;
 
-import "../chainlink_topup/KeeperRegistryBaseInterface.sol";
+import "../chainlink_topup/AutomationRegistryBaseInterface.sol";
 import "../chainlink_topup/LinkTokenInterface.sol";
 import "../erc677/IERC677Receiver.sol";
 
-contract MockKeeperRegistry is KeeperRegistryBaseInterface, IERC677Receiver {
+contract MockAutomationRegistry is AutomationRegistryBaseInterface, IERC677Receiver {
 
     mapping(uint256 => address) public upkeepAdmins;
     mapping(uint256 => uint96) public upkeepBalance;

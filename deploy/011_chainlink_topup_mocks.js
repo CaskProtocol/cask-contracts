@@ -18,13 +18,14 @@ const deployChainlinkTopupMocks = async ({ethers}) => {
             8 // decimals
         ],
         "MockChainlinkOracleFeed");
-    await deployWithConfirmation("MockKeeperRegistry");
+    await deployWithConfirmation("MockAutomationRegistry");
+    await deployWithConfirmation("MockVRFCoordinator");
     await deployWithConfirmation("MockPegSwap");
     await deployWithConfirmation("MockUniswapRouterUSDCLINK", null, "MockUniswapRouter");
 
     const router = await ethers.getContract("MockUniswapRouterUSDCLINK");
     const erc677Link = await ethers.getContract("MockERC677LINK");
-    const registry = await ethers.getContract("MockKeeperRegistry");
+    const registry = await ethers.getContract("MockAutomationRegistry");
 
     await router.initialize();
     await registry.initialize(erc677Link.address);

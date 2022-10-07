@@ -12,7 +12,7 @@ import "../interfaces/ICaskVault.sol";
 import "../job_queue/CaskJobQueue.sol";
 import "./ICaskChainlinkTopupManager.sol";
 import "./ICaskChainlinkTopup.sol";
-import "./KeeperRegistryBaseInterface.sol";
+import "./AutomationRegistryBaseInterface.sol";
 import "./VRFCoordinatorV2Interface.sol";
 import "./LinkTokenInterface.sol";
 import "./IPegSwap.sol";
@@ -28,6 +28,9 @@ ICaskChainlinkTopupManager
 
     uint8 private constant QUEUE_ID_KEEPER_TOPUP = 1;
 
+
+    /** @dev map of registries address that are allowed */
+    mapping(address => bool) public allowedRegistries;
 
     /** @dev Pointer to CaskChainlinkTopup contract */
     ICaskChainlinkTopup public caskChainlinkTopup;
@@ -144,6 +147,12 @@ ICaskChainlinkTopupManager
 
     }
 
+    function registryAllowed(
+        address _registry
+    ) override external view returns(bool) {
+        return allowedRegistries[_registry];
+    }
+
     function _processChainlinkTopup(
         bytes32 _chainlinkTopupId
     ) internal returns(bool) {
@@ -155,7 +164,7 @@ ICaskChainlinkTopupManager
         }
 
         // topup target not active
-        if (!_topupValid(_chainlinkTopupId)) {
+        if (!_topupValid(_chainlinkTopupId) || !allowedRegistries[chainlinkTopup.registry]) {
             caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Cancel);
             return false;
         }
@@ -274,8 +283,8 @@ ICaskChainlinkTopupManager
         uint96 balance = type(uint96).max;
 
         if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
-            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(chainlinkTopup.registry);
-            (,,,balance,,,) = keeperRegistry.getUpkeep(chainlinkTopup.targetId);
+            AutomationRegistryBaseInterface automationRegistry = AutomationRegistryBaseInterface(chainlinkTopup.registry);
+            (,,,balance,,,) = automationRegistry.getUpkeep(chainlinkTopup.targetId);
 
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
             VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
@@ -292,8 +301,8 @@ ICaskChainlinkTopupManager
             caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
-            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(chainlinkTopup.registry);
-            try keeperRegistry.getUpkeep(chainlinkTopup.targetId) returns (
+            AutomationRegistryBaseInterface automationRegistry = AutomationRegistryBaseInterface(chainlinkTopup.registry);
+            try automationRegistry.getUpkeep(chainlinkTopup.targetId) returns (
                 address target,
                 uint32 executeGas,
                 bytes memory checkData,
@@ -333,9 +342,9 @@ ICaskChainlinkTopupManager
 
         if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
             // we dont use the ERC677 interface here because arbitrum LINK is not ERC677
-            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(chainlinkTopup.registry);
+            AutomationRegistryBaseInterface automationRegistry = AutomationRegistryBaseInterface(chainlinkTopup.registry);
             IERC20Metadata(address(linkFundingToken)).safeIncreaseAllowance(chainlinkTopup.registry, _amount);
-            keeperRegistry.addFunds(chainlinkTopup.targetId, uint96(_amount));
+            automationRegistry.addFunds(chainlinkTopup.targetId, uint96(_amount));
 
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
             VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
@@ -436,4 +445,26 @@ ICaskChainlinkTopupManager
         emit SetFeeDistributor(_feeDistributor);
     }
 
+    function allowRegistry(
+        address _registry
+    ) external onlyOwner {
+        allowedRegistries[_registry] = true;
+
+        emit RegistryAllowed(_registry);
+    }
+
+    function disallowRegistry(
+        address _registry
+    ) external onlyOwner {
+        allowedRegistries[_registry] = false;
+
+        emit RegistryDisallowed(_registry);
+    }
+
+    function recoverFunds(
+        address _asset,
+        address _dest
+    ) external onlyOwner {
+        IERC20Metadata(_asset).transfer(_dest, IERC20Metadata(_asset).balanceOf(address(this)));
+    }
 }

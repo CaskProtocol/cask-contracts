@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface KeeperRegistryBaseInterface {
+interface AutomationRegistryBaseInterface {
     function registerUpkeep(
         address target,
         uint32 gasLimit,
