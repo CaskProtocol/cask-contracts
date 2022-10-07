@@ -111,16 +111,16 @@ const transferOwnerships = async ({ethers, getNamedAccounts}) => {
 }
 
 const main = async (hre) => {
-    console.log("Running 012_link_topup deployment...");
+    console.log("Running 012_chainlink_topup deployment...");
     await deployChainlinkTopup(hre);
     await transferOwnerships(hre);
-    console.log("012_link_topup deploy done.");
+    console.log("012_chainlink_topup deploy done.");
     return true;
 };
 
-main.id = "012_link_topup";
-main.tags = ["link_topup"];
-main.dependencies = ["vault","link_topup_mocks"];
+main.id = "012_chainlink_topup";
+main.tags = ["chainlink_topup"];
+main.dependencies = ["vault","chainlink_topup_mocks"];
 main.skip = () => !isProtocolChain;
 
 module.exports = main;

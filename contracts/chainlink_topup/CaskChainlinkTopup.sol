@@ -116,8 +116,8 @@ BaseRelayRecipient
 
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active, "!UNPROCESSABLE");
 
-        emit ChainlinkTopupCreated(chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
-            chainlinkTopup.registry, chainlinkTopup.topupType);
+        emit ChainlinkTopupCreated(chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.lowBalance,
+            chainlinkTopup.topupAmount, chainlinkTopup.targetId, chainlinkTopup.registry, chainlinkTopup.topupType);
 
         return chainlinkTopupId;
     }
@@ -150,8 +150,8 @@ BaseRelayRecipient
 
         chainlinkTopup.status = ChainlinkTopupStatus.Paused;
 
-        emit ChainlinkTopupPaused(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
-            chainlinkTopup.topupType);
+        emit ChainlinkTopupPaused(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
+            chainlinkTopup.registry, chainlinkTopup.topupType);
     }
 
     function resumeChainlinkTopup(
@@ -162,8 +162,8 @@ BaseRelayRecipient
 
         chainlinkTopup.status = ChainlinkTopupStatus.Active;
 
-        emit ChainlinkTopupResumed(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
-            chainlinkTopup.topupType);
+        emit ChainlinkTopupResumed(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
+            chainlinkTopup.registry, chainlinkTopup.topupType);
     }
 
     function cancelChainlinkTopup(
@@ -178,8 +178,8 @@ BaseRelayRecipient
         chainlinkTopupGroupMap[chainlinkTopup.groupId].count -= 1;
         backfillGroups.push(chainlinkTopup.groupId);
 
-        emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
-            chainlinkTopup.topupType);
+        emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
+            chainlinkTopup.registry, chainlinkTopup.topupType);
     }
 
     function getChainlinkTopup(
@@ -221,8 +221,8 @@ BaseRelayRecipient
 
             chainlinkTopup.status = ChainlinkTopupStatus.Paused;
 
-            emit ChainlinkTopupPaused(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
-                chainlinkTopup.topupType);
+            emit ChainlinkTopupPaused(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
+                chainlinkTopup.registry, chainlinkTopup.topupType);
 
         } else if (_command == ManagerCommand.Cancel) {
 
@@ -231,8 +231,8 @@ BaseRelayRecipient
             chainlinkTopupGroupMap[chainlinkTopup.groupId].count -= 1;
             backfillGroups.push(chainlinkTopup.groupId);
 
-            emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
-                chainlinkTopup.topupType);
+            emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
+                chainlinkTopup.registry, chainlinkTopup.topupType);
 
         }
     }
@@ -246,10 +246,11 @@ BaseRelayRecipient
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
 
         chainlinkTopup.currentAmount += _amount;
+        chainlinkTopup.currentBuyQty += _buyQty;
         chainlinkTopup.numTopups += 1;
 
-        emit ChainlinkTopupProcessed(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
-            chainlinkTopup.topupType, _amount, _buyQty, _fee);
+        emit ChainlinkTopupProcessed(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
+            chainlinkTopup.registry, chainlinkTopup.topupType, _amount, _buyQty, _fee);
     }
 
     function managerProcessedGroup(
@@ -271,8 +272,8 @@ BaseRelayRecipient
 
         chainlinkTopup.numSkips += 1;
 
-        emit ChainlinkTopupSkipped(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
-            chainlinkTopup.topupType, _skipReason);
+        emit ChainlinkTopupSkipped(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
+            chainlinkTopup.registry, chainlinkTopup.topupType, _skipReason);
     }
 
     /************************** ADMIN FUNCTIONS **************************/

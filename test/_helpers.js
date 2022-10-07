@@ -147,7 +147,8 @@ const getChainlinkAddresses = async (deployments) => {
             link_swap_path: addresses[hre.network.name].link_swap_path ||
                 [
                     (await deployments.get("MockUSDC")).address,
-                    (await deployments.get("MockERC677LINK")).address
+                    addresses[hre.network.name].ERC677LINK ||
+                        (await deployments.get("MockERC677LINK")).address
                 ],
             // link_peg_swap: addresses[hre.network.name].link_peg_swap ||
             //     (await deployments.get("MockPegSwap")).address,

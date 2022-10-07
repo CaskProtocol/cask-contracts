@@ -5,8 +5,12 @@ const {
 } = require("../test/_networks");
 
 const {
-    deployWithConfirmation,
+    deployWithConfirmation, withConfirmation, log,
 } = require("../utils/deploy");
+
+const {
+    getChainlinkAddresses
+} = require("../test/_helpers");
 
 const deployChainlinkTopupMocks = async ({ethers}) => {
 
@@ -24,11 +28,17 @@ const deployChainlinkTopupMocks = async ({ethers}) => {
     await deployWithConfirmation("MockUniswapRouterUSDCLINK", null, "MockUniswapRouter");
 
     const router = await ethers.getContract("MockUniswapRouterUSDCLINK");
-    const erc677Link = await ethers.getContract("MockERC677LINK");
     const registry = await ethers.getContract("MockAutomationRegistry");
 
-    await router.initialize();
-    await registry.initialize(erc677Link.address);
+    const chainlinkAddresses = await getChainlinkAddresses(deployments);
+
+    await withConfirmation(
+        await router.initialize()
+    );
+    await withConfirmation(
+        await registry.initialize(chainlinkAddresses.ERC677LINK)
+    );
+    log("Initialized ChainlinkTopup mock router and registry");
 
 };
 

@@ -187,8 +187,6 @@ ICaskChainlinkTopupManager
         } else {
             if (maxSkips > 0 && chainlinkTopup.numSkips >= maxSkips) {
                 caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Pause);
-            } else {
-                caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Skip);
             }
         }
 
