@@ -171,12 +171,29 @@ BaseRelayRecipient
     ) external override onlyUser(_chainlinkTopupId) {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active ||
-            chainlinkTopup.status == ChainlinkTopupStatus.Paused, "!INVALID(status)");
+                chainlinkTopup.status == ChainlinkTopupStatus.Paused, "!INVALID(status)");
+
+        uint256 groupId = chainlinkTopup.groupId;
+        uint256 groupLen = chainlinkTopupGroupMap[groupId].chainlinkTopups.length;
 
         chainlinkTopup.status = ChainlinkTopupStatus.Canceled;
 
-        chainlinkTopupGroupMap[chainlinkTopup.groupId].count -= 1;
-        backfillGroups.push(chainlinkTopup.groupId);
+        // remove topup from group list
+        uint256 idx = groupLen;
+        for (uint256 i = 0; i < groupLen; i++) {
+            if (chainlinkTopupGroupMap[groupId].chainlinkTopups[i] == _chainlinkTopupId) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < groupLen) {
+            chainlinkTopupGroupMap[groupId].chainlinkTopups[idx] =
+                chainlinkTopupGroupMap[groupId].chainlinkTopups[groupLen - 1];
+            chainlinkTopupGroupMap[groupId].chainlinkTopups.pop();
+        }
+
+        chainlinkTopupGroupMap[groupId].count -= 1;
+        backfillGroups.push(groupId);
 
         emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
             chainlinkTopup.registry, chainlinkTopup.topupType);
