@@ -80,6 +80,8 @@ BaseRelayRecipient
         TopupType _topupType
     ) external override returns(bytes32) {
         require(_topupAmount >= minTopupAmount, "!INVALID(topupAmount)");
+        require(_topupType == TopupType.Automation ||
+                _topupType == TopupType.VRF, "!INVALID(topupType)");
 
         bytes32 chainlinkTopupId = keccak256(abi.encodePacked(_msgSender(), _targetId, _registry, block.number, block.timestamp));
 

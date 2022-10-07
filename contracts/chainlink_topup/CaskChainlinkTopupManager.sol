@@ -288,15 +288,32 @@ ICaskChainlinkTopupManager
 
         if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
             KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(chainlinkTopup.registry);
-            uint64 maxValidBlocknumber;
-            (,,,,,,maxValidBlocknumber) = keeperRegistry.getUpkeep(chainlinkTopup.targetId);
-            return maxValidBlocknumber == type(uint64).max;
+            try keeperRegistry.getUpkeep(chainlinkTopup.targetId) returns (
+                address target,
+                uint32 executeGas,
+                bytes memory checkData,
+                uint96 balance,
+                address lastKeeper,
+                address admin,
+                uint64 maxValidBlocknumber
+            ) {
+                return maxValidBlocknumber == type(uint64).max;
+            } catch {
+                return false;
+            }
 
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
             VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
-            address owner;
-            (,,owner,) = coordinator.getSubscription(uint64(chainlinkTopup.targetId));
-            return owner != address(0);
+            try coordinator.getSubscription(uint64(chainlinkTopup.targetId)) returns (
+                uint96 balance,
+                uint64 reqCount,
+                address owner,
+                address[] memory consumers
+            ) {
+                return owner != address(0);
+            } catch {
+                return false;
+            }
         }
 
         return false;
