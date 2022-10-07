@@ -48,7 +48,6 @@ const deployKeeperTopup = async ({ethers, getNamedAccounts}) => {
         ktuManager.initialize(
             ktu.address,
             vault.address,
-            chainlinkAddresses.keeper_registry,
             chainlinkAddresses.ERC20LINK,
             chainlinkAddresses.ERC677LINK,
             chainlinkAddresses.LINK_USD,

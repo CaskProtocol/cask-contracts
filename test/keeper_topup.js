@@ -8,6 +8,7 @@ const {
 
 const {
     advanceTimeRunKTUKeeper,
+    ChainlinkTopupType,
 } = require("./_helpers");
 
 const {
@@ -53,9 +54,11 @@ describe("CaskKeeperTopup General", function () {
 
         // create keeper topup
         tx = await userKTU.createKeeperTopup(
-            upkeepId, // keeperId
             linkUnits('5'), // lowBalance
-            usdcUnits('10') // topupAmount
+            usdcUnits('10'), // topupAmount
+            upkeepId, // keeperId
+            keeperRegistry.address,
+            ChainlinkTopupType.Automation
         );
 
         const events = (await tx.wait()).events || [];
@@ -144,9 +147,11 @@ describe("CaskKeeperTopup General", function () {
 
         // create keeper topup
         tx = await userKTU.createKeeperTopup(
-            upkeepId, // keeperId
             linkUnits('5'), // lowBalance
-            usdcUnits('10') // topupAmount
+            usdcUnits('10'), // topupAmount
+            upkeepId, // keeperId
+            keeperRegistry.address,
+            ChainlinkTopupType.Automation
         );
 
         const events = (await tx.wait()).events || [];
@@ -221,9 +226,11 @@ describe("CaskKeeperTopup General", function () {
 
         // create keeper topup
         tx = await userKTU.createKeeperTopup(
-            upkeepId, // keeperId
             linkUnits('5'), // lowBalance
-            usdcUnits('10') // topupAmount
+            usdcUnits('10'), // topupAmount
+            upkeepId, // keeperId
+            keeperRegistry.address,
+            ChainlinkTopupType.Automation
         );
 
         const events = (await tx.wait()).events || [];
@@ -305,9 +312,11 @@ describe("CaskKeeperTopup General", function () {
                 ethers.utils.defaultAbiCoder.encode(['uint256'],[i]));
 
             await userKTU.createKeeperTopup(
-                i, // keeperId
                 linkUnits('5'), // lowBalance
-                usdcUnits('10') // topupAmount
+                usdcUnits('10'), // topupAmount
+                i, // keeperId
+                keeperRegistry.address,
+                ChainlinkTopupType.Automation
             );
         }
 
@@ -320,9 +329,11 @@ describe("CaskKeeperTopup General", function () {
         expect(result.balance).to.equal(linkUnits('7.0')); // confirm ERC677 funding worked
 
         tx = await userKTU.createKeeperTopup(
-            upkeepId, // keeperId
             linkUnits('5'), // lowBalance
-            usdcUnits('10') // topupAmount
+            usdcUnits('10'), // topupAmount
+            upkeepId, // keeperId
+            keeperRegistry.address,
+            ChainlinkTopupType.Automation
         );
 
         const events = (await tx.wait()).events || [];

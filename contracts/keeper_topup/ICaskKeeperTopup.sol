@@ -23,16 +23,24 @@ interface ICaskKeeperTopup {
         SwapFailed
     }
 
+    enum TopupType {
+        None,
+        Automation,
+        VRF
+    }
+
     struct KeeperTopup {
         address user;
         uint256 groupId;
-        uint256 upkeepId;
         uint256 lowBalance;
         uint256 topupAmount;
         uint256 currentAmount;
         uint256 numTopups;
         uint256 numSkips;
         uint32 createdAt;
+        uint256 targetId;
+        address registry;
+        TopupType topupType;
         KeeperTopupStatus status;
     }
 
@@ -43,9 +51,11 @@ interface ICaskKeeperTopup {
     }
 
     function createKeeperTopup(
-        uint256 _upkeepId,
         uint256 _lowBalance,
-        uint256 _topupAmount
+        uint256 _topupAmount,
+        uint256 _targetId,
+        address _registry,
+        TopupType _topupType
     ) external returns(bytes32);
 
     function getKeeperTopup(bytes32 _keeperTopupId) external view returns (KeeperTopup memory);
@@ -70,17 +80,19 @@ interface ICaskKeeperTopup {
 
     function managerProcessedGroup(uint256 _keeperTopupGroupId, uint32 _nextProcessAt) external;
 
-    event KeeperTopupCreated(bytes32 indexed keeperTopupId, address indexed user, uint256 indexed upkeepId);
+    event KeeperTopupCreated(bytes32 indexed keeperTopupId, address indexed user,
+        uint256 targetId, address registry, TopupType topupType);
 
-    event KeeperTopupPaused(bytes32 indexed keeperTopupId, uint256 indexed upkeepId);
+    event KeeperTopupPaused(bytes32 indexed keeperTopupId, uint256 targetId, address registry, TopupType topupType);
 
-    event KeeperTopupResumed(bytes32 indexed keeperTopupId, uint256 indexed upkeepId);
+    event KeeperTopupResumed(bytes32 indexed keeperTopupId, uint256 targetId, address registry, TopupType topupType);
 
-    event KeeperTopupSkipped(bytes32 indexed keeperTopupId, uint256 indexed upkeepId, SkipReason skipReason);
+    event KeeperTopupSkipped(bytes32 indexed keeperTopupId, uint256 targetId, address registry, TopupType topupType,
+        SkipReason skipReason);
 
-    event KeeperTopupProcessed(bytes32 indexed keeperTopupId, uint256 indexed upkeepId);
+    event KeeperTopupProcessed(bytes32 indexed keeperTopupId, uint256 targetId, address registry, TopupType topupType);
 
-    event KeeperTopupCanceled(bytes32 indexed keeperTopupId, uint256 indexed upkeepId);
+    event KeeperTopupCanceled(bytes32 indexed keeperTopupId, uint256 targetId, address registry, TopupType topupType);
 
     event KeeperTopupGroupProcessed(uint256 indexed keeperTopupGroupId);
 }

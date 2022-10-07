@@ -73,13 +73,15 @@ BaseRelayRecipient
 
 
     function createKeeperTopup(
-        uint256 _upkeepId,
         uint256 _lowBalance,
-        uint256 _topupAmount
+        uint256 _topupAmount,
+        uint256 _targetId,
+        address _registry,
+        TopupType _topupType
     ) external override returns(bytes32) {
         require(_topupAmount >= minTopupAmount, "!INVALID(topupAmount)");
 
-        bytes32 keeperTopupId = keccak256(abi.encodePacked(_msgSender(), _upkeepId, block.number, block.timestamp));
+        bytes32 keeperTopupId = keccak256(abi.encodePacked(_msgSender(), _targetId, _registry, block.number, block.timestamp));
 
         uint256 keeperTopupGroupId = _findGroupId();
         require(keeperTopupGroupId > 0, "!GROUP_ERROR");
@@ -89,10 +91,12 @@ BaseRelayRecipient
         KeeperTopup storage keeperTopup = keeperTopupMap[keeperTopupId];
         keeperTopup.user = _msgSender();
         keeperTopup.groupId = keeperTopupGroupId;
-        keeperTopup.upkeepId = _upkeepId;
         keeperTopup.lowBalance = _lowBalance;
         keeperTopup.topupAmount = _topupAmount;
         keeperTopup.createdAt = timestamp;
+        keeperTopup.targetId = _targetId;
+        keeperTopup.registry = _registry;
+        keeperTopup.topupType = _topupType;
         keeperTopup.status = KeeperTopupStatus.Active;
 
         userKeeperTopups[_msgSender()].push(keeperTopupId);
@@ -108,7 +112,8 @@ BaseRelayRecipient
 
         require(keeperTopup.status == KeeperTopupStatus.Active, "!UNPROCESSABLE");
 
-        emit KeeperTopupCreated(keeperTopupId, keeperTopup.user, keeperTopup.upkeepId);
+        emit KeeperTopupCreated(keeperTopupId, keeperTopup.user, keeperTopup.targetId,
+            keeperTopup.registry, keeperTopup.topupType);
 
         return keeperTopupId;
     }
@@ -139,7 +144,7 @@ BaseRelayRecipient
 
         keeperTopup.status = KeeperTopupStatus.Paused;
 
-        emit KeeperTopupPaused(_keeperTopupId, keeperTopup.upkeepId);
+        emit KeeperTopupPaused(_keeperTopupId, keeperTopup.targetId, keeperTopup.registry, keeperTopup.topupType);
     }
 
     function resumeKeeperTopup(
@@ -150,7 +155,7 @@ BaseRelayRecipient
 
         keeperTopup.status = KeeperTopupStatus.Active;
 
-        emit KeeperTopupResumed(_keeperTopupId, keeperTopup.upkeepId);
+        emit KeeperTopupResumed(_keeperTopupId, keeperTopup.targetId, keeperTopup.registry, keeperTopup.topupType);
     }
 
     function cancelKeeperTopup(
@@ -165,7 +170,7 @@ BaseRelayRecipient
         keeperTopupGroupMap[keeperTopup.groupId].count -= 1;
         backfillGroups.push(keeperTopup.groupId);
 
-        emit KeeperTopupCanceled(_keeperTopupId, keeperTopup.upkeepId);
+        emit KeeperTopupCanceled(_keeperTopupId, keeperTopup.targetId, keeperTopup.registry, keeperTopup.topupType);
     }
 
     function getKeeperTopup(
@@ -207,7 +212,7 @@ BaseRelayRecipient
 
             keeperTopup.status = KeeperTopupStatus.Paused;
 
-            emit KeeperTopupPaused(_keeperTopupId, keeperTopup.upkeepId);
+            emit KeeperTopupPaused(_keeperTopupId, keeperTopup.targetId, keeperTopup.registry, keeperTopup.topupType);
 
         } else if (_command == ManagerCommand.Cancel) {
 
@@ -216,7 +221,7 @@ BaseRelayRecipient
             keeperTopupGroupMap[keeperTopup.groupId].count -= 1;
             backfillGroups.push(keeperTopup.groupId);
 
-            emit KeeperTopupCanceled(_keeperTopupId, keeperTopup.upkeepId);
+            emit KeeperTopupCanceled(_keeperTopupId, keeperTopup.targetId, keeperTopup.registry, keeperTopup.topupType);
 
         }
     }
@@ -229,7 +234,7 @@ BaseRelayRecipient
         keeperTopup.currentAmount += keeperTopup.topupAmount;
         keeperTopup.numTopups += 1;
 
-        emit KeeperTopupProcessed(_keeperTopupId, keeperTopup.upkeepId);
+        emit KeeperTopupProcessed(_keeperTopupId, keeperTopup.targetId, keeperTopup.registry, keeperTopup.topupType);
     }
 
     function managerProcessedGroup(
@@ -251,7 +256,8 @@ BaseRelayRecipient
 
         keeperTopup.numSkips += 1;
 
-        emit KeeperTopupSkipped(_keeperTopupId, keeperTopup.upkeepId, _skipReason);
+        emit KeeperTopupSkipped(_keeperTopupId, keeperTopup.targetId, keeperTopup.registry, keeperTopup.topupType,
+            _skipReason);
     }
 
     /************************** ADMIN FUNCTIONS **************************/

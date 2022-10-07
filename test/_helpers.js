@@ -48,6 +48,13 @@ const P2PStatus = {
     Complete: 4,
 };
 
+
+const ChainlinkTopupType = {
+    None: 0,
+    Automation: 1,
+    VRF: 2,
+};
+
 const advanceTime = async (seconds) => {
     await hre.ethers.provider.send("evm_increaseTime", [seconds]);
     await hre.ethers.provider.send("evm_mine");
@@ -129,8 +136,6 @@ const getChainlinkAddresses = async (deployments) => {
             addresses[hre.network.name] = {};
         }
         return {
-            keeper_registry: addresses[hre.network.name].keeper_registry ||
-                (await deployments.get("MockKeeperRegistry")).address,
             keeper_swap_router: addresses[hre.network.name].keeper_swap_router ||
                 (await deployments.get("MockUniswapRouterUSDCLINK")).address,
             ERC20LINK: addresses[hre.network.name].ERC20LINK ||
@@ -298,6 +303,7 @@ module.exports = {
     PlanStatus,
     DCAStatus,
     P2PStatus,
+    ChainlinkTopupType,
 
     advanceTime,
     getBlockTimestamp,

@@ -13,6 +13,7 @@ import "../job_queue/CaskJobQueue.sol";
 import "./ICaskKeeperTopupManager.sol";
 import "./ICaskKeeperTopup.sol";
 import "./KeeperRegistryBaseInterface.sol";
+import "./VRFCoordinatorV2Interface.sol";
 import "./LinkTokenInterface.sol";
 import "./IPegSwap.sol";
 
@@ -34,9 +35,8 @@ ICaskKeeperTopupManager
     /** @dev vault to use for KeeperTopup funding. */
     ICaskVault public caskVault;
 
-    KeeperRegistryBaseInterface public keeperRegistry;
     IERC20Metadata public linkBridgeToken;
-    LinkTokenInterface public link677Token;
+    LinkTokenInterface public linkFundingToken;
     AggregatorV3Interface public linkPriceFeed;
     address[] public linkSwapPath;
     IUniswapV2Router02 public linkSwapRouter;
@@ -68,9 +68,8 @@ ICaskKeeperTopupManager
     function initialize(
         address _caskKeeperTopup,
         address _caskVault,
-        address _keeperRegistry,
         address _linkBridgeToken,
-        address _link677Token,
+        address _linkFundingToken,
         address _linkPriceFeed,
         address _linkSwapRouter,
         address[] calldata _linkSwapPath,
@@ -80,9 +79,8 @@ ICaskKeeperTopupManager
         caskKeeperTopup = ICaskKeeperTopup(_caskKeeperTopup);
         caskVault = ICaskVault(_caskVault);
 
-        keeperRegistry = KeeperRegistryBaseInterface(_keeperRegistry);
         linkBridgeToken = IERC20Metadata(_linkBridgeToken);
-        link677Token = LinkTokenInterface(_link677Token);
+        linkFundingToken = LinkTokenInterface(_linkFundingToken);
         linkPriceFeed = AggregatorV3Interface(_linkPriceFeed);
         linkSwapRouter = IUniswapV2Router02(_linkSwapRouter);
         linkSwapPath = _linkSwapPath;
@@ -148,25 +146,20 @@ ICaskKeeperTopupManager
     function _processKeeperTopup(
         bytes32 _keeperTopupId
     ) internal returns(bool) {
-
         ICaskKeeperTopup.KeeperTopup memory keeperTopup = caskKeeperTopup.getKeeperTopup(_keeperTopupId);
 
         if (keeperTopup.status != ICaskKeeperTopup.KeeperTopupStatus.Active){
             return false;
         }
 
-        uint96 balance;
-        uint64 maxValidBlocknumber;
-        (,,, balance,,,maxValidBlocknumber) = keeperRegistry.getUpkeep(keeperTopup.upkeepId);
-
-        // upkeep not active
-        if (maxValidBlocknumber != type(uint64).max) {
+        // topup target not active
+        if (!_topupValid(_keeperTopupId)) {
             caskKeeperTopup.managerCommand(_keeperTopupId, ICaskKeeperTopup.ManagerCommand.Cancel);
             return false;
         }
 
-        // keeper balance is ok - check again next period
-        if (balance > keeperTopup.lowBalance) {
+        // balance is ok - check again next period
+        if (_topupBalance(_keeperTopupId) >= keeperTopup.lowBalance) {
             return false;
         }
 
@@ -187,7 +180,6 @@ ICaskKeeperTopupManager
     function _performKeeperTopup(
         bytes32 _keeperTopupId
     ) internal returns(bool) {
-
         ICaskKeeperTopup.KeeperTopup memory keeperTopup = caskKeeperTopup.getKeeperTopup(_keeperTopupId);
 
         uint256 beforeBalance = IERC20Metadata(address(caskVault.getBaseAsset())).balanceOf(address(this));
@@ -231,7 +223,7 @@ ICaskKeeperTopupManager
             amountOutMin = amountOutMin - ((amountOutMin * maxSwapSlippageBps) / 10000);
         }
 
-        uint256 amount677before = link677Token.balanceOf(address(this));
+        uint256 amountFundingTokenBefore = linkFundingToken.balanceOf(address(this));
 
         // perform swap
         try linkSwapRouter.swapExactTokensForTokens(
@@ -260,14 +252,72 @@ ICaskKeeperTopupManager
         if (address(pegswap) != address(0)) {
             uint256 amountBridgeOut = linkBridgeToken.balanceOf(address(this));
             IERC20Metadata(address(linkBridgeToken)).safeIncreaseAllowance(address(pegswap), amountBridgeOut);
-            pegswap.swap(amountBridgeOut, address(linkBridgeToken), address(link677Token));
+            pegswap.swap(amountBridgeOut, address(linkBridgeToken), address(linkFundingToken));
         }
 
-        uint256 amount677Out = link677Token.balanceOf(address(this)) - amount677before;
-        IERC20Metadata(address(link677Token)).safeIncreaseAllowance(address(keeperRegistry), amount677Out);
-        keeperRegistry.addFunds(keeperTopup.upkeepId, uint96(amount677Out));
+        uint256 amountFundingTokenOut = linkFundingToken.balanceOf(address(this)) - amountFundingTokenBefore;
+
+        _doTopup(_keeperTopupId, amountFundingTokenOut);
 
         return true;
+    }
+
+    function _topupBalance(
+        bytes32 _keeperTopupId
+    ) internal view returns(uint256) {
+        ICaskKeeperTopup.KeeperTopup memory keeperTopup = caskKeeperTopup.getKeeperTopup(_keeperTopupId);
+
+        uint96 balance = type(uint96).max;
+
+        if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.Automation) {
+            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(keeperTopup.registry);
+            (,,,balance,,,) = keeperRegistry.getUpkeep(keeperTopup.targetId);
+
+        } else if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.VRF) {
+            VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(keeperTopup.registry);
+            (balance,,,) = coordinator.getSubscription(uint64(keeperTopup.targetId));
+        }
+
+        return uint256(balance);
+    }
+
+    function _topupValid(
+        bytes32 _keeperTopupId
+    ) internal view returns(bool) {
+        ICaskKeeperTopup.KeeperTopup memory keeperTopup = caskKeeperTopup.getKeeperTopup(_keeperTopupId);
+
+        if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.Automation) {
+            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(keeperTopup.registry);
+            uint64 maxValidBlocknumber;
+            (,,,,,,maxValidBlocknumber) = keeperRegistry.getUpkeep(keeperTopup.targetId);
+            return maxValidBlocknumber == type(uint64).max;
+
+        } else if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.VRF) {
+            VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(keeperTopup.registry);
+            address owner;
+            (,,owner,) = coordinator.getSubscription(uint64(keeperTopup.targetId));
+            return owner != address(0);
+        }
+
+        return false;
+    }
+
+    function _doTopup(
+        bytes32 _keeperTopupId,
+        uint256 _amount
+    ) internal {
+        ICaskKeeperTopup.KeeperTopup memory keeperTopup = caskKeeperTopup.getKeeperTopup(_keeperTopupId);
+
+        if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.Automation) {
+            // we dont use the ERC677 interface here because arbitrum LINK is not ERC677
+            KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(keeperTopup.registry);
+            IERC20Metadata(address(linkFundingToken)).safeIncreaseAllowance(keeperTopup.registry, _amount);
+            keeperRegistry.addFunds(keeperTopup.targetId, uint96(_amount));
+
+        } else if (keeperTopup.topupType == ICaskKeeperTopup.TopupType.VRF) {
+            VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(keeperTopup.registry);
+            linkFundingToken.transferAndCall(keeperTopup.registry, _amount, abi.encode(uint64(keeperTopup.targetId)));
+        }
     }
 
     function _convertPrice(
@@ -340,17 +390,15 @@ ICaskKeeperTopupManager
     }
 
     function setChainklinkAddresses(
-        address _keeperRegistry,
         address _linkBridgeToken,
-        address _link677Token,
+        address _linkFundingToken,
         address _linkPriceFeed,
         address _linkSwapRouter,
         address[] calldata _linkSwapPath,
         address _pegswap
     ) external onlyOwner {
-        keeperRegistry = KeeperRegistryBaseInterface(_keeperRegistry);
         linkBridgeToken = IERC20Metadata(_linkBridgeToken);
-        link677Token = LinkTokenInterface(_link677Token);
+        linkFundingToken = LinkTokenInterface(_linkFundingToken);
         linkPriceFeed = AggregatorV3Interface(_linkPriceFeed);
         linkSwapRouter = IUniswapV2Router02(_linkSwapRouter);
         linkSwapPath = _linkSwapPath;
