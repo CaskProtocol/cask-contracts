@@ -70,4 +70,13 @@ contract MockVRFCoordinator is VRFCoordinatorV2Interface, IERC677Receiver {
         require(vrfOwners[subId] != address(0), "!invalid");
         vrfBalance[subId] += uint96(amount);
     }
+
+    function spendFunds(
+        uint64 subId,
+        uint96 amount
+    ) external {
+        require(vrfOwners[subId] != address(0), "!invalid");
+        require(amount <= vrfBalance[subId], "!balance");
+        vrfBalance[subId] -= amount;
+    }
 }

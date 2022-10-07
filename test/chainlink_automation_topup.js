@@ -17,7 +17,7 @@ const {
 } = require("./fixtures/chainlink_topup");
 
 
-describe("CaskChainlinkTopup General", function () {
+describe("CaskChainlinkTopup Automation General", function () {
 
     it("Basic automation topup lifecycle", async function () {
 
