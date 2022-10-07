@@ -132,7 +132,8 @@ ICaskChainlinkTopupManager
         if (count >= chainlinkTopupGroup.chainlinkTopups.length || count < maxTopupsPerGroupRun) {
             // everything in this group has been processed - move group to next check period
             if (chainlinkTopupGroup.count > 0) { // stop processing empty groups
-                scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(chainlinkTopupGroup.processAt + queueBucketSize));
+                scheduleWorkUnit(_queueId, _chainlinkTopupGroupId,
+                    bucketAt(chainlinkTopupGroup.processAt + queueBucketSize));
                 caskChainlinkTopup.managerProcessedGroup(uint256(_chainlinkTopupGroupId),
                     chainlinkTopupGroup.processAt + queueBucketSize);
             }
@@ -146,7 +147,8 @@ ICaskChainlinkTopupManager
     function _processChainlinkTopup(
         bytes32 _chainlinkTopupId
     ) internal returns(bool) {
-        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup = caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
+            caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         if (chainlinkTopup.status != ICaskChainlinkTopup.ChainlinkTopupStatus.Active){
             return false;
@@ -180,7 +182,8 @@ ICaskChainlinkTopupManager
     function _performChainlinkTopup(
         bytes32 _chainlinkTopupId
     ) internal returns(bool) {
-        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup = caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
+            caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         uint256 beforeBalance = IERC20Metadata(address(caskVault.getBaseAsset())).balanceOf(address(this));
 
@@ -265,7 +268,8 @@ ICaskChainlinkTopupManager
     function _topupBalance(
         bytes32 _chainlinkTopupId
     ) internal view returns(uint256) {
-        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup = caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
+            caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         uint96 balance = type(uint96).max;
 
@@ -284,7 +288,8 @@ ICaskChainlinkTopupManager
     function _topupValid(
         bytes32 _chainlinkTopupId
     ) internal view returns(bool) {
-        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup = caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
+            caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
             KeeperRegistryBaseInterface keeperRegistry = KeeperRegistryBaseInterface(chainlinkTopup.registry);
@@ -323,7 +328,8 @@ ICaskChainlinkTopupManager
         bytes32 _chainlinkTopupId,
         uint256 _amount
     ) internal {
-        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup = caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
+            caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
             // we dont use the ERC677 interface here because arbitrum LINK is not ERC677
@@ -333,7 +339,8 @@ ICaskChainlinkTopupManager
 
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
             VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
-            linkFundingToken.transferAndCall(chainlinkTopup.registry, _amount, abi.encode(uint64(chainlinkTopup.targetId)));
+            linkFundingToken.transferAndCall(chainlinkTopup.registry, _amount,
+                abi.encode(uint64(chainlinkTopup.targetId)));
         }
     }
 
