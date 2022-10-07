@@ -358,4 +358,47 @@ describe("CaskChainlinkTopup General", function () {
         expect(result).to.equal(usdcUnits('990')); // charged
     });
 
+    it("Automation topup disallowed registry fails", async function () {
+
+        const {
+            networkAddresses,
+            user,
+            vault,
+            automationRegistry,
+            erc677Link,
+            cltu,
+        } = await cltuFundedFixture();
+
+        const userVault = vault.connect(user);
+        const userCLTU = cltu.connect(user);
+        const userERC77Link = erc677Link.connect(user);
+
+        // deposit to vault
+        await userVault.deposit(networkAddresses.USDC, usdcUnits('1000'));
+
+        // check initial balance
+        const initialUserBalance = await userVault.currentValueOf(user.address);
+        expect(initialUserBalance).to.equal(usdcUnits('1000'));
+
+        let result;
+
+        const upkeepId = 1;
+        await automationRegistry.registerUpkeep(user.address, 5000000, user.address, 0);
+
+        await userERC77Link.transferAndCall(automationRegistry.address, linkUnits('7.0'),
+            ethers.utils.defaultAbiCoder.encode(['uint256'], [upkeepId]));
+        result = await automationRegistry.getUpkeep(upkeepId);
+        expect(result.balance).to.equal(linkUnits('7.0')); // confirm ERC677 funding worked
+
+        // attempt to create keeper topup with disallowed registry
+        await expect(userCLTU.createChainlinkTopup(
+            linkUnits('5'), // lowBalance
+            usdcUnits('10'), // topupAmount
+            upkeepId,
+            user.address, // simulate disallowed registry address
+            ChainlinkTopupType.Automation
+        )).to.be.revertedWith("!INVALID(registry)");
+
+    });
+
 });
