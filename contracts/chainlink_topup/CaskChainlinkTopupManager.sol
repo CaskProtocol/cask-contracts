@@ -174,9 +174,16 @@ ICaskChainlinkTopupManager
             return false;
         }
 
+        uint256 topupFee = (chainlinkTopup.topupAmount * topupFeeBps) / 10000;
+        if (topupFee < topupFeeMin) {
+            topupFee = topupFeeMin;
+        }
+
+        uint256 buyQty = _performChainlinkTopup(_chainlinkTopupId, topupFee);
+
         // did a topup happen successfully?
-        if (_performChainlinkTopup(_chainlinkTopupId)) {
-            caskChainlinkTopup.managerProcessed(_chainlinkTopupId);
+        if (buyQty > 0) {
+            caskChainlinkTopup.managerProcessed(_chainlinkTopupId, chainlinkTopup.topupAmount, buyQty, topupFee);
         } else {
             if (maxSkips > 0 && chainlinkTopup.numSkips >= maxSkips) {
                 caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Pause);
@@ -189,28 +196,24 @@ ICaskChainlinkTopupManager
     }
 
     function _performChainlinkTopup(
-        bytes32 _chainlinkTopupId
-    ) internal returns(bool) {
+        bytes32 _chainlinkTopupId,
+        uint256 _protocolFee
+    ) internal returns(uint256) {
         ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
             caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         uint256 beforeBalance = IERC20Metadata(address(caskVault.getBaseAsset())).balanceOf(address(this));
-
-        uint256 topupFee = (chainlinkTopup.topupAmount * topupFeeBps) / 10000;
-        if (topupFee < topupFeeMin) {
-            topupFee = topupFeeMin;
-        }
 
         // perform a 'payment' to this contract, fee is taken out manually after a successful swap
         try caskVault.protocolPayment(chainlinkTopup.user, address(this), chainlinkTopup.topupAmount, 0) {
             // noop
         } catch (bytes memory) {
             caskChainlinkTopup.managerSkipped(_chainlinkTopupId, ICaskChainlinkTopup.SkipReason.PaymentFailed);
-            return false;
+            return 0;
         }
 
         // then withdraw the MASH received above as input asset to fund swap
-        uint256 withdrawShares = caskVault.sharesForValue(chainlinkTopup.topupAmount - topupFee);
+        uint256 withdrawShares = caskVault.sharesForValue(chainlinkTopup.topupAmount - _protocolFee);
         if (withdrawShares > caskVault.balanceOf(address(this))) {
             withdrawShares = caskVault.balanceOf(address(this));
         }
@@ -258,7 +261,7 @@ ICaskChainlinkTopupManager
             caskVault.transfer(chainlinkTopup.user, caskVault.balanceOf(address(this))); // refund full amount
 
             caskChainlinkTopup.managerSkipped(_chainlinkTopupId, ICaskChainlinkTopup.SkipReason.SwapFailed);
-            return false;
+            return 0;
         }
 
         if (address(pegswap) != address(0)) {
@@ -271,7 +274,7 @@ ICaskChainlinkTopupManager
 
         _doTopup(_chainlinkTopupId, amountFundingTokenOut);
 
-        return true;
+        return amountFundingTokenOut;
     }
 
     function _topupBalance(

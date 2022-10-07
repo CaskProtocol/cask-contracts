@@ -74,25 +74,29 @@ interface ICaskChainlinkTopup {
 
     function managerCommand(bytes32 _chainlinkTopupId, ManagerCommand _command) external;
 
-    function managerProcessed(bytes32 _chainlinkTopupId) external;
+    function managerProcessed(bytes32 _chainlinkTopupId, uint256 _amount, uint256 _buyQty, uint256 _fee) external;
 
     function managerSkipped(bytes32 _chainlinkTopupId, SkipReason _skipReason) external;
 
     function managerProcessedGroup(uint256 _chainlinkTopupGroupId, uint32 _nextProcessAt) external;
 
-    event ChainlinkTopupCreated(bytes32 indexed chainlinkTopupId, address indexed user,
-        uint256 targetId, address registry, TopupType topupType);
+    event ChainlinkTopupCreated(bytes32 indexed chainlinkTopupId, address indexed user, uint256 targetId,
+        address registry, TopupType topupType);
 
-    event ChainlinkTopupPaused(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry, TopupType topupType);
+    event ChainlinkTopupPaused(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry,
+        TopupType topupType);
 
-    event ChainlinkTopupResumed(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry, TopupType topupType);
+    event ChainlinkTopupResumed(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry,
+        TopupType topupType);
 
-    event ChainlinkTopupSkipped(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry, TopupType topupType,
-        SkipReason skipReason);
+    event ChainlinkTopupSkipped(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry,
+        TopupType topupType, SkipReason skipReason);
 
-    event ChainlinkTopupProcessed(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry, TopupType topupType);
+    event ChainlinkTopupProcessed(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry,
+        TopupType topupType, uint256 amount, uint256 buyQty, uint256 fee);
 
-    event ChainlinkTopupCanceled(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry, TopupType topupType);
+    event ChainlinkTopupCanceled(bytes32 indexed chainlinkTopupId, uint256 targetId, address registry,
+        TopupType topupType);
 
     event ChainlinkTopupGroupProcessed(uint256 indexed chainlinkTopupGroupId);
 }

@@ -84,7 +84,8 @@ BaseRelayRecipient
                 _topupType == TopupType.VRF, "!INVALID(topupType)");
         require(chainlinkTopupManager.registryAllowed(_registry), "!INVALID(registry)");
 
-        bytes32 chainlinkTopupId = keccak256(abi.encodePacked(_msgSender(), _targetId, _registry, block.number, block.timestamp));
+        bytes32 chainlinkTopupId = keccak256(abi.encodePacked(_msgSender(), _targetId, _registry,
+            block.number, block.timestamp));
 
         uint256 chainlinkTopupGroupId = _findGroupId();
         require(chainlinkTopupGroupId > 0, "!GROUP_ERROR");
@@ -129,7 +130,9 @@ BaseRelayRecipient
         } else {
             chainlinkTopupGroupId = currentGroup;
         }
-        if (chainlinkTopupGroupId != currentGroup && chainlinkTopupGroupMap[chainlinkTopupGroupId].count >= groupSize) {
+        if (chainlinkTopupGroupId != currentGroup &&
+            chainlinkTopupGroupMap[chainlinkTopupGroupId].count >= groupSize)
+        {
             chainlinkTopupGroupId = currentGroup;
         }
         if (chainlinkTopupGroupMap[chainlinkTopupGroupId].count >= groupSize) {
@@ -147,7 +150,8 @@ BaseRelayRecipient
 
         chainlinkTopup.status = ChainlinkTopupStatus.Paused;
 
-        emit ChainlinkTopupPaused(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry, chainlinkTopup.topupType);
+        emit ChainlinkTopupPaused(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
+            chainlinkTopup.topupType);
     }
 
     function resumeChainlinkTopup(
@@ -158,7 +162,8 @@ BaseRelayRecipient
 
         chainlinkTopup.status = ChainlinkTopupStatus.Active;
 
-        emit ChainlinkTopupResumed(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry, chainlinkTopup.topupType);
+        emit ChainlinkTopupResumed(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
+            chainlinkTopup.topupType);
     }
 
     function cancelChainlinkTopup(
@@ -173,7 +178,8 @@ BaseRelayRecipient
         chainlinkTopupGroupMap[chainlinkTopup.groupId].count -= 1;
         backfillGroups.push(chainlinkTopup.groupId);
 
-        emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry, chainlinkTopup.topupType);
+        emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
+            chainlinkTopup.topupType);
     }
 
     function getChainlinkTopup(
@@ -215,7 +221,8 @@ BaseRelayRecipient
 
             chainlinkTopup.status = ChainlinkTopupStatus.Paused;
 
-            emit ChainlinkTopupPaused(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry, chainlinkTopup.topupType);
+            emit ChainlinkTopupPaused(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
+                chainlinkTopup.topupType);
 
         } else if (_command == ManagerCommand.Cancel) {
 
@@ -224,20 +231,25 @@ BaseRelayRecipient
             chainlinkTopupGroupMap[chainlinkTopup.groupId].count -= 1;
             backfillGroups.push(chainlinkTopup.groupId);
 
-            emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry, chainlinkTopup.topupType);
+            emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
+                chainlinkTopup.topupType);
 
         }
     }
 
     function managerProcessed(
-        bytes32 _chainlinkTopupId
+        bytes32 _chainlinkTopupId,
+        uint256 _amount,
+        uint256 _buyQty,
+        uint256 _fee
     ) external override onlyManager {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
 
-        chainlinkTopup.currentAmount += chainlinkTopup.topupAmount;
+        chainlinkTopup.currentAmount += _amount;
         chainlinkTopup.numTopups += 1;
 
-        emit ChainlinkTopupProcessed(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry, chainlinkTopup.topupType);
+        emit ChainlinkTopupProcessed(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
+            chainlinkTopup.topupType, _amount, _buyQty, _fee);
     }
 
     function managerProcessedGroup(
@@ -259,8 +271,8 @@ BaseRelayRecipient
 
         chainlinkTopup.numSkips += 1;
 
-        emit ChainlinkTopupSkipped(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry, chainlinkTopup.topupType,
-            _skipReason);
+        emit ChainlinkTopupSkipped(_chainlinkTopupId, chainlinkTopup.targetId, chainlinkTopup.registry,
+            chainlinkTopup.topupType, _skipReason);
     }
 
     /************************** ADMIN FUNCTIONS **************************/
