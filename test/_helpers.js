@@ -55,6 +55,13 @@ const ChainlinkTopupType = {
     VRF: 2,
 };
 
+const ChainlinkTopupStatus = {
+    None: 0,
+    Active: 1,
+    Paused: 2,
+    Canceled: 3,
+};
+
 const advanceTime = async (seconds) => {
     await hre.ethers.provider.send("evm_increaseTime", [seconds]);
     await hre.ethers.provider.send("evm_mine");
@@ -305,6 +312,7 @@ module.exports = {
     DCAStatus,
     P2PStatus,
     ChainlinkTopupType,
+    ChainlinkTopupStatus,
 
     advanceTime,
     getBlockTimestamp,

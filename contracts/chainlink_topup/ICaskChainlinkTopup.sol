@@ -45,7 +45,6 @@ interface ICaskChainlinkTopup {
     }
 
     struct ChainlinkTopupGroup {
-        uint256 count;
         bytes32[] chainlinkTopups;
         uint32 processAt;
     }

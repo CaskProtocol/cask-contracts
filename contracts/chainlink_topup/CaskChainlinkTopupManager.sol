@@ -134,12 +134,10 @@ ICaskChainlinkTopupManager
 
         if (count >= chainlinkTopupGroup.chainlinkTopups.length || count < maxTopupsPerGroupRun) {
             // everything in this group has been processed - move group to next check period
-            if (chainlinkTopupGroup.count > 0) { // stop processing empty groups
-                scheduleWorkUnit(_queueId, _chainlinkTopupGroupId,
-                    bucketAt(chainlinkTopupGroup.processAt + queueBucketSize));
-                caskChainlinkTopup.managerProcessedGroup(uint256(_chainlinkTopupGroupId),
-                    chainlinkTopupGroup.processAt + queueBucketSize);
-            }
+            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId,
+                bucketAt(chainlinkTopupGroup.processAt + queueBucketSize));
+            caskChainlinkTopup.managerProcessedGroup(uint256(_chainlinkTopupGroupId),
+                chainlinkTopupGroup.processAt + queueBucketSize);
         } else {
             // still more to do - schedule an immediate re-run
             scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(currentBucket()));

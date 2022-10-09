@@ -87,17 +87,11 @@ BaseRelayRecipient
         bytes32 chainlinkTopupId = keccak256(abi.encodePacked(_msgSender(), _targetId, _registry,
             block.number, block.timestamp));
 
-        uint256 chainlinkTopupGroupId = _findGroupId();
-        require(chainlinkTopupGroupId > 0, "!GROUP_ERROR");
-
-        uint32 timestamp = uint32(block.timestamp);
-
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[chainlinkTopupId];
         chainlinkTopup.user = _msgSender();
-        chainlinkTopup.groupId = chainlinkTopupGroupId;
         chainlinkTopup.lowBalance = _lowBalance;
         chainlinkTopup.topupAmount = _topupAmount;
-        chainlinkTopup.createdAt = timestamp;
+        chainlinkTopup.createdAt = uint32(block.timestamp);
         chainlinkTopup.targetId = _targetId;
         chainlinkTopup.registry = _registry;
         chainlinkTopup.topupType = _topupType;
@@ -105,14 +99,7 @@ BaseRelayRecipient
 
         userChainlinkTopups[_msgSender()].push(chainlinkTopupId);
 
-        ChainlinkTopupGroup storage chainlinkTopupGroup = chainlinkTopupGroupMap[chainlinkTopupGroupId];
-        chainlinkTopupGroup.processAt = timestamp;
-        chainlinkTopupGroup.chainlinkTopups.push(chainlinkTopupId);
-        chainlinkTopupGroup.count += 1;
-
-        if (chainlinkTopupGroup.count == 1) { // register only if new/reinitialized group
-            chainlinkTopupManager.registerChainlinkTopupGroup(chainlinkTopupGroupId);
-        }
+        _assignChainlinkTopupToGroup(chainlinkTopupId);
 
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active, "!UNPROCESSABLE");
 
@@ -122,31 +109,13 @@ BaseRelayRecipient
         return chainlinkTopupId;
     }
 
-    function _findGroupId() internal returns(uint256) {
-        uint256 chainlinkTopupGroupId;
-        if (backfillGroups.length > 0) {
-            chainlinkTopupGroupId = backfillGroups[backfillGroups.length-1];
-            backfillGroups.pop();
-        } else {
-            chainlinkTopupGroupId = currentGroup;
-        }
-        if (chainlinkTopupGroupId != currentGroup &&
-            chainlinkTopupGroupMap[chainlinkTopupGroupId].count >= groupSize)
-        {
-            chainlinkTopupGroupId = currentGroup;
-        }
-        if (chainlinkTopupGroupMap[chainlinkTopupGroupId].count >= groupSize) {
-            currentGroup += 1;
-            chainlinkTopupGroupId = currentGroup;
-        }
-        return chainlinkTopupGroupId;
-    }
-
     function pauseChainlinkTopup(
         bytes32 _chainlinkTopupId
     ) external override onlyUser(_chainlinkTopupId) {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active, "!NOT_ACTIVE");
+
+        _removeChainlinkTopupFromGroup(_chainlinkTopupId);
 
         chainlinkTopup.status = ChainlinkTopupStatus.Paused;
 
@@ -159,6 +128,8 @@ BaseRelayRecipient
     ) external override onlyUser(_chainlinkTopupId) {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
         require(chainlinkTopup.status == ChainlinkTopupStatus.Paused, "!NOT_PAUSED");
+
+        _assignChainlinkTopupToGroup(_chainlinkTopupId);
 
         chainlinkTopup.status = ChainlinkTopupStatus.Active;
 
@@ -173,27 +144,9 @@ BaseRelayRecipient
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active ||
                 chainlinkTopup.status == ChainlinkTopupStatus.Paused, "!INVALID(status)");
 
-        uint256 groupId = chainlinkTopup.groupId;
-        uint256 groupLen = chainlinkTopupGroupMap[groupId].chainlinkTopups.length;
+        _removeChainlinkTopupFromGroup(_chainlinkTopupId);
 
         chainlinkTopup.status = ChainlinkTopupStatus.Canceled;
-
-        // remove topup from group list
-        uint256 idx = groupLen;
-        for (uint256 i = 0; i < groupLen; i++) {
-            if (chainlinkTopupGroupMap[groupId].chainlinkTopups[i] == _chainlinkTopupId) {
-                idx = i;
-                break;
-            }
-        }
-        if (idx < groupLen) {
-            chainlinkTopupGroupMap[groupId].chainlinkTopups[idx] =
-                chainlinkTopupGroupMap[groupId].chainlinkTopups[groupLen - 1];
-            chainlinkTopupGroupMap[groupId].chainlinkTopups.pop();
-        }
-
-        chainlinkTopupGroupMap[groupId].count -= 1;
-        backfillGroups.push(groupId);
 
         emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
             chainlinkTopup.registry, chainlinkTopup.topupType);
@@ -224,6 +177,68 @@ BaseRelayRecipient
         return userChainlinkTopups[_user].length;
     }
 
+    function _removeChainlinkTopupFromGroup(
+        bytes32 _chainlinkTopupId
+    ) internal {
+        ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
+
+        uint256 groupId = chainlinkTopup.groupId;
+        uint256 groupLen = chainlinkTopupGroupMap[groupId].chainlinkTopups.length;
+
+        // remove topup from group list
+        uint256 idx = groupLen;
+        for (uint256 i = 0; i < groupLen; i++) {
+            if (chainlinkTopupGroupMap[groupId].chainlinkTopups[i] == _chainlinkTopupId) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < groupLen) {
+            chainlinkTopupGroupMap[groupId].chainlinkTopups[idx] =
+                chainlinkTopupGroupMap[groupId].chainlinkTopups[groupLen - 1];
+            chainlinkTopupGroupMap[groupId].chainlinkTopups.pop();
+        }
+
+        backfillGroups.push(groupId);
+    }
+
+    function _findGroupId() internal returns(uint256) {
+        uint256 chainlinkTopupGroupId;
+        if (backfillGroups.length > 0) {
+            chainlinkTopupGroupId = backfillGroups[backfillGroups.length-1];
+            backfillGroups.pop();
+        } else {
+            chainlinkTopupGroupId = currentGroup;
+        }
+        if (chainlinkTopupGroupId != currentGroup &&
+            chainlinkTopupGroupMap[chainlinkTopupGroupId].chainlinkTopups.length >= groupSize)
+        {
+            chainlinkTopupGroupId = currentGroup;
+        }
+        if (chainlinkTopupGroupMap[chainlinkTopupGroupId].chainlinkTopups.length >= groupSize) {
+            currentGroup += 1;
+            chainlinkTopupGroupId = currentGroup;
+        }
+        return chainlinkTopupGroupId;
+    }
+
+    function _assignChainlinkTopupToGroup(
+        bytes32 _chainlinkTopupId
+    ) internal {
+        uint256 chainlinkTopupGroupId = _findGroupId();
+        require(chainlinkTopupGroupId > 0, "!GROUP_ERROR");
+
+        ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
+        chainlinkTopup.groupId = chainlinkTopupGroupId;
+
+        ChainlinkTopupGroup storage chainlinkTopupGroup = chainlinkTopupGroupMap[chainlinkTopupGroupId];
+        chainlinkTopupGroup.chainlinkTopups.push(_chainlinkTopupId);
+
+        if (chainlinkTopupGroup.chainlinkTopups.length == 1) { // register only if new/reinitialized group
+            chainlinkTopupGroup.processAt = uint32(block.timestamp);
+            chainlinkTopupManager.registerChainlinkTopupGroup(chainlinkTopupGroupId);
+        }
+    }
 
     /************************** MANAGER FUNCTIONS **************************/
 
@@ -245,8 +260,7 @@ BaseRelayRecipient
 
             chainlinkTopup.status = ChainlinkTopupStatus.Canceled;
 
-            chainlinkTopupGroupMap[chainlinkTopup.groupId].count -= 1;
-            backfillGroups.push(chainlinkTopup.groupId);
+            _removeChainlinkTopupFromGroup(_chainlinkTopupId);
 
             emit ChainlinkTopupCanceled(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
                 chainlinkTopup.registry, chainlinkTopup.topupType);
