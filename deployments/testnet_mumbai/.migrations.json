@@ -5,5 +5,7 @@
   "006_protocol_treasury": 1651686394,
   "007_dca_mocks": 1658439198,
   "008_dca": 1660612317,
-  "009_p2p": 1660612955
+  "009_p2p": 1660612955,
+  "011_chainlink_topup_mocks": 1665421955,
+  "012_chainlink_topup": 1665422109
 }

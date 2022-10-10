@@ -108,6 +108,9 @@ addresses.testnet_fantom.USDT_USD = "0x9BB8A6dcD83E36726Cc230a97F1AF8a84ae5F128"
 /* avax/fuji testnet addresses */
 addresses.testnet_fuji = {};
 addresses.testnet_fuji.USDT_USD = "0x7898AcCC83587C3C55116c5230C17a6Cd9C71bad";
+addresses.testnet_fuji.ERC677LINK = "0x0b9d5d9136855f6fec3c0993fee6e9ce8a297846";
+addresses.testnet_fuji.LINK_USD = "0x34C4c526902d88a3Aa98DB8a9b802603EB1E3470";
+addresses.testnet_fuji.link_swap_router = "0xd7f655e3376ce2d7a2b08ff01eb3b1023191a901";
 
 /* alfajores testnet addresses */
 addresses.testnet_alfajores = {};
@@ -126,7 +129,9 @@ addresses.internal_mumbai.USDT_USD = "0x92C09849638959196E976289418e5973CC96d645
 /* avax/fuji internal addresses */
 addresses.internal_fuji = {};
 addresses.internal_fuji.USDT_USD = "0x7898AcCC83587C3C55116c5230C17a6Cd9C71bad";
-
+addresses.internal_fuji.ERC677LINK = "0x0b9d5d9136855f6fec3c0993fee6e9ce8a297846";
+addresses.internal_fuji.LINK_USD = "0x34C4c526902d88a3Aa98DB8a9b802603EB1E3470";
+addresses.internal_fuji.link_swap_router = "0xd7f655e3376ce2d7a2b08ff01eb3b1023191a901";
 
 
 module.exports = addresses;

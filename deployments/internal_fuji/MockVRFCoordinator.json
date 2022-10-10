@@ -1,0 +1,516 @@
+{
+  "address": "0x48df3230331D28E017Fab7Ae1F59eba8Fd991Ad7",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "subId",
+          "type": "uint64"
+        }
+      ],
+      "name": "acceptSubscriptionOwnerTransfer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "subId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "address",
+          "name": "consumer",
+          "type": "address"
+        }
+      ],
+      "name": "addConsumer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "subId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "cancelSubscription",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "createSubscription",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "subId",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getRequestConfig",
+      "outputs": [
+        {
+          "internalType": "uint16",
+          "name": "",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        },
+        {
+          "internalType": "bytes32[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "subId",
+          "type": "uint64"
+        }
+      ],
+      "name": "getSubscription",
+      "outputs": [
+        {
+          "internalType": "uint96",
+          "name": "balance",
+          "type": "uint96"
+        },
+        {
+          "internalType": "uint64",
+          "name": "reqCount",
+          "type": "uint64"
+        },
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "consumers",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "onTokenTransfer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "subId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "address",
+          "name": "consumer",
+          "type": "address"
+        }
+      ],
+      "name": "removeConsumer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "keyHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint64",
+          "name": "subId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint16",
+          "name": "minimumRequestConfirmations",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint32",
+          "name": "callbackGasLimit",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "numWords",
+          "type": "uint32"
+        }
+      ],
+      "name": "requestRandomWords",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "requestId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "subId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "requestSubscriptionOwnerTransfer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "subId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint96",
+          "name": "amount",
+          "type": "uint96"
+        }
+      ],
+      "name": "spendFunds",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "name": "vrfBalance",
+      "outputs": [
+        {
+          "internalType": "uint96",
+          "name": "",
+          "type": "uint96"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "vrfCount",
+      "outputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "name": "vrfOwners",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "",
+          "type": "uint64"
+        }
+      ],
+      "name": "vrfPerforms",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x91aaaa3981f2ee7e2dba0ec7c0682f3572af3c7e698b7bf1df4381912990dc17",
+  "receipt": {
+    "to": null,
+    "from": "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0",
+    "contractAddress": "0x48df3230331D28E017Fab7Ae1F59eba8Fd991Ad7",
+    "transactionIndex": 1,
+    "gasUsed": "570683",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xda34f921b3cb4cea73eb5f071885e32d0d2eca9bb430e367b3d8bc675f341c27",
+    "transactionHash": "0x91aaaa3981f2ee7e2dba0ec7c0682f3572af3c7e698b7bf1df4381912990dc17",
+    "logs": [],
+    "blockNumber": 14403336,
+    "cumulativeGasUsed": "837952",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "88a5ce2a14d5881014c25cdba22e94e8",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.9+commit.e5eed63a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"subId\",\"type\":\"uint64\"}],\"name\":\"acceptSubscriptionOwnerTransfer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"subId\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"consumer\",\"type\":\"address\"}],\"name\":\"addConsumer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"subId\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"}],\"name\":\"cancelSubscription\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"createSubscription\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"subId\",\"type\":\"uint64\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getRequestConfig\",\"outputs\":[{\"internalType\":\"uint16\",\"name\":\"\",\"type\":\"uint16\"},{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"},{\"internalType\":\"bytes32[]\",\"name\":\"\",\"type\":\"bytes32[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"subId\",\"type\":\"uint64\"}],\"name\":\"getSubscription\",\"outputs\":[{\"internalType\":\"uint96\",\"name\":\"balance\",\"type\":\"uint96\"},{\"internalType\":\"uint64\",\"name\":\"reqCount\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"consumers\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"onTokenTransfer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"subId\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"consumer\",\"type\":\"address\"}],\"name\":\"removeConsumer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"keyHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint64\",\"name\":\"subId\",\"type\":\"uint64\"},{\"internalType\":\"uint16\",\"name\":\"minimumRequestConfirmations\",\"type\":\"uint16\"},{\"internalType\":\"uint32\",\"name\":\"callbackGasLimit\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"numWords\",\"type\":\"uint32\"}],\"name\":\"requestRandomWords\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"requestId\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"subId\",\"type\":\"uint64\"},{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"requestSubscriptionOwnerTransfer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"subId\",\"type\":\"uint64\"},{\"internalType\":\"uint96\",\"name\":\"amount\",\"type\":\"uint96\"}],\"name\":\"spendFunds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"name\":\"vrfBalance\",\"outputs\":[{\"internalType\":\"uint96\",\"name\":\"\",\"type\":\"uint96\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"vrfCount\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"name\":\"vrfOwners\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"name\":\"vrfPerforms\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"acceptSubscriptionOwnerTransfer(uint64)\":{\"details\":\"will revert if original owner of subId has not requested that msg.sender become the new owner.\",\"params\":{\"subId\":\"- ID of the subscription\"}},\"addConsumer(uint64,address)\":{\"params\":{\"consumer\":\"- New consumer which can use the subscription\",\"subId\":\"- ID of the subscription\"}},\"cancelSubscription(uint64,address)\":{\"params\":{\"subId\":\"- ID of the subscription\",\"to\":\"- Where to send the remaining LINK to\"}},\"createSubscription()\":{\"details\":\"You can manage the consumer set dynamically with addConsumer/removeConsumer.Note to fund the subscription, use transferAndCall. For exampleLINKTOKEN.transferAndCall(address(COORDINATOR),amount,abi.encode(subId));\",\"returns\":{\"subId\":\"- A unique subscription id.\"}},\"getRequestConfig()\":{\"returns\":{\"_0\":\"minimumRequestConfirmations global min for request confirmations\",\"_1\":\"maxGasLimit global max for request gas limit\",\"_2\":\"s_provingKeyHashes list of registered key hashes\"}},\"getSubscription(uint64)\":{\"params\":{\"subId\":\"- ID of the subscription\"},\"returns\":{\"balance\":\"- LINK balance of the subscription in juels.\",\"consumers\":\"- list of consumer address which are able to use this subscription.\",\"owner\":\"- owner of the subscription.\",\"reqCount\":\"- number of requests for this subscription, determines fee tier.\"}},\"removeConsumer(uint64,address)\":{\"params\":{\"consumer\":\"- Consumer to remove from the subscription\",\"subId\":\"- ID of the subscription\"}},\"requestRandomWords(bytes32,uint64,uint16,uint32,uint32)\":{\"params\":{\"callbackGasLimit\":\"- How much gas you'd like to receive in your fulfillRandomWords callback. Note that gasleft() inside fulfillRandomWords may be slightly less than this amount because of gas used calling the function (argument decoding etc.), so you may need to request slightly more than you expect to have inside fulfillRandomWords. The acceptable range is [0, maxGasLimit]\",\"keyHash\":\"- Corresponds to a particular oracle job which uses that key for generating the VRF proof. Different keyHash's have different gas price ceilings, so you can select a specific one to bound your maximum per request cost.\",\"minimumRequestConfirmations\":\"- How many blocks you'd like the oracle to wait before responding to the request. See SECURITY CONSIDERATIONS for why you may want to request more. The acceptable range is [minimumRequestBlockConfirmations, 200].\",\"numWords\":\"- The number of uint256 random values you'd like to receive in your fulfillRandomWords callback. Note these numbers are expanded in a secure way by the VRFCoordinator from a single random value supplied by the oracle.\",\"subId\":\"- The ID of the VRF subscription. Must be funded with the minimum subscription balance required for the selected keyHash.\"},\"returns\":{\"requestId\":\"- A unique identifier of the request. Can be used to match a request to a response in fulfillRandomWords.\"}},\"requestSubscriptionOwnerTransfer(uint64,address)\":{\"params\":{\"newOwner\":\"- proposed new owner of the subscription\",\"subId\":\"- ID of the subscription\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"acceptSubscriptionOwnerTransfer(uint64)\":{\"notice\":\"Request subscription owner transfer.\"},\"addConsumer(uint64,address)\":{\"notice\":\"Add a consumer to a VRF subscription.\"},\"cancelSubscription(uint64,address)\":{\"notice\":\"Cancel a subscription\"},\"createSubscription()\":{\"notice\":\"Create a VRF subscription.\"},\"getRequestConfig()\":{\"notice\":\"Get configuration relevant for making requests\"},\"getSubscription(uint64)\":{\"notice\":\"Get a VRF subscription.\"},\"removeConsumer(uint64,address)\":{\"notice\":\"Remove a consumer from a VRF subscription.\"},\"requestRandomWords(bytes32,uint64,uint16,uint32,uint32)\":{\"notice\":\"Request a set of random words.\"},\"requestSubscriptionOwnerTransfer(uint64,address)\":{\"notice\":\"Request subscription owner transfer.\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/mocks/MockVRFCoordinator.sol\":\"MockVRFCoordinator\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/chainlink_topup/VRFCoordinatorV2Interface.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.0;\\n\\ninterface VRFCoordinatorV2Interface {\\n    /**\\n     * @notice Get configuration relevant for making requests\\n   * @return minimumRequestConfirmations global min for request confirmations\\n   * @return maxGasLimit global max for request gas limit\\n   * @return s_provingKeyHashes list of registered key hashes\\n   */\\n    function getRequestConfig()\\n    external\\n    view\\n    returns (\\n        uint16,\\n        uint32,\\n        bytes32[] memory\\n    );\\n\\n    /**\\n     * @notice Request a set of random words.\\n   * @param keyHash - Corresponds to a particular oracle job which uses\\n   * that key for generating the VRF proof. Different keyHash's have different gas price\\n   * ceilings, so you can select a specific one to bound your maximum per request cost.\\n   * @param subId  - The ID of the VRF subscription. Must be funded\\n   * with the minimum subscription balance required for the selected keyHash.\\n   * @param minimumRequestConfirmations - How many blocks you'd like the\\n   * oracle to wait before responding to the request. See SECURITY CONSIDERATIONS\\n   * for why you may want to request more. The acceptable range is\\n   * [minimumRequestBlockConfirmations, 200].\\n   * @param callbackGasLimit - How much gas you'd like to receive in your\\n   * fulfillRandomWords callback. Note that gasleft() inside fulfillRandomWords\\n   * may be slightly less than this amount because of gas used calling the function\\n   * (argument decoding etc.), so you may need to request slightly more than you expect\\n   * to have inside fulfillRandomWords. The acceptable range is\\n   * [0, maxGasLimit]\\n   * @param numWords - The number of uint256 random values you'd like to receive\\n   * in your fulfillRandomWords callback. Note these numbers are expanded in a\\n   * secure way by the VRFCoordinator from a single random value supplied by the oracle.\\n   * @return requestId - A unique identifier of the request. Can be used to match\\n   * a request to a response in fulfillRandomWords.\\n   */\\n    function requestRandomWords(\\n        bytes32 keyHash,\\n        uint64 subId,\\n        uint16 minimumRequestConfirmations,\\n        uint32 callbackGasLimit,\\n        uint32 numWords\\n    ) external returns (uint256 requestId);\\n\\n    /**\\n     * @notice Create a VRF subscription.\\n   * @return subId - A unique subscription id.\\n   * @dev You can manage the consumer set dynamically with addConsumer/removeConsumer.\\n   * @dev Note to fund the subscription, use transferAndCall. For example\\n   * @dev  LINKTOKEN.transferAndCall(\\n   * @dev    address(COORDINATOR),\\n   * @dev    amount,\\n   * @dev    abi.encode(subId));\\n   */\\n    function createSubscription() external returns (uint64 subId);\\n\\n    /**\\n     * @notice Get a VRF subscription.\\n   * @param subId - ID of the subscription\\n   * @return balance - LINK balance of the subscription in juels.\\n   * @return reqCount - number of requests for this subscription, determines fee tier.\\n   * @return owner - owner of the subscription.\\n   * @return consumers - list of consumer address which are able to use this subscription.\\n   */\\n    function getSubscription(uint64 subId)\\n    external\\n    view\\n    returns (\\n        uint96 balance,\\n        uint64 reqCount,\\n        address owner,\\n        address[] memory consumers\\n    );\\n\\n    /**\\n     * @notice Request subscription owner transfer.\\n   * @param subId - ID of the subscription\\n   * @param newOwner - proposed new owner of the subscription\\n   */\\n    function requestSubscriptionOwnerTransfer(uint64 subId, address newOwner) external;\\n\\n    /**\\n     * @notice Request subscription owner transfer.\\n   * @param subId - ID of the subscription\\n   * @dev will revert if original owner of subId has\\n   * not requested that msg.sender become the new owner.\\n   */\\n    function acceptSubscriptionOwnerTransfer(uint64 subId) external;\\n\\n    /**\\n     * @notice Add a consumer to a VRF subscription.\\n   * @param subId - ID of the subscription\\n   * @param consumer - New consumer which can use the subscription\\n   */\\n    function addConsumer(uint64 subId, address consumer) external;\\n\\n    /**\\n     * @notice Remove a consumer from a VRF subscription.\\n   * @param subId - ID of the subscription\\n   * @param consumer - Consumer to remove from the subscription\\n   */\\n    function removeConsumer(uint64 subId, address consumer) external;\\n\\n    /**\\n     * @notice Cancel a subscription\\n   * @param subId - ID of the subscription\\n   * @param to - Where to send the remaining LINK to\\n   */\\n    function cancelSubscription(uint64 subId, address to) external;\\n}\",\"keccak256\":\"0xe8ca3d2b6a9de6ab86549f1f87f2aae33b77f08396937e3b466e387fbaa3bee5\",\"license\":\"MIT\"},\"contracts/erc677/IERC677Receiver.sol\":{\"content\":\"// SPDX-License-Identifier: agpl-3.0\\npragma solidity ^0.8.0;\\n\\ninterface IERC677Receiver {\\n    function onTokenTransfer(\\n        address sender,\\n        uint value,\\n        bytes memory data\\n    )\\n    external;\\n}\",\"keccak256\":\"0xa1df26a04c7406c17bbdb0aa4f852fa96209d1f0665a50900b86bfa3fb2b73b8\",\"license\":\"agpl-3.0\"},\"contracts/mocks/MockVRFCoordinator.sol\":{\"content\":\"// SPDX-License-Identifier: agpl-3.0\\npragma solidity ^0.8.0;\\n\\nimport \\\"../chainlink_topup/VRFCoordinatorV2Interface.sol\\\";\\nimport \\\"../erc677/IERC677Receiver.sol\\\";\\n\\ncontract MockVRFCoordinator is VRFCoordinatorV2Interface, IERC677Receiver {\\n\\n    mapping(uint64 => address) public vrfOwners;\\n    mapping(uint64 => uint96) public vrfBalance;\\n    mapping(uint64 => uint256) public vrfPerforms;\\n    uint64 public vrfCount;\\n\\n    function getRequestConfig()\\n    external\\n    view\\n    returns (\\n        uint16,\\n        uint32,\\n        bytes32[] memory\\n    ) { return (0, 0, new bytes32[](0)); }\\n\\n    function requestRandomWords(\\n        bytes32 keyHash,\\n        uint64 subId,\\n        uint16 minimumRequestConfirmations,\\n        uint32 callbackGasLimit,\\n        uint32 numWords\\n    ) external returns (uint256 requestId) { return 0; }\\n\\n    function createSubscription() external returns (uint64 subId) {\\n        vrfCount += 1;\\n\\n        vrfOwners[vrfCount] = msg.sender;\\n        return vrfCount;\\n    }\\n\\n    function getSubscription(uint64 subId)\\n    external\\n    view\\n    returns (\\n        uint96 balance,\\n        uint64 reqCount,\\n        address owner,\\n        address[] memory consumers\\n    ) { return (vrfBalance[subId], 0, vrfOwners[subId], new address[](0)); }\\n\\n    function requestSubscriptionOwnerTransfer(uint64 subId, address newOwner) external {}\\n\\n    function acceptSubscriptionOwnerTransfer(uint64 subId) external {}\\n\\n    function addConsumer(uint64 subId, address consumer) external {}\\n\\n    function removeConsumer(uint64 subId, address consumer) external {}\\n\\n    function cancelSubscription(uint64 subId, address to) external {\\n        require(vrfOwners[subId] != address(0), \\\"!invalid\\\");\\n        vrfCount -= 1;\\n        vrfBalance[subId] = 0;\\n        vrfOwners[subId] = address(0);\\n    }\\n\\n    function onTokenTransfer(\\n        address sender,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external {\\n        uint64 subId = abi.decode(data, (uint64));\\n\\n        require(vrfOwners[subId] != address(0), \\\"!invalid\\\");\\n        vrfBalance[subId] += uint96(amount);\\n    }\\n\\n    function spendFunds(\\n        uint64 subId,\\n        uint96 amount\\n    ) external {\\n        require(vrfOwners[subId] != address(0), \\\"!invalid\\\");\\n        require(amount <= vrfBalance[subId], \\\"!balance\\\");\\n        vrfBalance[subId] -= amount;\\n    }\\n}\",\"keccak256\":\"0xc2fbb9172b1455344669feab981c1d00786adc777f26e59ff060605efdafb454\",\"license\":\"agpl-3.0\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b5061095c806100206000396000f3fe608060405234801561001057600080fd5b50600436106100f45760003560e01c8063810a893411610097578063a47c769611610066578063a47c769614610213578063a4c0ed3614610277578063bce4908b1461028a578063d7ae1d30146102cb57600080fd5b8063810a8934146101e757806382359740146101fa5780639f87fad714610120578063a21a23e41461020b57600080fd5b80635d3b1d30116100d35780635d3b1d301461016257806360f35dc51461017b57806367d55365146101bc5780637341c10c1461012057600080fd5b8062012291146100f957806304c357cb146101205780632433259814610134575b600080fd5b604080516000808252602082019283905261011792909182916105b4565b60405180910390f35b61013261012e366004610646565b5050565b005b610154610142366004610679565b60026020526000908152604090205481565b604051908152602001610117565b6101546101703660046106af565b600095945050505050565b6101a4610189366004610679565b6000602081905290815260409020546001600160a01b031681565b6040516001600160a01b039091168152602001610117565b6003546101cf906001600160401b031681565b6040516001600160401b039091168152602001610117565b6101326101f5366004610716565b6102de565b610132610208366004610679565b50565b6101cf6103de565b610267610221366004610679565b6001600160401b03166000908152600160209081526040808320548383528184205482518581529384019092526001600160601b0316936001600160a01b039091169190565b6040516101179493929190610759565b6101326102853660046107d3565b61044c565b6102b3610298366004610679565b6001602052600090815260409020546001600160601b031681565b6040516001600160601b039091168152602001610117565b6101326102d9366004610646565b6104f7565b6001600160401b0382166000908152602081905260409020546001600160a01b03166103255760405162461bcd60e51b815260040161031c90610859565b60405180910390fd5b6001600160401b0382166000908152600160205260409020546001600160601b0390811690821611156103855760405162461bcd60e51b81526020600482015260086024820152672162616c616e636560c01b604482015260640161031c565b6001600160401b038216600090815260016020526040812080548392906103b69084906001600160601b0316610891565b92506101000a8154816001600160601b0302191690836001600160601b031602179055505050565b6003805460009160019183906103fe9084906001600160401b03166108b9565b82546101009290920a6001600160401b0381810219909316918316021790915560038054821660009081526020819052604090208054336001600160a01b0319909116179055541692915050565b600061045a82840184610679565b6001600160401b0381166000908152602081905260409020549091506001600160a01b031661049b5760405162461bcd60e51b815260040161031c90610859565b6001600160401b038116600090815260016020526040812080548692906104cc9084906001600160601b03166108e4565b92506101000a8154816001600160601b0302191690836001600160601b031602179055505050505050565b6001600160401b0382166000908152602081905260409020546001600160a01b03166105355760405162461bcd60e51b815260040161031c90610859565b60038054600191906000906105549084906001600160401b0316610906565b82546101009290920a6001600160401b0381810219909316918316021790915592909216600090815260016020908152604080832080546bffffffffffffffffffffffff1916905590829052902080546001600160a01b03191690555050565b60006060820161ffff86168352602063ffffffff86168185015260606040850152818551808452608086019150828701935060005b81811015610605578451835293830193918301916001016105e9565b509098975050505050505050565b80356001600160401b038116811461062a57600080fd5b919050565b80356001600160a01b038116811461062a57600080fd5b6000806040838503121561065957600080fd5b61066283610613565b91506106706020840161062f565b90509250929050565b60006020828403121561068b57600080fd5b61069482610613565b9392505050565b803563ffffffff8116811461062a57600080fd5b600080600080600060a086880312156106c757600080fd5b853594506106d760208701610613565b9350604086013561ffff811681146106ee57600080fd5b92506106fc6060870161069b565b915061070a6080870161069b565b90509295509295909350565b6000806040838503121561072957600080fd5b61073283610613565b915060208301356001600160601b038116811461074e57600080fd5b809150509250929050565b6000608082016001600160601b038716835260206001600160401b0387168185015260018060a01b0380871660408601526080606086015282865180855260a087019150838801945060005b818110156107c35785518416835294840194918401916001016107a5565b50909a9950505050505050505050565b600080600080606085870312156107e957600080fd5b6107f28561062f565b93506020850135925060408501356001600160401b038082111561081557600080fd5b818701915087601f83011261082957600080fd5b81358181111561083857600080fd5b88602082850101111561084a57600080fd5b95989497505060200194505050565b602080825260089082015267085a5b9d985b1a5960c21b604082015260600190565b634e487b7160e01b600052601160045260246000fd5b60006001600160601b03838116908316818110156108b1576108b161087b565b039392505050565b60006001600160401b038083168185168083038211156108db576108db61087b565b01949350505050565b60006001600160601b038083168185168083038211156108db576108db61087b565b60006001600160401b03838116908316818110156108b1576108b161087b56fea264697066735822122039e8fad133b234f321a33cc8f1ffd765a118ec913b6ef762ee73909f6d04e96264736f6c63430008090033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100f45760003560e01c8063810a893411610097578063a47c769611610066578063a47c769614610213578063a4c0ed3614610277578063bce4908b1461028a578063d7ae1d30146102cb57600080fd5b8063810a8934146101e757806382359740146101fa5780639f87fad714610120578063a21a23e41461020b57600080fd5b80635d3b1d30116100d35780635d3b1d301461016257806360f35dc51461017b57806367d55365146101bc5780637341c10c1461012057600080fd5b8062012291146100f957806304c357cb146101205780632433259814610134575b600080fd5b604080516000808252602082019283905261011792909182916105b4565b60405180910390f35b61013261012e366004610646565b5050565b005b610154610142366004610679565b60026020526000908152604090205481565b604051908152602001610117565b6101546101703660046106af565b600095945050505050565b6101a4610189366004610679565b6000602081905290815260409020546001600160a01b031681565b6040516001600160a01b039091168152602001610117565b6003546101cf906001600160401b031681565b6040516001600160401b039091168152602001610117565b6101326101f5366004610716565b6102de565b610132610208366004610679565b50565b6101cf6103de565b610267610221366004610679565b6001600160401b03166000908152600160209081526040808320548383528184205482518581529384019092526001600160601b0316936001600160a01b039091169190565b6040516101179493929190610759565b6101326102853660046107d3565b61044c565b6102b3610298366004610679565b6001602052600090815260409020546001600160601b031681565b6040516001600160601b039091168152602001610117565b6101326102d9366004610646565b6104f7565b6001600160401b0382166000908152602081905260409020546001600160a01b03166103255760405162461bcd60e51b815260040161031c90610859565b60405180910390fd5b6001600160401b0382166000908152600160205260409020546001600160601b0390811690821611156103855760405162461bcd60e51b81526020600482015260086024820152672162616c616e636560c01b604482015260640161031c565b6001600160401b038216600090815260016020526040812080548392906103b69084906001600160601b0316610891565b92506101000a8154816001600160601b0302191690836001600160601b031602179055505050565b6003805460009160019183906103fe9084906001600160401b03166108b9565b82546101009290920a6001600160401b0381810219909316918316021790915560038054821660009081526020819052604090208054336001600160a01b0319909116179055541692915050565b600061045a82840184610679565b6001600160401b0381166000908152602081905260409020549091506001600160a01b031661049b5760405162461bcd60e51b815260040161031c90610859565b6001600160401b038116600090815260016020526040812080548692906104cc9084906001600160601b03166108e4565b92506101000a8154816001600160601b0302191690836001600160601b031602179055505050505050565b6001600160401b0382166000908152602081905260409020546001600160a01b03166105355760405162461bcd60e51b815260040161031c90610859565b60038054600191906000906105549084906001600160401b0316610906565b82546101009290920a6001600160401b0381810219909316918316021790915592909216600090815260016020908152604080832080546bffffffffffffffffffffffff1916905590829052902080546001600160a01b03191690555050565b60006060820161ffff86168352602063ffffffff86168185015260606040850152818551808452608086019150828701935060005b81811015610605578451835293830193918301916001016105e9565b509098975050505050505050565b80356001600160401b038116811461062a57600080fd5b919050565b80356001600160a01b038116811461062a57600080fd5b6000806040838503121561065957600080fd5b61066283610613565b91506106706020840161062f565b90509250929050565b60006020828403121561068b57600080fd5b61069482610613565b9392505050565b803563ffffffff8116811461062a57600080fd5b600080600080600060a086880312156106c757600080fd5b853594506106d760208701610613565b9350604086013561ffff811681146106ee57600080fd5b92506106fc6060870161069b565b915061070a6080870161069b565b90509295509295909350565b6000806040838503121561072957600080fd5b61073283610613565b915060208301356001600160601b038116811461074e57600080fd5b809150509250929050565b6000608082016001600160601b038716835260206001600160401b0387168185015260018060a01b0380871660408601526080606086015282865180855260a087019150838801945060005b818110156107c35785518416835294840194918401916001016107a5565b50909a9950505050505050505050565b600080600080606085870312156107e957600080fd5b6107f28561062f565b93506020850135925060408501356001600160401b038082111561081557600080fd5b818701915087601f83011261082957600080fd5b81358181111561083857600080fd5b88602082850101111561084a57600080fd5b95989497505060200194505050565b602080825260089082015267085a5b9d985b1a5960c21b604082015260600190565b634e487b7160e01b600052601160045260246000fd5b60006001600160601b03838116908316818110156108b1576108b161087b565b039392505050565b60006001600160401b038083168185168083038211156108db576108db61087b565b01949350505050565b60006001600160601b038083168185168083038211156108db576108db61087b565b60006001600160401b03838116908316818110156108b1576108b161087b56fea264697066735822122039e8fad133b234f321a33cc8f1ffd765a118ec913b6ef762ee73909f6d04e96264736f6c63430008090033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "acceptSubscriptionOwnerTransfer(uint64)": {
+        "details": "will revert if original owner of subId has not requested that msg.sender become the new owner.",
+        "params": {
+          "subId": "- ID of the subscription"
+        }
+      },
+      "addConsumer(uint64,address)": {
+        "params": {
+          "consumer": "- New consumer which can use the subscription",
+          "subId": "- ID of the subscription"
+        }
+      },
+      "cancelSubscription(uint64,address)": {
+        "params": {
+          "subId": "- ID of the subscription",
+          "to": "- Where to send the remaining LINK to"
+        }
+      },
+      "createSubscription()": {
+        "details": "You can manage the consumer set dynamically with addConsumer/removeConsumer.Note to fund the subscription, use transferAndCall. For exampleLINKTOKEN.transferAndCall(address(COORDINATOR),amount,abi.encode(subId));",
+        "returns": {
+          "subId": "- A unique subscription id."
+        }
+      },
+      "getRequestConfig()": {
+        "returns": {
+          "_0": "minimumRequestConfirmations global min for request confirmations",
+          "_1": "maxGasLimit global max for request gas limit",
+          "_2": "s_provingKeyHashes list of registered key hashes"
+        }
+      },
+      "getSubscription(uint64)": {
+        "params": {
+          "subId": "- ID of the subscription"
+        },
+        "returns": {
+          "balance": "- LINK balance of the subscription in juels.",
+          "consumers": "- list of consumer address which are able to use this subscription.",
+          "owner": "- owner of the subscription.",
+          "reqCount": "- number of requests for this subscription, determines fee tier."
+        }
+      },
+      "removeConsumer(uint64,address)": {
+        "params": {
+          "consumer": "- Consumer to remove from the subscription",
+          "subId": "- ID of the subscription"
+        }
+      },
+      "requestRandomWords(bytes32,uint64,uint16,uint32,uint32)": {
+        "params": {
+          "callbackGasLimit": "- How much gas you'd like to receive in your fulfillRandomWords callback. Note that gasleft() inside fulfillRandomWords may be slightly less than this amount because of gas used calling the function (argument decoding etc.), so you may need to request slightly more than you expect to have inside fulfillRandomWords. The acceptable range is [0, maxGasLimit]",
+          "keyHash": "- Corresponds to a particular oracle job which uses that key for generating the VRF proof. Different keyHash's have different gas price ceilings, so you can select a specific one to bound your maximum per request cost.",
+          "minimumRequestConfirmations": "- How many blocks you'd like the oracle to wait before responding to the request. See SECURITY CONSIDERATIONS for why you may want to request more. The acceptable range is [minimumRequestBlockConfirmations, 200].",
+          "numWords": "- The number of uint256 random values you'd like to receive in your fulfillRandomWords callback. Note these numbers are expanded in a secure way by the VRFCoordinator from a single random value supplied by the oracle.",
+          "subId": "- The ID of the VRF subscription. Must be funded with the minimum subscription balance required for the selected keyHash."
+        },
+        "returns": {
+          "requestId": "- A unique identifier of the request. Can be used to match a request to a response in fulfillRandomWords."
+        }
+      },
+      "requestSubscriptionOwnerTransfer(uint64,address)": {
+        "params": {
+          "newOwner": "- proposed new owner of the subscription",
+          "subId": "- ID of the subscription"
+        }
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "acceptSubscriptionOwnerTransfer(uint64)": {
+        "notice": "Request subscription owner transfer."
+      },
+      "addConsumer(uint64,address)": {
+        "notice": "Add a consumer to a VRF subscription."
+      },
+      "cancelSubscription(uint64,address)": {
+        "notice": "Cancel a subscription"
+      },
+      "createSubscription()": {
+        "notice": "Create a VRF subscription."
+      },
+      "getRequestConfig()": {
+        "notice": "Get configuration relevant for making requests"
+      },
+      "getSubscription(uint64)": {
+        "notice": "Get a VRF subscription."
+      },
+      "removeConsumer(uint64,address)": {
+        "notice": "Remove a consumer from a VRF subscription."
+      },
+      "requestRandomWords(bytes32,uint64,uint16,uint32,uint32)": {
+        "notice": "Request a set of random words."
+      },
+      "requestSubscriptionOwnerTransfer(uint64,address)": {
+        "notice": "Request subscription owner transfer."
+      }
+    },
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 18518,
+        "contract": "contracts/mocks/MockVRFCoordinator.sol:MockVRFCoordinator",
+        "label": "vrfOwners",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_mapping(t_uint64,t_address)"
+      },
+      {
+        "astId": 18522,
+        "contract": "contracts/mocks/MockVRFCoordinator.sol:MockVRFCoordinator",
+        "label": "vrfBalance",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_mapping(t_uint64,t_uint96)"
+      },
+      {
+        "astId": 18526,
+        "contract": "contracts/mocks/MockVRFCoordinator.sol:MockVRFCoordinator",
+        "label": "vrfPerforms",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_mapping(t_uint64,t_uint256)"
+      },
+      {
+        "astId": 18528,
+        "contract": "contracts/mocks/MockVRFCoordinator.sol:MockVRFCoordinator",
+        "label": "vrfCount",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_uint64"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_mapping(t_uint64,t_address)": {
+        "encoding": "mapping",
+        "key": "t_uint64",
+        "label": "mapping(uint64 => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
+      },
+      "t_mapping(t_uint64,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_uint64",
+        "label": "mapping(uint64 => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_mapping(t_uint64,t_uint96)": {
+        "encoding": "mapping",
+        "key": "t_uint64",
+        "label": "mapping(uint64 => uint96)",
+        "numberOfBytes": "32",
+        "value": "t_uint96"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      },
+      "t_uint64": {
+        "encoding": "inplace",
+        "label": "uint64",
+        "numberOfBytes": "8"
+      },
+      "t_uint96": {
+        "encoding": "inplace",
+        "label": "uint96",
+        "numberOfBytes": "12"
+      }
+    }
+  }
+}
