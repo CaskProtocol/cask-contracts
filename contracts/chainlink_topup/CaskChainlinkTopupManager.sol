@@ -250,28 +250,16 @@ ICaskChainlinkTopupManager
         uint256 amountFundingTokenBefore = linkFundingToken.balanceOf(address(this));
 
         // perform swap
-        try linkSwapRouter.swapExactTokensForTokens(
+        linkSwapRouter.swapExactTokensForTokens(
             amountIn,
             amountOutMin,
             linkSwapPath,
             address(this),
             block.timestamp + 1 hours
-        ) returns (uint256[] memory amounts) {
-            require(amounts.length >= 2, "!INVALID(amounts)");
+        );
 
-            // any non-withdrawn shares are the fee portion - send to fee distributor
-            caskVault.transfer(feeDistributor, caskVault.balanceOf(address(this)));
-
-        } catch (bytes memory) {
-
-            // undo withdraw and send shares back to user
-            IERC20Metadata(caskVault.getBaseAsset()).safeIncreaseAllowance(address(caskVault), amountIn);
-            caskVault.deposit(caskVault.getBaseAsset(), amountIn);
-            caskVault.transfer(chainlinkTopup.user, caskVault.balanceOf(address(this))); // refund full amount
-
-            caskChainlinkTopup.managerSkipped(_chainlinkTopupId, ICaskChainlinkTopup.SkipReason.SwapFailed);
-            return 0;
-        }
+        // any non-withdrawn shares are the fee portion - send to fee distributor
+        caskVault.transfer(feeDistributor, caskVault.balanceOf(address(this)));
 
         if (address(pegswap) != address(0)) {
             uint256 amountBridgeOut = linkBridgeToken.balanceOf(address(this));

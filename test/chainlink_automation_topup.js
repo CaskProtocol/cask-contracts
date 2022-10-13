@@ -219,63 +219,19 @@ describe("CaskChainlinkTopup Automation General", function () {
         const upkeepId = 1;
         await automationRegistry.registerUpkeep(user.address, 5000000, user.address, 0);
 
-        await userERC77Link.transferAndCall(automationRegistry.address, linkUnits('7.0'),
+        await userERC77Link.transferAndCall(automationRegistry.address, linkUnits('4.0'),
             ethers.utils.defaultAbiCoder.encode(['uint256'],[upkeepId]));
         result = await automationRegistry.getUpkeep(upkeepId);
-        expect(result.balance).to.equal(linkUnits('7.0')); // confirm ERC677 funding worked
+        expect(result.balance).to.equal(linkUnits('4.0')); // confirm ERC677 funding worked
 
-        // create keeper topup
-        tx = await userCLTU.createChainlinkTopup(
+        // confirm keeper topup cannot be created
+        await expect(userCLTU.createChainlinkTopup(
             linkUnits('5'), // lowBalance
             usdcUnits('10'), // topupAmount
             upkeepId, // keeperId
             automationRegistry.address,
             ChainlinkTopupType.Automation
-        );
-
-        const events = (await tx.wait()).events || [];
-        const createdEvent = events.find((e) => e.event === "ChainlinkTopupCreated");
-        const cltuId = createdEvent.args.chainlinkTopupId;
-        expect(cltuId).to.not.be.undefined;
-        expect(createdEvent.args.user).to.equal(user.address);
-
-        await automationRegistry.spendFunds(upkeepId, linkUnits('1')); // spend down to 6 LINK
-        await advanceTimeRunCLTUKeeper(2, day);
-
-        result = await automationRegistry.getUpkeep(upkeepId);
-        expect(result.balance).to.equal(linkUnits('6')); // confirm 1 LINK was spent
-
-        await automationRegistry.spendFunds(upkeepId, linkUnits('2')); // spend down to 4 LINK
-        await advanceTimeRunCLTUKeeper(1, day);
-
-        // confirm topup was skipped
-        result = await cltu.getChainlinkTopup(cltuId);
-        expect(result.numSkips).to.equal(1);
-        result = await userVault.currentValueOf(user.address);
-        expect(result).to.equal(usdcUnits('1000')); // not charged
-
-        // change slippage to 10% max
-        await cltuManager.connect(governor).setParameters(
-            5, // maxSkips
-            60, // topupFeeBps (0.6%)
-            usdcUnits('0.1'), // topupFeeMin
-            86400+3600, // maxPriceFeedAge (1 day + 1 hour)
-            1, // maxTopupsPerRun
-            1000, // maxSwapSlippageBps - set to 10%
-            24 * hour, // queueBucketSize
-            20 * day // maxQueueAge
-        );
-
-        await advanceTimeRunCLTUKeeper(1, day);
-
-        // confirm topup happened
-        result = await cltu.getChainlinkTopup(cltuId);
-        expect(result.numTopups).to.equal(1);
-        expect(result.numSkips).to.equal(1);
-        result = await automationRegistry.getUpkeep(upkeepId);
-        expect(result.balance).to.equal(linkUnits('22.81')); // == 4 + ( ((10 - 0.1 fee) / 0.5 LINK price) - 5% slippage ))
-        result = await userVault.currentValueOf(user.address);
-        expect(result).to.equal(usdcUnits('990')); // == 1000 - 10
+        )).to.be.revertedWith("Slippage error");
 
     });
 
