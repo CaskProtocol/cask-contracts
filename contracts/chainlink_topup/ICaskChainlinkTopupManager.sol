@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 interface ICaskChainlinkTopupManager {
 
-    function registerChainlinkTopupGroup(uint256 _chainlinkTopupId) external;
+    function registerChainlinkTopup(bytes32 _chainlinkTopupId) external;
 
     function registryAllowed(address _registry) external view returns(bool);
 

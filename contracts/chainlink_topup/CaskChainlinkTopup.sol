@@ -101,6 +101,8 @@ BaseRelayRecipient
 
         _assignChainlinkTopupToGroup(chainlinkTopupId);
 
+        chainlinkTopupManager.registerChainlinkTopup(chainlinkTopupId);
+
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active, "!UNPROCESSABLE");
 
         emit ChainlinkTopupCreated(chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.lowBalance,
@@ -233,10 +235,8 @@ BaseRelayRecipient
 
         ChainlinkTopupGroup storage chainlinkTopupGroup = chainlinkTopupGroupMap[chainlinkTopupGroupId];
         chainlinkTopupGroup.chainlinkTopups.push(_chainlinkTopupId);
-
-        if (chainlinkTopupGroup.chainlinkTopups.length == 1) { // register only if new/reinitialized group
+        if (chainlinkTopupGroup.chainlinkTopups.length == 1) {// new/reinitializing group
             chainlinkTopupGroup.processAt = uint32(block.timestamp);
-            chainlinkTopupManager.registerChainlinkTopupGroup(chainlinkTopupGroupId);
         }
     }
 

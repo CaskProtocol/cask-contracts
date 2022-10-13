@@ -102,10 +102,23 @@ ICaskChainlinkTopupManager
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function registerChainlinkTopupGroup(
-        uint256 _chainlinkTopupGroupId
+    function registerChainlinkTopup(
+        bytes32 _chainlinkTopupId
     ) override external nonReentrant whenNotPaused {
-        processWorkUnit(QUEUE_ID_KEEPER_TOPUP, bytes32(_chainlinkTopupGroupId));
+
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
+            caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
+        require(chainlinkTopup.groupId > 0, "!INVALID(groupId)");
+
+        _processChainlinkTopup(_chainlinkTopupId);
+
+        ICaskChainlinkTopup.ChainlinkTopupGroup memory chainlinkTopupGroup =
+            caskChainlinkTopup.getChainlinkTopupGroup(chainlinkTopup.groupId);
+
+        if (chainlinkTopupGroup.chainlinkTopups.length == 1) { // register only if new/reinitialized group
+            scheduleWorkUnit(QUEUE_ID_KEEPER_TOPUP, bytes32(chainlinkTopup.groupId),
+                bucketAt(chainlinkTopupGroup.processAt));
+        }
     }
 
     function processWorkUnit(
