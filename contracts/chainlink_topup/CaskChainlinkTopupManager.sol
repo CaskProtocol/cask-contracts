@@ -154,7 +154,7 @@ ICaskChainlinkTopupManager
             }
 
             // everything in this group has been processed - move group to next check period
-            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(processAt + queueBucketSize));
+            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(processAt));
             caskChainlinkTopup.managerProcessedGroup(uint256(_chainlinkTopupGroupId), processAt + queueBucketSize);
         } else {
             // still more to do - schedule an immediate re-run
