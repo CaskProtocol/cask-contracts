@@ -146,11 +146,16 @@ ICaskChainlinkTopupManager
         }
 
         if (count >= chainlinkTopupGroup.chainlinkTopups.length || count < maxTopupsPerGroupRun) {
+
+            // ensure next processing is never more than queueBucketSize away
+            uint32 processAt = chainlinkTopupGroup.processAt;
+            if (processAt > timestamp) {
+                processAt = timestamp;
+            }
+
             // everything in this group has been processed - move group to next check period
-            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId,
-                bucketAt(chainlinkTopupGroup.processAt + queueBucketSize));
-            caskChainlinkTopup.managerProcessedGroup(uint256(_chainlinkTopupGroupId),
-                chainlinkTopupGroup.processAt + queueBucketSize);
+            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(processAt + queueBucketSize));
+            caskChainlinkTopup.managerProcessedGroup(uint256(_chainlinkTopupGroupId), processAt + queueBucketSize);
         } else {
             // still more to do - schedule an immediate re-run
             scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(currentBucket()));
