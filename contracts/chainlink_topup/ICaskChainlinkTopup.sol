@@ -46,7 +46,6 @@ interface ICaskChainlinkTopup {
 
     struct ChainlinkTopupGroup {
         bytes32[] chainlinkTopups;
-        uint32 processAt;
     }
 
     function createChainlinkTopup(
@@ -77,8 +76,6 @@ interface ICaskChainlinkTopup {
 
     function managerSkipped(bytes32 _chainlinkTopupId, SkipReason _skipReason) external;
 
-    function managerProcessedGroup(uint256 _chainlinkTopupGroupId, uint32 _nextProcessAt) external;
-
     event ChainlinkTopupCreated(bytes32 indexed chainlinkTopupId, address indexed user, uint256 lowBalance,
         uint256 topupAmount, uint256 targetId, address registry, TopupType topupType);
 
@@ -96,6 +93,4 @@ interface ICaskChainlinkTopup {
 
     event ChainlinkTopupCanceled(bytes32 indexed chainlinkTopupId, address indexed user, uint256 targetId,
         address registry, TopupType topupType);
-
-    event ChainlinkTopupGroupProcessed(uint256 indexed chainlinkTopupGroupId);
 }

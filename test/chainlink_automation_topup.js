@@ -7,8 +7,10 @@ const {
 } = require("../utils/units");
 
 const {
+    advanceTime,
     advanceTimeRunCLTUKeeper,
-    ChainlinkTopupType, ChainlinkTopupStatus,
+    ChainlinkTopupType,
+    ChainlinkTopupStatus,
 } = require("./_helpers");
 
 const {
@@ -568,6 +570,122 @@ describe("CaskChainlinkTopup Automation General", function () {
         expect(result).to.equal(usdcUnits('980'));
         result  = await cltu.getChainlinkTopupGroup(groupId);
         expect(result.chainlinkTopups.length).to.equal(1);
+    });
+
+    it("Multiple topups", async function () {
+
+        const {
+            networkAddresses,
+            user,
+            vault,
+            automationRegistry,
+            erc677Link,
+            cltu,
+        } = await cltuFundedFixture();
+
+        const userVault = vault.connect(user);
+        const userCLTU = cltu.connect(user);
+        const userERC77Link = erc677Link.connect(user);
+
+        // deposit to vault
+        await userVault.deposit(networkAddresses.USDC, usdcUnits('1000'));
+
+        // check initial balance
+        const initialUserBalance = await userVault.currentValueOf(user.address);
+        expect(initialUserBalance).to.equal(usdcUnits('1000'));
+
+        let tx;
+        let result;
+
+        await automationRegistry.registerUpkeep(user.address, 5000000, user.address, 0); // upkeep 1
+        await automationRegistry.registerUpkeep(user.address, 5000000, user.address, 0); // upkeep 2
+        await automationRegistry.registerUpkeep(user.address, 5000000, user.address, 0); // upkeep 3
+
+        await userERC77Link.transferAndCall(automationRegistry.address, linkUnits('7.0'),
+            ethers.utils.defaultAbiCoder.encode(['uint256'],[1])); // upkeep 1
+        await userERC77Link.transferAndCall(automationRegistry.address, linkUnits('7.0'),
+            ethers.utils.defaultAbiCoder.encode(['uint256'],[2])); // upkeep 2
+        await userERC77Link.transferAndCall(automationRegistry.address, linkUnits('7.0'),
+            ethers.utils.defaultAbiCoder.encode(['uint256'],[3])); // upkeep 2
+
+        // create keeper topup
+        tx = await userCLTU.createChainlinkTopup(
+            linkUnits('5'), // lowBalance
+            usdcUnits('10'), // topupAmount
+            1, // upkeep 1
+            automationRegistry.address,
+            ChainlinkTopupType.Automation
+        );
+        let events = (await tx.wait()).events || [];
+        let createdEvent = events.find((e) => e.event === "ChainlinkTopupCreated");
+        const cltuId1 = createdEvent.args.chainlinkTopupId;
+
+        tx = await userCLTU.createChainlinkTopup(
+            linkUnits('5'), // lowBalance
+            usdcUnits('10'), // topupAmount
+            2, // upkeep 2
+            automationRegistry.address,
+            ChainlinkTopupType.Automation
+        );
+        events = (await tx.wait()).events || [];
+        createdEvent = events.find((e) => e.event === "ChainlinkTopupCreated");
+        const cltuId2 = createdEvent.args.chainlinkTopupId;
+
+        tx = await userCLTU.createChainlinkTopup(
+            linkUnits('5'), // lowBalance
+            usdcUnits('10'), // topupAmount
+            2, // upkeep 2
+            automationRegistry.address,
+            ChainlinkTopupType.Automation
+        );
+        events = (await tx.wait()).events || [];
+        createdEvent = events.find((e) => e.event === "ChainlinkTopupCreated");
+        const cltuId3 = createdEvent.args.chainlinkTopupId;
+
+        await advanceTimeRunCLTUKeeper(1, day);
+
+        await automationRegistry.spendFunds(1, linkUnits('3')); // upkeep 1 - spend down to 4 LINK
+        await automationRegistry.spendFunds(2, linkUnits('3')); // upkeep 2 - spend down to 4 LINK
+        await automationRegistry.spendFunds(3, linkUnits('1')); // upkeep 3 - spend but not below threshold
+
+        await advanceTime(day);
+
+        await advanceTimeRunCLTUKeeper(1, 300, 1);
+        await advanceTimeRunCLTUKeeper(1, 300, 1);
+        await advanceTimeRunCLTUKeeper(1, 300, 1);
+
+
+        // confirm topups happened
+        result = await cltu.getChainlinkTopup(cltuId1);
+        expect(result.numSkips).to.equal(0);
+        expect(result.numTopups).to.equal(1);
+
+        result = await cltu.getChainlinkTopup(cltuId2);
+        expect(result.numSkips).to.equal(0);
+        expect(result.numTopups).to.equal(1);
+
+        await advanceTimeRunCLTUKeeper(5, day);
+
+
+        await automationRegistry.spendFunds(1, linkUnits('20')); // upkeep 1 - spend down to < 5 LINK
+        await automationRegistry.spendFunds(2, linkUnits('20')); // upkeep 2 - spend down to < 5 LINK
+
+
+        await advanceTime(day);
+
+        await advanceTimeRunCLTUKeeper(1, 300, 1);
+        await advanceTimeRunCLTUKeeper(1, 300, 1);
+        await advanceTimeRunCLTUKeeper(1, 300, 1);
+
+
+        // confirm topup2 happened again
+        result = await cltu.getChainlinkTopup(cltuId1);
+        expect(result.numSkips).to.equal(0);
+        expect(result.numTopups).to.equal(2);
+
+        result = await cltu.getChainlinkTopup(cltuId2);
+        expect(result.numSkips).to.equal(0);
+        expect(result.numTopups).to.equal(2);
     });
 
 });

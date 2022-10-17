@@ -116,8 +116,7 @@ ICaskChainlinkTopupManager
             caskChainlinkTopup.getChainlinkTopupGroup(chainlinkTopup.groupId);
 
         if (chainlinkTopupGroup.chainlinkTopups.length == 1) { // register only if new/reinitialized group
-            scheduleWorkUnit(QUEUE_ID_KEEPER_TOPUP, bytes32(chainlinkTopup.groupId),
-                bucketAt(chainlinkTopupGroup.processAt));
+            scheduleWorkUnit(QUEUE_ID_KEEPER_TOPUP, bytes32(chainlinkTopup.groupId), uint32(block.timestamp));
         }
     }
 
@@ -129,11 +128,8 @@ ICaskChainlinkTopupManager
         ICaskChainlinkTopup.ChainlinkTopupGroup memory chainlinkTopupGroup =
             caskChainlinkTopup.getChainlinkTopupGroup(uint256(_chainlinkTopupGroupId));
 
-        uint32 timestamp = uint32(block.timestamp);
-
-        // not time to process yet, re-queue for processAt time
-        if (chainlinkTopupGroup.processAt > timestamp) {
-            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(chainlinkTopupGroup.processAt));
+        // empty group - stop processing
+        if (chainlinkTopupGroup.chainlinkTopups.length == 0) {
             return;
         }
 
@@ -146,19 +142,10 @@ ICaskChainlinkTopupManager
         }
 
         if (count >= chainlinkTopupGroup.chainlinkTopups.length || count < maxTopupsPerGroupRun) {
-
-            // ensure next processing is never more than queueBucketSize away
-            uint32 processAt = chainlinkTopupGroup.processAt;
-            if (processAt > timestamp) {
-                processAt = timestamp;
-            }
-
-            // everything in this group has been processed - move group to next check period
-            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(processAt));
-            caskChainlinkTopup.managerProcessedGroup(uint256(_chainlinkTopupGroupId), processAt + queueBucketSize);
+            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, uint32(block.timestamp));
         } else {
             // still more to do - schedule an immediate re-run
-            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(currentBucket()));
+            requeueWorkUnit(_queueId, _chainlinkTopupGroupId);
         }
 
     }

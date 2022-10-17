@@ -138,6 +138,8 @@ ICaskJobQueue
             queueBucket[queueId] = bucket;
         }
 
+        require(queueBucket[queueId] <= bucket, "!TOO_EARLY");
+
         while (jobsProcessed < limit && maxBucketChecks > 0 && queueBucket[queueId] <= bucket) {
             uint256 queueLen = queue[queueId][queueBucket[queueId]].length;
             if (queueLen > 0) {
@@ -161,13 +163,27 @@ ICaskJobQueue
     }
 
 
+    function requeueWorkUnit(
+        uint8 _queueId,
+        bytes32 _workUnit
+    ) internal override {
+        uint32 bucket = currentBucket();
+        queue[_queueId][bucket].push(_workUnit);
+        emit WorkUnitQueued(_queueId, _workUnit, bucket);
+    }
+
     function scheduleWorkUnit(
         uint8 _queueId,
         bytes32 _workUnit,
         uint32 _processAt
     ) internal override {
-        queue[_queueId][bucketAt(_processAt)].push(_workUnit);
-        emit WorkUnitQueued(_queueId, _workUnit, _processAt);
+        // make sure we don't queue something in the past that will never get processed
+        uint32 bucket = bucketAt(_processAt);
+        if (bucket < queueBucket[_queueId]) {
+            bucket = queueBucket[_queueId];
+        }
+        queue[_queueId][bucket].push(_workUnit);
+        emit WorkUnitQueued(_queueId, _workUnit, bucket);
     }
 
     function setQueueBucketSize(

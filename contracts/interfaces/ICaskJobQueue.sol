@@ -15,6 +15,8 @@ abstract contract ICaskJobQueue is Initializable {
 
     function processWorkUnit(uint8 _queueId, bytes32 _workUnit) virtual internal;
 
+    function requeueWorkUnit(uint8 _queueId, bytes32 _workUnit) virtual internal;
+
     function scheduleWorkUnit(uint8 _queueId, bytes32 _workUnit, uint32 _processAt) virtual internal;
 
     function queueItem(uint8 _queueId, uint32 _bucket, uint256 _idx) virtual external view returns(bytes32);

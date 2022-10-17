@@ -135,6 +135,8 @@ BaseRelayRecipient
 
         chainlinkTopup.status = ChainlinkTopupStatus.Active;
 
+        chainlinkTopupManager.registerChainlinkTopup(_chainlinkTopupId);
+
         emit ChainlinkTopupResumed(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
             chainlinkTopup.registry, chainlinkTopup.topupType);
     }
@@ -235,9 +237,6 @@ BaseRelayRecipient
 
         ChainlinkTopupGroup storage chainlinkTopupGroup = chainlinkTopupGroupMap[chainlinkTopupGroupId];
         chainlinkTopupGroup.chainlinkTopups.push(_chainlinkTopupId);
-        if (chainlinkTopupGroup.chainlinkTopups.length == 1) {// new/reinitializing group
-            chainlinkTopupGroup.processAt = uint32(block.timestamp);
-        }
     }
 
     /************************** MANAGER FUNCTIONS **************************/
@@ -252,6 +251,8 @@ BaseRelayRecipient
         if (_command == ManagerCommand.Pause) {
 
             chainlinkTopup.status = ChainlinkTopupStatus.Paused;
+
+            _removeChainlinkTopupFromGroup(_chainlinkTopupId);
 
             emit ChainlinkTopupPaused(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
                 chainlinkTopup.registry, chainlinkTopup.topupType);
@@ -282,17 +283,6 @@ BaseRelayRecipient
 
         emit ChainlinkTopupProcessed(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
             chainlinkTopup.registry, chainlinkTopup.topupType, _amount, _buyQty, _fee);
-    }
-
-    function managerProcessedGroup(
-        uint256 _chainlinkTopupGroupId,
-        uint32 _nextProcessAt
-    ) external override onlyManager {
-        ChainlinkTopupGroup storage chainlinkTopupGroup = chainlinkTopupGroupMap[_chainlinkTopupGroupId];
-
-        chainlinkTopupGroup.processAt = _nextProcessAt;
-
-        emit ChainlinkTopupGroupProcessed(_chainlinkTopupGroupId);
     }
 
     function managerSkipped(
