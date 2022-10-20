@@ -81,8 +81,11 @@ BaseRelayRecipient
     ) external override returns(bytes32) {
         require(_topupAmount >= minTopupAmount, "!INVALID(topupAmount)");
         require(_topupType == TopupType.Automation ||
-                _topupType == TopupType.VRF, "!INVALID(topupType)");
-        require(chainlinkTopupManager.registryAllowed(_registry), "!INVALID(registry)");
+                _topupType == TopupType.VRF ||
+                _topupType == TopupType.Direct, "!INVALID(topupType)");
+        if (_topupType != TopupType.Direct) {
+            require(chainlinkTopupManager.registryAllowed(_registry), "!INVALID(registry)");
+        }
 
         bytes32 chainlinkTopupId = keccak256(abi.encodePacked(_msgSender(), _targetId, _registry,
             block.number, block.timestamp));

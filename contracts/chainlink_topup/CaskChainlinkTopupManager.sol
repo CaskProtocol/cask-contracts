@@ -170,8 +170,11 @@ ICaskChainlinkTopupManager
             return false;
         }
 
-        // topup target not active
-        if (!_topupValid(_chainlinkTopupId) || !allowedRegistries[chainlinkTopup.registry]) {
+        // topup target not active or registry not allowed
+        if (!_topupValid(_chainlinkTopupId) ||
+            (chainlinkTopup.topupType != ICaskChainlinkTopup.TopupType.Direct &&
+                !allowedRegistries[chainlinkTopup.registry]))
+        {
             caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Cancel);
             return false;
         }
@@ -289,6 +292,9 @@ ICaskChainlinkTopupManager
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
             VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
             (balance,,,) = coordinator.getSubscription(uint64(chainlinkTopup.targetId));
+
+        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Direct) {
+            balance = uint96(linkFundingToken.balanceOf(chainlinkTopup.registry));
         }
 
         return uint256(balance);
@@ -328,6 +334,9 @@ ICaskChainlinkTopupManager
             } catch {
                 return false;
             }
+
+        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Direct) {
+            return chainlinkTopup.registry != address(0);
         }
 
         return false;
@@ -347,6 +356,14 @@ ICaskChainlinkTopupManager
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
             linkFundingToken.transferAndCall(chainlinkTopup.registry, _amount,
                 abi.encode(uint64(chainlinkTopup.targetId)));
+
+        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Direct) {
+            if (chainlinkTopup.targetId > 0) {
+                linkFundingToken.transferAndCall(chainlinkTopup.registry, _amount,
+                    abi.encode(uint64(chainlinkTopup.targetId)));
+            } else {
+                linkFundingToken.transfer(chainlinkTopup.registry, _amount);
+            }
         }
     }
 

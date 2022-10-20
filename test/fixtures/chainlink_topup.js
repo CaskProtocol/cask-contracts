@@ -12,6 +12,7 @@ async function cltuFixture() {
     const fixture = await fundedFixture();
 
     fixture.user = fixture.consumerA;
+    fixture.vrfContract = fixture.providerA;
     fixture.automationRegistry = await ethers.getContract("MockAutomationRegistry");
     fixture.vrfCoordinator = await ethers.getContract("MockVRFCoordinator");
     fixture.cltu = await ethers.getContract("CaskChainlinkTopup");

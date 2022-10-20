@@ -25,7 +25,8 @@ interface ICaskChainlinkTopup {
     enum TopupType {
         None,
         Automation,
-        VRF
+        VRF,
+        Direct
     }
 
     struct ChainlinkTopup {

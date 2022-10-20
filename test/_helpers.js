@@ -53,6 +53,7 @@ const ChainlinkTopupType = {
     None: 0,
     Automation: 1,
     VRF: 2,
+    Direct: 3,
 };
 
 const ChainlinkTopupStatus = {
