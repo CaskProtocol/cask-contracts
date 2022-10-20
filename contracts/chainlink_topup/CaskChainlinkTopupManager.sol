@@ -166,6 +166,10 @@ ICaskChainlinkTopupManager
             return false;
         }
 
+        if (chainlinkTopup.retryAfter >= uint32(block.timestamp)) {
+            return false;
+        }
+
         // topup target not active
         if (!_topupValid(_chainlinkTopupId) || !allowedRegistries[chainlinkTopup.registry]) {
             caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Cancel);
@@ -209,7 +213,11 @@ ICaskChainlinkTopupManager
         try caskVault.protocolPayment(chainlinkTopup.user, address(this), chainlinkTopup.topupAmount, 0) {
             // noop
         } catch (bytes memory) {
-            caskChainlinkTopup.managerSkipped(_chainlinkTopupId, ICaskChainlinkTopup.SkipReason.PaymentFailed);
+            caskChainlinkTopup.managerSkipped(
+                _chainlinkTopupId,
+                uint32(block.timestamp) + queueBucketSize,
+                ICaskChainlinkTopup.SkipReason.PaymentFailed
+            );
             return 0;
         }
 

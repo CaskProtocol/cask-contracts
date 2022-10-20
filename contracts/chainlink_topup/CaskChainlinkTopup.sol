@@ -133,6 +133,7 @@ BaseRelayRecipient
 
         _assignChainlinkTopupToGroup(_chainlinkTopupId);
 
+        chainlinkTopup.numSkips = 0;
         chainlinkTopup.status = ChainlinkTopupStatus.Active;
 
         chainlinkTopupManager.registerChainlinkTopup(_chainlinkTopupId);
@@ -277,6 +278,7 @@ BaseRelayRecipient
     ) external override onlyManager {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
 
+        chainlinkTopup.retryAfter = 0;
         chainlinkTopup.currentAmount += _amount;
         chainlinkTopup.currentBuyQty += _buyQty;
         chainlinkTopup.numTopups += 1;
@@ -287,10 +289,12 @@ BaseRelayRecipient
 
     function managerSkipped(
         bytes32 _chainlinkTopupId,
+        uint32 _retryAfter,
         SkipReason _skipReason
     ) external override onlyManager {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
 
+        chainlinkTopup.retryAfter = _retryAfter;
         chainlinkTopup.numSkips += 1;
 
         emit ChainlinkTopupSkipped(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
