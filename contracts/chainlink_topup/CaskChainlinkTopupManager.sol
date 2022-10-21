@@ -360,7 +360,7 @@ ICaskChainlinkTopupManager
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Direct) {
             if (chainlinkTopup.targetId > 0) {
                 linkFundingToken.transferAndCall(chainlinkTopup.registry, _amount,
-                    abi.encode(uint64(chainlinkTopup.targetId)));
+                    abi.encode(chainlinkTopup.targetId));
             } else {
                 linkFundingToken.transfer(chainlinkTopup.registry, _amount);
             }
