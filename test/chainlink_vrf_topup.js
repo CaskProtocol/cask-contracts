@@ -144,7 +144,7 @@ describe("CaskChainlinkTopup VRF General", function () {
         tx = await userCLTU.createChainlinkTopup(
             linkUnits('5'), // lowBalance
             usdcUnits('10'), // topupAmount
-            0,
+            0, // direct topups do not need a targetId
             vrfContract.address,
             ChainlinkTopupType.Direct
         );
