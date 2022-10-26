@@ -268,6 +268,7 @@ ICaskChainlinkTopupManager
             uint256 amountBridgeOut = linkBridgeToken.balanceOf(address(this));
             IERC20Metadata(address(linkBridgeToken)).safeIncreaseAllowance(address(pegswap), amountBridgeOut);
             pegswap.swap(amountBridgeOut, address(linkBridgeToken), address(linkFundingToken));
+            require(linkFundingToken.balanceOf(address(this)) >= amountBridgeOut, "!PEG_SWAP");
         }
 
         uint256 amountFundingTokenOut = linkFundingToken.balanceOf(address(this)) - amountFundingTokenBefore;

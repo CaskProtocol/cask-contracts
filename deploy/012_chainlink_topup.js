@@ -12,9 +12,12 @@ const {
     isInternal,
 } = require("../test/_networks");
 
+const addresses = require("../utils/addresses");
+
 const {
     getChainlinkAddresses
 } = require("../test/_helpers");
+
 
 const {
     log,
@@ -53,7 +56,7 @@ const deployChainlinkTopup = async ({ethers, getNamedAccounts}) => {
             chainlinkAddresses.LINK_USD,
             chainlinkAddresses.link_swap_router,
             chainlinkAddresses.link_swap_path,
-            chainlinkAddresses.link_peg_swap,
+            addresses.zero,
             governorAddr
         )
     );

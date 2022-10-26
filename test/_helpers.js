@@ -158,9 +158,8 @@ const getChainlinkAddresses = async (deployments) => {
                     addresses[hre.network.name].ERC677LINK ||
                         (await deployments.get("MockERC677LINK")).address
                 ],
-            // link_peg_swap: addresses[hre.network.name].link_peg_swap ||
-            //     (await deployments.get("MockPegSwap")).address,
-            link_peg_swap: addresses.zero,
+            link_peg_swap: addresses[hre.network.name].link_peg_swap ||
+                (await deployments.get("MockPegSwap")).address,
         };
     }
 };

@@ -1,3 +1,5 @@
+const { deployments } = require("hardhat");
+
 const {
     usdcUnits,
     linkUnits,
@@ -6,6 +8,11 @@ const {
 const {
     fundedFixture,
 } = require("./vault");
+
+const {
+    getNetworkAddresses,
+    getChainlinkAddresses
+} = require("../_helpers");
 
 
 async function cltuFixture() {
@@ -48,6 +55,31 @@ async function cltuFundedFixture() {
     return fixture;
 }
 
+async function cltuPegSwapFixture() {
+    const fixture = await cltuFundedFixture();
+
+    // mint pegswap liquidity
+    await fixture.erc677Link.connect(fixture.deployer).mint(fixture.pegSwap.address, linkUnits('200000.0', 18));
+    await fixture.erc20Link.connect(fixture.deployer).mint(fixture.pegSwap.address, linkUnits('200000.0', 18));
+
+    const chainlinkAddresses = await getChainlinkAddresses(deployments);
+    const networkAddresses = await getNetworkAddresses(deployments);
+
+    await fixture.cltuManager.connect(fixture.governor).setChainklinkAddresses(
+        chainlinkAddresses.ERC20LINK,
+        chainlinkAddresses.ERC677LINK,
+        chainlinkAddresses.LINK_USD,
+        chainlinkAddresses.link_swap_router,
+        [
+            networkAddresses.USDC,
+            chainlinkAddresses.ERC20LINK
+        ],
+        chainlinkAddresses.link_peg_swap
+    );
+
+    return fixture;
+}
+
 async function cltuExcessSlippageFixture() {
     const fixture = await cltuFundedFixture();
 
@@ -64,4 +96,5 @@ module.exports = {
     cltuFixture,
     cltuFundedFixture,
     cltuExcessSlippageFixture,
+    cltuPegSwapFixture,
 }
