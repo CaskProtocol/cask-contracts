@@ -56,7 +56,7 @@ const deployChainlinkTopup = async ({ethers, getNamedAccounts}) => {
             chainlinkAddresses.LINK_USD,
             chainlinkAddresses.link_swap_router,
             chainlinkAddresses.link_swap_path,
-            addresses.zero,
+            chainlinkAddresses.link_peg_swap,
             governorAddr
         )
     );
