@@ -387,6 +387,16 @@ async function _debug_chainlinkTopup(taskArguments, hre) {
     console.log(`DefaultProxyAdmin:                                     ${defaultProxyAdmin.address}`);
     console.log(`DefaultProxyAdmin Owner:                               ${await defaultProxyAdmin.owner()}`);
 
+
+    console.log("\nChainlinkTopup Chainlink Addresses");
+    console.log("====================");
+    console.log(`linkBridgeToken:                                       ${linkBridgeToken}`);
+    console.log(`linkFundingToken:                                      ${linkFundingToken}`);
+    console.log(`linkPriceFeed:                                         ${linkPriceFeed}`);
+    console.log(`linkSwapPath:                                          ${linkSwapPathIn} -> ${linkSwapPathOut}`);
+    console.log(`linkSwapRouter:                                        ${linkSwapRouter}`);
+    console.log(`pegswap:                                               ${pegswap}`);
+
     //
     // ChainlinkTopup Config
     //
