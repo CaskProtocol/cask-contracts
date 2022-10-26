@@ -350,6 +350,91 @@ async function _debug_p2p(taskArguments, hre) {
 
 }
 
+async function _debug_chainlinkTopup(taskArguments, hre) {
+
+    const vault = await hre.ethers.getContract("CaskVault");
+    const cltu = await hre.ethers.getContract("CaskChainlinkTopup");
+    const cltuManager = await hre.ethers.getContract("CaskChainlinkTopupManager");
+    const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
+    const linkBridgeToken = await cltuManager.linkBridgeToken();
+    const linkFundingToken = await cltuManager.linkFundingToken();
+    const linkPriceFeed = await cltuManager.linkPriceFeed();
+    const linkSwapPathIn = await cltuManager.linkSwapPath(0);
+    const linkSwapPathOut = await cltuManager.linkSwapPath(1);
+    const linkSwapRouter = await cltuManager.linkSwapRouter();
+    const pegswap = await cltuManager.pegswap();
+
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
+    const baseAssetContract = CaskSDK.contracts.ERC20({tokenAddress: baseAsset, provider: hre.ethers.provider});
+    const baseAssetSymbol = await baseAssetContract.symbol();
+
+    //
+    // Protocol Addresses
+    //
+    console.log("\nChainlinkTopup Contract addresses");
+    console.log("====================");
+    console.log(`CaskChainlinkTopup:                                    ${cltu.address}`);
+    console.log(`CaskChainlinkTopup Proxy Admin:                        ${await hre.upgrades.erc1967.getAdminAddress(cltu.address)}`);
+    console.log(`CaskChainlinkTopup Impl:                               ${await hre.upgrades.erc1967.getImplementationAddress(cltu.address)}`);
+    console.log(`CaskChainlinkTopup Owner:                              ${await cltu.owner()}`);
+
+    console.log(`CaskChainlinkTopupManager:                             ${cltuManager.address}`);
+    console.log(`CaskChainlinkTopupManager Proxy Admin:                 ${await hre.upgrades.erc1967.getAdminAddress(cltuManager.address)}`);
+    console.log(`CaskChainlinkTopupManager Impl:                        ${await hre.upgrades.erc1967.getImplementationAddress(cltuManager.address)}`);
+    console.log(`CaskChainlinkTopupManager Owner:                       ${await cltuManager.owner()}`);
+
+    console.log(`DefaultProxyAdmin:                                     ${defaultProxyAdmin.address}`);
+    console.log(`DefaultProxyAdmin Owner:                               ${await defaultProxyAdmin.owner()}`);
+
+    //
+    // ChainlinkTopup Config
+    //
+    const currentGroup = await cltu.currentGroup();
+    const minTopupAmount = await cltu.minTopupAmount();
+    const groupSize = await cltu.groupSize();
+
+    const maxSkips = await cltuManager.maxSkips();
+    const topupFeeBps = await cltuManager.topupFeeBps();
+    const topupFeeMin = await cltuManager.topupFeeMin();
+    const maxPriceFeedAge = await cltuManager.maxPriceFeedAge();
+    const maxTopupsPerGroupRun = await cltuManager.maxTopupsPerGroupRun();
+    const maxSwapSlippageBps = await cltuManager.maxSwapSlippageBps();
+    const feeDistributor = await cltuManager.feeDistributor();
+    const queueBucketSize = await cltuManager.queueBucketSize();
+    const maxQueueAge = await cltuManager.maxQueueAge();
+
+
+    console.log("\nChainlinkTopup Configuration");
+    console.log("====================");
+    console.log(`CaskChainlinkTopup chainlinkTopupManager:                  ${await cltu.chainlinkTopupManager()}`);
+    console.log(`CaskChainlinkTopup currentGroup:                           ${currentGroup}`);
+    console.log(`CaskChainlinkTopup minTopupAmount:                         ${minTopupAmount} (${formatUnits(minTopupAmount, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskChainlinkTopup groupSize:                              ${groupSize}`);
+
+    console.log(`CaskChainlinkTopupManager caskVault:                       ${await cltuManager.caskVault()}`);
+    console.log(`CaskChainlinkTopupManager caskChainlinkTopup:              ${await cltuManager.caskChainlinkTopup()}`);
+    console.log(`CaskChainlinkTopupManager maxSkips:                        ${maxSkips}`);
+    console.log(`CaskChainlinkTopupManager topupFeeBps:                     ${topupFeeBps} bps (${topupFeeBps / 100}%)`);
+    console.log(`CaskChainlinkTopupManager topupFeeMin:                     ${topupFeeMin} (${formatUnits(topupFeeMin, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
+    console.log(`CaskChainlinkTopupManager maxPriceFeedAge:                 ${maxPriceFeedAge} seconds`);
+    console.log(`CaskChainlinkTopupManager maxTopupsPerGroupRun:            ${maxTopupsPerGroupRun}`);
+    console.log(`CaskChainlinkTopupManager maxSwapSlippageBps:              ${maxSwapSlippageBps} bps (${maxSwapSlippageBps / 100}%)`);
+    console.log(`CaskChainlinkTopupManager feeDistributor:                  ${feeDistributor}`);
+    console.log(`CaskChainlinkTopupManager queueBucketSize:                 ${queueBucketSize}`);
+    console.log(`CaskChainlinkTopupManager maxQueueAge:                     ${maxQueueAge}`);
+
+    const now = new Date().getTime() / 1000;
+    const queuePos = await cltuManager.queuePosition(1);
+    const queueSize = await cltuManager.queueSize(1, queuePos);
+
+    console.log("\nChainlinkTopupManager Queue");
+    console.log("====================");
+    console.log(`CaskChainlinkTopupManager queuePosition:                   ${new Date(queuePos*1000).toISOString()} (${parseInt(now - queuePos)} seconds old)`);
+    console.log(`CaskChainlinkTopupManager queueSize:                       ${queueSize}`);
+
+}
+
 
 /**
  * Prints information about deployed contracts and their config.
@@ -377,6 +462,9 @@ async function debug(taskArguments, hre, protocol='all') {
         }
         if (protocol === 'all' || protocol === 'p2p') {
             await _debug_p2p(taskArguments, hre);
+        }
+        if (protocol === 'all' || protocol === 'chainlinkTopup') {
+            await _debug_chainlinkTopup(taskArguments, hre);
         }
     }
 }

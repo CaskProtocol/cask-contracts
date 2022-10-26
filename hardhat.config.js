@@ -84,6 +84,9 @@ task("debug:p2p", "Print info about P2P contracts and their configs", async (tas
 task("debug:vault", "Print info about vault contracts and their configs", async (taskArguments, hre) => {
   return debug(taskArguments, hre, 'vault');
 });
+task("debug:chainlinkTopup", "Print info about chainlinkTopup contracts and their configs", async (taskArguments, hre) => {
+  return debug(taskArguments, hre, 'chainlinkTopup');
+});
 task("debug", "Print info about all contracts and their configs", async (taskArguments, hre) => {
   return debug(taskArguments, hre, 'all');
 });
