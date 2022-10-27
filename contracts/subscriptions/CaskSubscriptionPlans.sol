@@ -3,8 +3,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/interfaces/IERC1271.sol";
 
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
@@ -17,6 +19,8 @@ BaseRelayRecipient,
 OwnableUpgradeable,
 PausableUpgradeable
 {
+    using ECDSA for bytes32;
+
     /** @dev Address of subscription manager. */
     address public subscriptionManager;
 
@@ -237,6 +241,35 @@ PausableUpgradeable
         } catch (bytes memory) {
             return false;
         }
+    }
+
+    function verifyProviderSignature(
+        address _provider,
+        uint256 _nonce,
+        bytes32 _planMerkleRoot,
+        bytes32 _discountMerkleRoot,
+        bytes memory _providerSignature
+    ) public view override returns (bool) {
+        bytes32 signedMessageHash = keccak256(abi.encode(_nonce, _planMerkleRoot, _discountMerkleRoot))
+            .toEthSignedMessageHash();
+        if (_providerSignature.length == 0) {
+            bytes4 result = IERC1271(_provider).isValidSignature(signedMessageHash, _providerSignature);
+            return result == IERC1271.isValidSignature.selector && _nonce == providerProfiles[_provider].nonce;
+        } else {
+            address recovered = signedMessageHash.recover(_providerSignature);
+            return recovered == _provider && _nonce == providerProfiles[_provider].nonce;
+        }
+    }
+
+    function verifyNetworkData(
+        address _network,
+        bytes32 _networkData,
+        bytes memory _networkSignature
+    ) public view override returns (bool) {
+        address recovered = keccak256(abi.encode(_networkData))
+            .toEthSignedMessageHash()
+            .recover(_networkSignature);
+        return recovered == _network;
     }
 
     function getPlanStatus(

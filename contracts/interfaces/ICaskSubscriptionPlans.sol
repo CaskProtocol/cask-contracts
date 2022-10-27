@@ -60,6 +60,12 @@ interface ICaskSubscriptionPlans {
 
     function erc20DiscountCurrentlyApplies(address _consumer, bytes32 _discountValidator) external returns(bool);
 
+    function verifyProviderSignature(address _provider, uint256 _nonce, bytes32 _planMerkleRoot,
+        bytes32 _discountMerkleRoot, bytes memory _providerSignature) external view returns (bool);
+
+    function verifyNetworkData(address _network, bytes32 _networkData,
+        bytes memory _networkSignature) external view returns (bool);
+
 
     /** @dev Emitted when `provider` sets their profile info */
     event ProviderSetProfile(address indexed provider, address indexed paymentAddress, uint256 nonce, string cid);
