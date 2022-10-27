@@ -266,10 +266,14 @@ PausableUpgradeable
         bytes32 _networkData,
         bytes memory _networkSignature
     ) public view override returns (bool) {
-        address recovered = keccak256(abi.encode(_networkData))
-            .toEthSignedMessageHash()
-            .recover(_networkSignature);
-        return recovered == _network;
+        bytes32 signedMessageHash = keccak256(abi.encode(_networkData)).toEthSignedMessageHash();
+        if (_networkSignature.length == 0) {
+            bytes4 result = IERC1271(_network).isValidSignature(signedMessageHash, _networkSignature);
+            return result == IERC1271.isValidSignature.selector;
+        } else {
+            address recovered = signedMessageHash.recover(_networkSignature);
+            return recovered == _network;
+        }
     }
 
     function getPlanStatus(
