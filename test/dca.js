@@ -14,6 +14,7 @@ const {
 const {
     advanceTimeRunDCAKeeper,
     DCAStatus,
+    DCASwapProtocol,
 } = require("./_helpers");
 
 const {
@@ -47,13 +48,8 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         let result;
 
@@ -61,6 +57,7 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('100'), // amount
             0, // totalAmount
@@ -124,13 +121,8 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         let result;
 
@@ -138,6 +130,7 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('10'), // amount
             0, // totalAmount
@@ -200,13 +193,8 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         let result;
 
@@ -214,6 +202,7 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('100'), // amount
             0, // totalAmount
@@ -277,13 +266,8 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         let result;
 
@@ -291,6 +275,7 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('100'), // amount
             usdcUnits('250'), // totalAmount
@@ -350,17 +335,13 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
 
         // create DCA
         await expect(userDCA.createDCA(
             assetSpec, // assetSpec
             ['0x56a9e930d5992a8446ba6814144d4ae98194eaf9d8210be85ed01614b45effff'], // bad merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('10'), // amount
             0, // totalAmount
@@ -396,13 +377,8 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         let result;
 
@@ -410,6 +386,7 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('10'), // amount
             0, // totalAmount
@@ -470,13 +447,8 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         let result;
 
@@ -484,6 +456,7 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('10'), // amount
             0, // totalAmount
@@ -543,18 +516,14 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         // create DCA
         await expect(userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('0.90'), // too low of an amount
             0, // totalAmount
@@ -589,18 +558,14 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         // create DCA
         await expect(userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('10'), // too low of an amount
             0, // totalAmount
@@ -634,13 +599,8 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         const assetSpecHash = CaskSDK.utils.dcaAssetspecHash(assetInfo);
 
@@ -651,6 +611,7 @@ describe("CaskDCA General", function () {
         await expect(userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('10'), // amount
             0, // totalAmount
@@ -686,13 +647,8 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         let result;
 
@@ -700,6 +656,7 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('10'), // amount
             0, // totalAmount
@@ -755,13 +712,8 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
         const assetInfo = dcaManifest.assets.find((a) => a.inputAssetSymbol === 'DAI' && a.outputAssetSymbol === 'ABC');
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         let result;
 
@@ -769,6 +721,7 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('100'), // amount
             0, // totalAmount
@@ -832,13 +785,8 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo = dcaManifest.assets.find((a) => a.inputAssetSymbol === 'DAI' && a.outputAssetSymbol === 'ABC');
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         let result;
 
@@ -846,6 +794,7 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('10'), // amount
             0, // totalAmount
@@ -904,18 +853,14 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo = dcaManifest.assets.find((a) => a.inputAssetSymbol === 'DAI' && a.outputAssetSymbol === 'ABC');
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
 
         // try and create DCA with minPrice above current price (1 USDC)
         await expect(userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            DCASwapProtocol.UNIV2,
             user.address, // to
             usdcUnits('10'), // amount
             0, // totalAmount

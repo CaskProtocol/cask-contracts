@@ -39,6 +39,12 @@ const DCAStatus = {
     Complete: 4,
 };
 
+// keep in sync with ICaskDCA.sol
+const DCASwapProtocol = {
+    UNIV2: 0,
+    UNIV3: 1,
+};
+
 // keep in sync with ICaskP2P.sol
 const P2PStatus = {
     None: 0,
@@ -237,6 +243,7 @@ module.exports = {
     SubscriptionStatus,
     PlanStatus,
     DCAStatus,
+    DCASwapProtocol,
     P2PStatus,
 
     advanceTime,

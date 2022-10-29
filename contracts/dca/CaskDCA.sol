@@ -83,6 +83,7 @@ BaseRelayRecipient
     function createDCA(
         address[] calldata _assetSpec, // router, priceFeed, path...
         bytes32[] calldata _merkleProof,
+        SwapProtocol _swapProtocol,
         address _to,
         uint256 _amount,
         uint256 _totalAmount,
@@ -94,10 +95,15 @@ BaseRelayRecipient
         require(_amount >= minAmount, "!INVALID(amount)");
         require(_period >= minPeriod, "!INVALID(period)");
         require(_slippageBps >= minSlippage, "!INVALID(slippageBps)");
-        require(_assetSpec.length >= 4, "!INVALID(assetSpec)");
-        require(_verifyAssetSpec(_assetSpec, _merkleProof), "!INVALID(assetSpec)");
+        require(_verifyAssetSpec(_swapProtocol, _assetSpec, _merkleProof), "!INVALID(assetSpec)");
 
-        bytes32 dcaId = keccak256(abi.encodePacked(_msgSender(), _assetSpec, _amount, _period,
+        if (_swapProtocol == SwapProtocol.UNIV2) {
+            require(_assetSpec.length >= 4, "!INVALID(assetSpec)");
+        } else if (_swapProtocol == SwapProtocol.UNIV3) {
+            require(_assetSpec.length >= 6, "!INVALID(assetSpec)");
+        }
+
+        bytes32 dcaId = keccak256(abi.encodePacked(_msgSender(), _swapProtocol, _assetSpec, _amount, _period,
             block.number, block.timestamp));
 
         uint32 timestamp = uint32(block.timestamp);
@@ -117,6 +123,7 @@ BaseRelayRecipient
         dca.createdAt = timestamp;
         dca.processAt = timestamp;
         dca.status = DCAStatus.Active;
+        dca.swapProtocol = _swapProtocol;
 
         userDCAs[_msgSender()].push(dcaId);
 
@@ -172,11 +179,12 @@ BaseRelayRecipient
     }
 
     function _verifyAssetSpec(
+        SwapProtocol _swapProtocol,
         address[] calldata _assetSpec,
         bytes32[] calldata _merkleProof
     ) internal view returns(bool) {
         return MerkleProof.verify(_merkleProof, assetsMerkleRoot,
-            keccak256(abi.encode(_assetSpec[0], _assetSpec[1], _assetSpec[2:])));
+            keccak256(abi.encode(_swapProtocol, _assetSpec[0], _assetSpec[1], _assetSpec[2:])));
     }
 
 

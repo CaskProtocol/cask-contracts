@@ -3,6 +3,11 @@ pragma solidity ^0.8.0;
 
 interface ICaskDCA {
 
+    enum SwapProtocol {
+        UNIV2,
+        UNIV3
+    }
+
     enum DCAStatus {
         None,
         Active,
@@ -46,11 +51,13 @@ interface ICaskDCA {
         uint32 processAt;
         DCAStatus status;
         address[] path;
+        SwapProtocol swapProtocol;
     }
 
     function createDCA(
         address[] calldata _assetSpec, // router, priceFeed, path...
         bytes32[] calldata _merkleProof,
+        SwapProtocol _swapProtocol,
         address _to,
         uint256 _amount,
         uint256 _totalAmount,
