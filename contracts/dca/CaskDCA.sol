@@ -84,29 +84,19 @@ BaseRelayRecipient
         address[] calldata _assetSpec, // router, priceFeed, path...
         bytes32[] calldata _merkleProof,
         SwapProtocol _swapProtocol,
+        bytes calldata _swapData,
         address _to,
-        uint256 _amount,
-        uint256 _totalAmount,
-        uint32 _period,
-        uint256 _slippageBps,
-        uint256 _minPrice,
-        uint256 _maxPrice
+        uint256[] calldata _priceSpec // period, amount, totalAmount, maxSlippageBps, minPrice, maxPrice
     ) external override returns(bytes32) {
-        require(_amount >= minAmount, "!INVALID(amount)");
-        require(_period >= minPeriod, "!INVALID(period)");
-        require(_slippageBps >= minSlippage, "!INVALID(slippageBps)");
-        require(_verifyAssetSpec(_swapProtocol, _assetSpec, _merkleProof), "!INVALID(assetSpec)");
+        require(_assetSpec.length >= 4, "!INVALID(assetSpec)");
+        require(_priceSpec.length == 6, "!INVALID(priceSpec)");
+        require(_priceSpec[0] >= minPeriod, "!INVALID(period)");
+        require(_priceSpec[1] >= minAmount, "!INVALID(amount)");
+        require(_priceSpec[3] >= minSlippage, "!INVALID(maxSlippageBps)");
+        require(_verifyAssetSpec(_swapProtocol, _swapData, _assetSpec, _merkleProof), "!INVALID(assetSpec)");
 
-        if (_swapProtocol == SwapProtocol.UNIV2) {
-            require(_assetSpec.length >= 4, "!INVALID(assetSpec)");
-        } else if (_swapProtocol == SwapProtocol.UNIV3) {
-            require(_assetSpec.length >= 6, "!INVALID(assetSpec)");
-        }
-
-        bytes32 dcaId = keccak256(abi.encodePacked(_msgSender(), _swapProtocol, _assetSpec, _amount, _period,
+        bytes32 dcaId = keccak256(abi.encodePacked(_msgSender(), _swapProtocol, _swapData, _assetSpec, _priceSpec,
             block.number, block.timestamp));
-
-        uint32 timestamp = uint32(block.timestamp);
 
         DCA storage dca = dcaMap[dcaId];
         dca.user = _msgSender();
@@ -114,16 +104,17 @@ BaseRelayRecipient
         dca.router = _assetSpec[0];
         dca.priceFeed = _assetSpec[1];
         dca.path = _assetSpec[2:];
-        dca.amount = _amount;
-        dca.totalAmount = _totalAmount;
-        dca.period = _period;
-        dca.minPrice = _minPrice;
-        dca.maxPrice = _maxPrice;
-        dca.slippageBps = _slippageBps;
-        dca.createdAt = timestamp;
-        dca.processAt = timestamp;
+        dca.amount = _priceSpec[1];
+        dca.totalAmount = _priceSpec[2];
+        dca.period = uint32(_priceSpec[0]);
+        dca.minPrice = _priceSpec[4];
+        dca.maxPrice = _priceSpec[5];
+        dca.maxSlippageBps = _priceSpec[3];
+        dca.createdAt = uint32(block.timestamp);
+        dca.processAt = uint32(block.timestamp);
         dca.status = DCAStatus.Active;
         dca.swapProtocol = _swapProtocol;
+        dca.swapData = _swapData;
 
         userDCAs[_msgSender()].push(dcaId);
 
@@ -133,7 +124,7 @@ BaseRelayRecipient
         require(dca.numBuys == 1, "!UNPROCESSABLE"); // make sure first DCA purchase succeeded
 
         emit DCACreated(dcaId, dca.user, dca.to, dca.path[0], dca.path[dca.path.length-1],
-            _amount, _totalAmount, _period);
+            dca.amount, dca.totalAmount, dca.period);
 
         return dcaId;
     }
@@ -180,11 +171,12 @@ BaseRelayRecipient
 
     function _verifyAssetSpec(
         SwapProtocol _swapProtocol,
+        bytes calldata _swapData,
         address[] calldata _assetSpec,
         bytes32[] calldata _merkleProof
     ) internal view returns(bool) {
         return MerkleProof.verify(_merkleProof, assetsMerkleRoot,
-            keccak256(abi.encode(_swapProtocol, _assetSpec[0], _assetSpec[1], _assetSpec[2:])));
+            keccak256(abi.encode(_swapProtocol, _swapData, _assetSpec[0], _assetSpec[1], _assetSpec[2:])));
     }
 
 

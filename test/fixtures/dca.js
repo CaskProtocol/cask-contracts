@@ -45,6 +45,7 @@ async function dcaWithLiquidityFixture() {
                 "outputAssetSymbol": "ABC",
                 "routerName": "MockRouter",
                 "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": fixture.priceFeed.address.toLowerCase(),
                 "path": [
@@ -58,6 +59,7 @@ async function dcaWithLiquidityFixture() {
                 "outputAssetSymbol": "ABC",
                 "routerName": "MockRouter",
                 "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": fixture.priceFeed.address.toLowerCase(),
                 "path": [
@@ -71,6 +73,7 @@ async function dcaWithLiquidityFixture() {
                 "outputAssetSymbol": "ZZZ",
                 "routerName": "MockRouter",
                 "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": fixture.priceFeed.address.toLowerCase(),
                 "path": [
@@ -103,6 +106,7 @@ async function dcaWithLiquidityFixtureNoPricefeed() {
                 "outputAssetSymbol": "ABC",
                 "routerName": "MockRouter",
                 "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": "0x0000000000000000000000000000000000000000",
                 "path": [
@@ -116,6 +120,7 @@ async function dcaWithLiquidityFixtureNoPricefeed() {
                 "outputAssetSymbol": "ABC",
                 "routerName": "MockRouter",
                 "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": "0x0000000000000000000000000000000000000000",
                 "path": [
@@ -129,6 +134,7 @@ async function dcaWithLiquidityFixtureNoPricefeed() {
                 "outputAssetSymbol": "ZZZ",
                 "routerName": "MockRouter",
                 "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": "0x0000000000000000000000000000000000000000",
                 "path": [
