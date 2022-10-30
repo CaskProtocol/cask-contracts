@@ -9,6 +9,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
+import "./IGMXRouter.sol";
 
 import "../job_queue/CaskJobQueue.sol";
 import "../interfaces/ICaskDCAManager.sol";
@@ -239,7 +240,7 @@ ICaskDCAManager
         address _inputAsset,
         address _outputAsset,
         uint256 _inputAmount
-    ) internal returns(uint256) {
+    ) internal view returns(uint256) {
         ICaskVault.Asset memory inputAssetInfo = caskVault.getAsset(_inputAsset);
 
         uint256 minOutput = 0;
@@ -269,6 +270,8 @@ ICaskDCAManager
             return _performSwapUniV2(dca, _inputAsset, _inputAmount, _minOutput);
         } else if (dca.swapProtocol == ICaskDCA.SwapProtocol.UNIV3) {
             return _performSwapUniV3(dca, _inputAsset, _inputAmount, _minOutput);
+        } else if (dca.swapProtocol == ICaskDCA.SwapProtocol.GMX) {
+            return _performSwapGMX(dca, _inputAsset, _inputAmount, _minOutput);
         }
         revert("!INVALID(swapProtocol)");
     }
@@ -276,11 +279,15 @@ ICaskDCAManager
     function _amountOut(
         ICaskDCA.DCA memory dca,
         uint256 _inputAmount
-    ) internal returns(uint256) {
+    ) internal view returns(uint256) {
         if (dca.swapProtocol == ICaskDCA.SwapProtocol.UNIV2) {
             return _amountOutUniV2(dca, _inputAmount);
         } else if (dca.swapProtocol == ICaskDCA.SwapProtocol.UNIV3) {
-            return _amountOutUniV3(dca, _inputAmount);
+            require(dca.priceFeed != address(0), "!INVALID(priceFeed)"); // univ3 requires external oracle
+            return type(uint256).max; // no direct pool slippage check for uni-v3
+        } else if (dca.swapProtocol == ICaskDCA.SwapProtocol.GMX) {
+            require(dca.priceFeed != address(0), "!INVALID(priceFeed)"); // gmx requires external oracle
+            return type(uint256).max; // slippage-less trading on gmx!
         }
         revert("!INVALID(swapProtocol)");
     }
@@ -314,7 +321,7 @@ ICaskDCAManager
     function _amountOutUniV2(
         ICaskDCA.DCA memory dca,
         uint256 _inputAmount
-    ) internal returns(uint256) {
+    ) internal view returns(uint256) {
         uint256[] memory amountOuts = IUniswapV2Router02(dca.router).getAmountsOut(_inputAmount, dca.path);
         return amountOuts[amountOuts.length-1];
     }
@@ -331,9 +338,9 @@ ICaskDCAManager
 
         uint256 buyAmount = 0;
 
-        // univ3 paths are [inputToken, quoter, fee, outputToken]
+        // univ3 paths are [inputToken, fee, outputToken]
         // fee is a uint24 encoded as an address in the path for optimization purposes
-        uint24 fee = uint24(bytes3(bytes20(dca.path[2]) << 136));
+        uint24 fee = uint24(bytes3(bytes20(dca.path[1]) << 136));
         ISwapRouter.ExactInputSingleParams memory params =
             ISwapRouter.ExactInputSingleParams({
                 tokenIn: dca.path[0],
@@ -354,27 +361,31 @@ ICaskDCAManager
         return buyAmount;
     }
 
-    function _amountOutUniV3(
+    function _performSwapGMX(
         ICaskDCA.DCA memory dca,
-        uint256 _inputAmount
+        address _inputAsset,
+        uint256 _inputAmount,
+        uint256 _minOutput
     ) internal returns(uint256) {
-        // univ3 paths are [inputToken, quoter, fee, outputToken]
-        // fee is a uint24 encoded as an address in the path for optimization purposes
-        uint24 fee = uint24(bytes3(bytes20(dca.path[2]) << 136));
-        return IQuoter(dca.path[1]).quoteExactInputSingle(
-            dca.path[0],
-            dca.path[dca.path.length-1],
-            fee,
-            _inputAmount,
-            0
-        );
+
+        // let swap router spend the amount of newly acquired inputAsset
+        IERC20Metadata(_inputAsset).safeIncreaseAllowance(dca.router, _inputAmount);
+
+        address outputAsset = dca.path[dca.path.length-1];
+
+        uint256 beforeBalance = IERC20Metadata(outputAsset).balanceOf(address(this));
+
+        // perform swap
+        try IGMXRouter(dca.router).swap(dca.path, _inputAmount, _minOutput, dca.to) { } catch (bytes memory) {}
+
+        return IERC20Metadata(outputAsset).balanceOf(address(this)) - beforeBalance;
     }
 
     function _checkMinMaxPrice(
         ICaskDCA.DCA memory dca,
         ICaskVault.Asset memory inputAssetInfo,
         address _outputAsset
-    ) internal returns(bool) {
+    ) internal view returns(bool) {
 
         if (dca.minPrice == 0 && dca.maxPrice == 0) {
             return true;

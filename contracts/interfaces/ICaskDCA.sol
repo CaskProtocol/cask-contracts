@@ -5,7 +5,8 @@ interface ICaskDCA {
 
     enum SwapProtocol {
         UNIV2,
-        UNIV3
+        UNIV3,
+        GMX
     }
 
     enum DCAStatus {
