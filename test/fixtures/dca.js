@@ -44,6 +44,8 @@ async function dcaWithLiquidityFixture() {
                 "inputAssetSymbol": "USDC",
                 "outputAssetSymbol": "ABC",
                 "routerName": "MockRouter",
+                "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": fixture.priceFeed.address.toLowerCase(),
                 "path": [
@@ -56,6 +58,8 @@ async function dcaWithLiquidityFixture() {
                 "inputAssetSymbol": "DAI",
                 "outputAssetSymbol": "ABC",
                 "routerName": "MockRouter",
+                "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": fixture.priceFeed.address.toLowerCase(),
                 "path": [
@@ -68,6 +72,8 @@ async function dcaWithLiquidityFixture() {
                 "inputAssetSymbol": "USDC",
                 "outputAssetSymbol": "ZZZ",
                 "routerName": "MockRouter",
+                "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": fixture.priceFeed.address.toLowerCase(),
                 "path": [
@@ -99,6 +105,8 @@ async function dcaWithLiquidityFixtureNoPricefeed() {
                 "inputAssetSymbol": "USDC",
                 "outputAssetSymbol": "ABC",
                 "routerName": "MockRouter",
+                "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": "0x0000000000000000000000000000000000000000",
                 "path": [
@@ -111,6 +119,8 @@ async function dcaWithLiquidityFixtureNoPricefeed() {
                 "inputAssetSymbol": "DAI",
                 "outputAssetSymbol": "ABC",
                 "routerName": "MockRouter",
+                "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": "0x0000000000000000000000000000000000000000",
                 "path": [
@@ -123,6 +133,8 @@ async function dcaWithLiquidityFixtureNoPricefeed() {
                 "inputAssetSymbol": "USDC",
                 "outputAssetSymbol": "ZZZ",
                 "routerName": "MockRouter",
+                "swapProtocol": 0,
+                "swapData": "0x",
                 "router": fixture.router.address.toLowerCase(),
                 "priceFeed": "0x0000000000000000000000000000000000000000",
                 "path": [

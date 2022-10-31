@@ -9,7 +9,6 @@ const {
 } = require("../utils/units");
 
 const {
-    SubscriptionStatus,
     advanceTimeRunSubscriptionKeeper,
 } = require("./_helpers");
 
@@ -67,7 +66,7 @@ describe("CaskSubscriptions Pause", function () {
         await advanceTimeRunSubscriptionKeeper(2, month);
 
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
 
         await expect(consumerASubscriptions.pauseSubscription(subscriptionId)).to.be.revertedWith("!NOT_PAUSABLE");
 
@@ -124,26 +123,26 @@ describe("CaskSubscriptions Pause", function () {
         await expect(consumerASubscriptions.cancelSubscription(subscriptionId, now)).to.be.revertedWith("!MIN_TERM");
 
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
 
         await advanceTimeRunSubscriptionKeeper(365, day);
 
         // confirm current state after 13 months
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
 
         // pause and confirm now that min term has elapsed
         expect(await consumerASubscriptions.pauseSubscription(subscriptionId))
             .to.emit(consumerASubscriptions, "SubscriptionPendingPause");
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.PendingPause);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.PENDING_PAUSE);
 
         await advanceTimeRunSubscriptionKeeper(1, day);
 
         // make sure we can change our mind
         await consumerASubscriptions.resumeSubscription(subscriptionId);
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
 
         await advanceTimeRunSubscriptionKeeper(1, day);
 
@@ -151,12 +150,12 @@ describe("CaskSubscriptions Pause", function () {
         expect(await consumerASubscriptions.pauseSubscription(subscriptionId))
             .to.emit(consumerASubscriptions, "SubscriptionPendingPause");
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.PendingPause);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.PENDING_PAUSE);
 
         await advanceTimeRunSubscriptionKeeper(30, day);
 
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Paused);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.PAUSED);
 
         await advanceTimeRunSubscriptionKeeper(31, day);
 
@@ -164,13 +163,13 @@ describe("CaskSubscriptions Pause", function () {
         expect(await consumerASubscriptions.resumeSubscription(subscriptionId))
             .to.emit(consumerASubscriptions, "SubscriptionResumed");
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
 
         await advanceTimeRunSubscriptionKeeper(31, day);
 
         // confirm new payment after resume
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
 
         // cancel immediately
         expect(await consumerASubscriptions.cancelSubscription(subscriptionId, 1))

@@ -13,7 +13,6 @@ const {
 
 const {
     advanceTimeRunDCAKeeper,
-    DCAStatus,
 } = require("./_helpers");
 
 const {
@@ -47,27 +46,27 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('100'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            parseUnits('0.99', 18), // minPrice
+            parseUnits('1.01', 18) // maxPrice
+        );
 
         let result;
 
         // create DCA
         const tx = await userDCA.createDCA(
-            assetSpec, // assetSpec
-            merkleProof, // merkleProof
+            assetSpec,
+            merkleProof,
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('100'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            parseUnits('0.99', 18), // minPrice
-            parseUnits('1.01', 18) // maxPrice
+            priceSpec
         );
 
         const events = (await tx.wait()).events || [];
@@ -87,7 +86,7 @@ describe("CaskDCA General", function () {
 
         // confirm second DCA was processed
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('800'));
         expect(await abc.balanceOf(user.address)).to.equal(parseUnits('199.40', 18));
 
@@ -95,7 +94,7 @@ describe("CaskDCA General", function () {
 
         // confirm third DCA was processed
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('700'));
         expect(await abc.balanceOf(user.address)).to.equal(parseUnits('299.10', 18));
 
@@ -124,13 +123,16 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            parseUnits('0.99', 18), // minPrice
+            parseUnits('1.01', 18) // maxPrice
+        );
 
         let result;
 
@@ -138,13 +140,10 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('10'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            parseUnits('0.99', 18), // minPrice
-            parseUnits('1.01', 18) // maxPrice
+            priceSpec
         );
 
         const events = (await tx.wait()).events || [];
@@ -164,7 +163,7 @@ describe("CaskDCA General", function () {
 
         // confirm second DCA was processed
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('80'));
         expect(await abc.balanceOf(user.address)).to.equal(parseUnits('19.80', 18)); // 0.10 min fee
 
@@ -172,7 +171,7 @@ describe("CaskDCA General", function () {
 
         // confirm third DCA was processed
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('70'));
         expect(await abc.balanceOf(user.address)).to.equal(parseUnits('29.70', 18)); // 0.10 min fee
     });
@@ -200,13 +199,16 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('100'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            0, // minPrice
+            0 // maxPrice
+        );
 
         let result;
 
@@ -214,13 +216,10 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('100'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            0, // minPrice
-            0 // maxPrice
+            priceSpec
         );
 
         const events = (await tx.wait()).events || [];
@@ -240,7 +239,7 @@ describe("CaskDCA General", function () {
 
         // confirm second DCA was processed
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('800'));
         expect(await abc.balanceOf(user.address)).to.equal(parseUnits('199.40', 18));
 
@@ -248,7 +247,7 @@ describe("CaskDCA General", function () {
 
         // confirm third DCA was processed
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('700'));
         expect(await abc.balanceOf(user.address)).to.equal(parseUnits('299.10', 18));
 
@@ -277,13 +276,16 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('100'), // amount
+            usdcUnits('250'), // totalAmount
+            100, // maxSlippageBps
+            0, // minPrice
+            0 // maxPrice
+        );
 
         let result;
 
@@ -291,13 +293,10 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('100'), // amount
-            usdcUnits('250'), // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            0, // minPrice
-            0 // maxPrice
+            priceSpec
         );
 
         const events = (await tx.wait()).events || [];
@@ -316,14 +315,14 @@ describe("CaskDCA General", function () {
 
         // confirm second DCA was processed
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('800'));
 
         await advanceTimeRunDCAKeeper(7, day);
 
         // confirm third DCA was processed for only 50 USDC which totals the 250 USDC limit
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Complete);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.COMPLETE);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('750'));
     });
 
@@ -350,24 +349,24 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            0, // minPrice
+            0 // maxPrice
+        );
 
         // create DCA
         await expect(userDCA.createDCA(
             assetSpec, // assetSpec
             ['0x56a9e930d5992a8446ba6814144d4ae98194eaf9d8210be85ed01614b45effff'], // bad merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('10'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            0, // minPrice
-            0 // maxPrice
+            priceSpec
         )).to.be.revertedWith("!INVALID(assetSpec)");
 
     });
@@ -396,13 +395,16 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            parseUnits('0.9', 18), // minPrice
+            0 // maxPrice
+        );
 
         let result;
 
@@ -410,13 +412,10 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('10'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            parseUnits('0.9', 18), // minPrice
-            0 // maxPrice
+            priceSpec
         );
 
         const events = (await tx.wait()).events || [];
@@ -431,7 +430,7 @@ describe("CaskDCA General", function () {
         // confirm initial DCA was processed
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(result.numSkips).to.equal(0);
 
         // change price of ABC so its no longer in range
@@ -441,7 +440,7 @@ describe("CaskDCA General", function () {
 
         // confirm second DCA was skipped
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(result.numSkips).to.equal(1);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('89.9')); // minus minFee
     });
@@ -470,13 +469,16 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            0, // minPrice
+            parseUnits('1.1', 18) // maxPrice
+        );
 
         let result;
 
@@ -484,13 +486,10 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('10'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            0, // minPrice
-            parseUnits('1.1', 18), // maxPrice
+            priceSpec
         );
 
         const events = (await tx.wait()).events || [];
@@ -505,7 +504,7 @@ describe("CaskDCA General", function () {
         // confirm initial DCA was processed
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(result.numSkips).to.equal(0);
 
         // change price of ABC so its no longer in range
@@ -515,7 +514,7 @@ describe("CaskDCA General", function () {
 
         // confirm second DCA was skipped
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(result.numSkips).to.equal(1);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('89.9')); // minus minFee
     });
@@ -543,25 +542,25 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('0.90'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            0, // minPrice
+            0 // maxPrice
+        );
 
         // create DCA
         await expect(userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('0.90'), // too low of an amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            0,
-            0
+            priceSpec
         )).to.be.revertedWith("!UNPROCESSABLE");
 
     });
@@ -589,25 +588,25 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            parseUnits('1.1', 18), // minPrice
+            parseUnits('1.5', 18) // maxPrice
+        );
 
         // create DCA
         await expect(userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('10'), // too low of an amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            parseUnits('1.1', 18), // minPrice,
-            parseUnits('1.5', 18) // maxPrice
+            priceSpec
         )).to.be.revertedWith("!UNPROCESSABLE"); // current price is 1 USDC per ABC - outside of DCA price range
     });
 
@@ -634,13 +633,16 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            0, // minPrice
+            0 // maxPrice
+        );
 
         const assetSpecHash = CaskSDK.utils.dcaAssetspecHash(assetInfo);
 
@@ -651,13 +653,10 @@ describe("CaskDCA General", function () {
         await expect(userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('10'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            0,
-            0
+            priceSpec
         )).to.be.revertedWith("!UNPROCESSABLE");
 
     });
@@ -686,13 +685,16 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo =  CaskSDK.utils.getDCAAsset(dcaManifest.assets, abc.address);
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            0, // minPrice
+            0 // maxPrice
+        );
 
         let result;
 
@@ -700,13 +702,10 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('10'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            0, // minPrice
-            0, // maxPrice
+            priceSpec
         );
 
         const events = (await tx.wait()).events || [];
@@ -717,7 +716,7 @@ describe("CaskDCA General", function () {
         // confirm initial DCA was processed
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(result.numSkips).to.equal(0);
 
         // set swap router to fail the swap
@@ -727,7 +726,7 @@ describe("CaskDCA General", function () {
 
         // confirm second DCA was skipped
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(result.numSkips).to.equal(1);
         expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('90'));
     });
@@ -755,13 +754,16 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('1000'));
 
         const assetInfo = dcaManifest.assets.find((a) => a.inputAssetSymbol === 'DAI' && a.outputAssetSymbol === 'ABC');
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('100'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            0, // minPrice
+            0 // maxPrice
+        );
 
         let result;
 
@@ -769,13 +771,10 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('100'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            0, // minPrice
-            0 // maxPrice
+            priceSpec
         );
 
         const events = (await tx.wait()).events || [];
@@ -795,7 +794,7 @@ describe("CaskDCA General", function () {
 
         // confirm second DCA was processed
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(await userVault.currentValueOf(user.address)).to.be.closeTo(usdcUnits('800'), usdcUnits('1'));
         expect(await abc.balanceOf(user.address)).to.be.closeTo(parseUnits('199.40', 18), parseUnits('1', 18));
 
@@ -803,7 +802,7 @@ describe("CaskDCA General", function () {
 
         // confirm third DCA was processed
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(await userVault.currentValueOf(user.address)).to.be.closeTo(usdcUnits('700'), usdcUnits('1'));
         expect(await abc.balanceOf(user.address)).to.be.closeTo(parseUnits('299.10', 18), parseUnits('1', 18));
 
@@ -832,13 +831,16 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo = dcaManifest.assets.find((a) => a.inputAssetSymbol === 'DAI' && a.outputAssetSymbol === 'ABC');
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            0, // minPrice
+            parseUnits('1.1', 18) // maxPrice
+        );
 
         let result;
 
@@ -846,13 +848,10 @@ describe("CaskDCA General", function () {
         const tx = await userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('10'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            0, // minPrice
-            parseUnits('1.1', 18) // maxPrice
+            priceSpec
         );
 
         const events = (await tx.wait()).events || [];
@@ -867,7 +866,7 @@ describe("CaskDCA General", function () {
         // confirm initial DCA was processed
         expect(await userVault.currentValueOf(user.address)).to.be.closeTo(usdcUnits('90'), usdcUnits('0.02'));
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(result.numSkips).to.equal(0);
 
         // change price of ABC so its no longer in range
@@ -877,7 +876,7 @@ describe("CaskDCA General", function () {
 
         // confirm second DCA was skipped
         result = await userDCA.getDCA(dcaId);
-        expect(result.status).to.equal(DCAStatus.Active);
+        expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(result.numSkips).to.equal(1);
         expect(await userVault.currentValueOf(user.address)).to.be.closeTo(usdcUnits('89.9'), usdcUnits('0.02'));  // minus minFee
     });
@@ -904,25 +903,25 @@ describe("CaskDCA General", function () {
         expect(initialUserBalance).to.equal(usdcUnits('100'));
 
         const assetInfo = dcaManifest.assets.find((a) => a.inputAssetSymbol === 'DAI' && a.outputAssetSymbol === 'ABC');
+        const assetSpec = CaskSDK.utils.dcaAssetspec(assetInfo);
         const merkleProof = CaskSDK.utils.dcaMerkleProof(dcaManifest.assets, assetInfo);
-
-        const assetSpec = [
-            assetInfo.router.toLowerCase(),
-            assetInfo.priceFeed.toLowerCase(),
-            ...assetInfo.path.map((a) => a.toLowerCase())
-        ];
+        const priceSpec = CaskSDK.utils.dcaPricespec(
+            7 * day, // period
+            usdcUnits('10'), // amount
+            0, // totalAmount
+            100, // maxSlippageBps
+            parseUnits('2', 18), // minPrice
+            0 // maxPrice
+        );
 
         // try and create DCA with minPrice above current price (1 USDC)
         await expect(userDCA.createDCA(
             assetSpec, // assetSpec
             merkleProof, // merkleProof
+            assetInfo.swapProtocol,
+            assetInfo.swapData,
             user.address, // to
-            usdcUnits('10'), // amount
-            0, // totalAmount
-            7 * day, // period
-            100, // slippageBps
-            parseUnits('2', 18), // minPrice
-            0 // maxPrice
+            priceSpec
         )).to.be.revertedWith("!UNPROCESSABLE");
 
     });

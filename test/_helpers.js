@@ -8,46 +8,6 @@ const {
     isMainnet,
 } = require("./_networks");
 
-
-
-// keep in sync with ICaskSubscriptions.sol
-const SubscriptionStatus = {
-    None: 0,
-    Trialing: 1,
-    Active: 2,
-    Paused: 3,
-    Canceled: 4,
-    PastDue: 5,
-    PendingPause: 6
-};
-
-// keep in sync with ICaskSubscriptionPlans.sol
-const PlanStatus = {
-    None: 0,
-    Enabled: 1,
-    Disabled: 2,
-    EndOfLife: 3,
-};
-
-
-// keep in sync with ICaskDCA.sol
-const DCAStatus = {
-    None: 0,
-    Active: 1,
-    Paused: 2,
-    Canceled: 3,
-    Complete: 4,
-};
-
-// keep in sync with ICaskP2P.sol
-const P2PStatus = {
-    None: 0,
-    Active: 1,
-    Paused: 2,
-    Canceled: 3,
-    Complete: 4,
-};
-
 const advanceTime = async (seconds) => {
     await hre.ethers.provider.send("evm_increaseTime", [seconds]);
     await hre.ethers.provider.send("evm_mine");
@@ -232,12 +192,6 @@ const advanceTimeRunP2PKeeper = async (times, seconds, keeperLimit=10) => {
 
 
 module.exports = {
-
-    // constants from solidity interfaces
-    SubscriptionStatus,
-    PlanStatus,
-    DCAStatus,
-    P2PStatus,
 
     advanceTime,
     getBlockTimestamp,
