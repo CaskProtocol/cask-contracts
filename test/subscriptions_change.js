@@ -8,7 +8,6 @@ const {
 } = require("../utils/units");
 
 const {
-    SubscriptionStatus,
     advanceTimeRunSubscriptionKeeper,
 } = require("./_helpers");
 
@@ -72,7 +71,7 @@ describe("CaskSubscriptions Change", function () {
         // normal renewal pre-upgrade
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(usdcUnits('130'));
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
         expect(result.subscription.planId).to.equal(plan.planId);
 
         const newPlan = plans.find((p) => p.planId === 201);
@@ -97,7 +96,7 @@ describe("CaskSubscriptions Change", function () {
         // upgrade used some funds and new plan is 20, so should have less than 110
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.lt(usdcUnits('110'));
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
         expect(result.subscription.planId).to.equal(newPlan.planId);
 
     });

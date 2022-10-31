@@ -1,4 +1,5 @@
 const { expect } = require("chai");
+const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
     usdcUnits,
@@ -7,7 +8,6 @@ const {
 
 const {
     advanceTimeRunP2PKeeper,
-    P2PStatus,
 } = require("./_helpers");
 
 const {
@@ -66,7 +66,7 @@ describe("CaskP2P General", function () {
 
         // confirm second P2P flow was processed
         result = await consumerAP2P.getP2P(p2pId);
-        expect(result.status).to.equal(P2PStatus.Active);
+        expect(result.status).to.equal(CaskSDK.p2pStatus.ACTIVE);
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(usdcUnits('80'));
         expect(await consumerAVault.currentValueOf(consumerB.address)).to.equal(usdcUnits('19'));
 
@@ -74,7 +74,7 @@ describe("CaskP2P General", function () {
 
         // confirm third P2P flow was processed
         result = await consumerAP2P.getP2P(p2pId);
-        expect(result.status).to.equal(P2PStatus.Active);
+        expect(result.status).to.equal(CaskSDK.p2pStatus.ACTIVE);
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(usdcUnits('70'));
         expect(await consumerAVault.currentValueOf(consumerB.address)).to.equal(usdcUnits('28.5'));
 
@@ -129,7 +129,7 @@ describe("CaskP2P General", function () {
 
         // confirm second P2P flow was processed
         result = await consumerAP2P.getP2P(p2pId);
-        expect(result.status).to.equal(P2PStatus.Active);
+        expect(result.status).to.equal(CaskSDK.p2pStatus.ACTIVE);
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(usdcUnits('80'));
         expect(await consumerAVault.currentValueOf(consumerB.address)).to.equal(usdcUnits('19'));
 
@@ -137,7 +137,7 @@ describe("CaskP2P General", function () {
 
         // confirm third P2P flow was processed
         result = await consumerAP2P.getP2P(p2pId);
-        expect(result.status).to.equal(P2PStatus.Complete);
+        expect(result.status).to.equal(CaskSDK.p2pStatus.COMPLETE);
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(usdcUnits('75'));
         expect(await consumerAVault.currentValueOf(consumerB.address)).to.equal(usdcUnits('23.5'));
 

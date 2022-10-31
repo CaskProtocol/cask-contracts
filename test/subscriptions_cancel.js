@@ -9,7 +9,6 @@ const {
 } = require("../utils/units");
 
 const {
-    SubscriptionStatus,
     advanceTimeRunSubscriptionKeeper,
 } = require("./_helpers");
 
@@ -67,7 +66,7 @@ describe("CaskSubscriptions Cancel", function () {
         // confirm conversion to paid after trial
         await advanceTimeRunSubscriptionKeeper(8, day);
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal(usdcUnits('10'));
 
         // funds just enough for one renewal
@@ -75,13 +74,13 @@ describe("CaskSubscriptions Cancel", function () {
 
         // confirm subscription still active but out of funds
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal('0');
 
         // unable to renew due to out of funds, confirm past due
         await advanceTimeRunSubscriptionKeeper(31, day);
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.PastDue);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.PAST_DUE);
 
         // deposit one more months worth
         await consumerAVault.deposit(networkAddresses.USDC, usdcUnits('10'));
@@ -90,18 +89,18 @@ describe("CaskSubscriptions Cancel", function () {
         await advanceTimeRunSubscriptionKeeper(1, day);
 
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Active);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.ACTIVE);
         expect(await consumerAVault.currentValueOf(consumerA.address)).to.equal('0');
 
         // a month later, since funds are depleted again, confirm past due
         await advanceTimeRunSubscriptionKeeper(31, day);
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.PastDue);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.PAST_DUE);
 
         // past due window passes, subscription cancels
         await advanceTimeRunSubscriptionKeeper(8, day);
         result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Canceled);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.CANCELED);
 
     });
 

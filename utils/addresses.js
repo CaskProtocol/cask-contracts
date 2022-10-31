@@ -99,6 +99,11 @@ addresses.mainnet_arbitrum = {};
 addresses.mainnet_arbitrum.USDC = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
 addresses.mainnet_arbitrum.USDC_USD = "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3";
 
+/* optimism addresses */
+addresses.mainnet_optimism = {};
+addresses.mainnet_optimism.USDC = "0x7f5c764cbc14f9669b88837ca1490cca17c31607";
+addresses.mainnet_optimism.USDC_USD = "0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3";
+
 
 
 /******* TESTNET ADDRESSES *********/
