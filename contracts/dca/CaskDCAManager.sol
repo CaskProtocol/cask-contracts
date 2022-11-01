@@ -93,8 +93,9 @@ ICaskDCAManager
     ) override internal {
 
         ICaskDCA.DCA memory dca = caskDCA.getDCA(_dcaId);
+        ICaskDCA.SwapInfo memory swapInfo = caskDCA.getSwapInfo(_dcaId);
 
-        bytes32 assetSpecHash = keccak256(abi.encode(dca.swapProtocol, dca.swapData, dca.router,
+        bytes32 assetSpecHash = keccak256(abi.encode(swapInfo.swapProtocol, swapInfo.swapData, dca.router,
             dca.priceFeed, dca.path));
 
         if (blacklistedAssetspecs[assetSpecHash]) {
@@ -140,7 +141,7 @@ ICaskDCAManager
             return;
         }
 
-        if (!_checkMinMaxPrice(dca, inputAssetInfo, outputAsset)) {
+        if (!_checkMinMaxPrice(dca, swapInfo, inputAssetInfo, outputAsset)) {
             scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
 
             try caskVault.protocolPayment(dca.user, address(this), dcaFeeMin) {
@@ -152,7 +153,7 @@ ICaskDCAManager
             return;
         }
 
-        uint256 buyQty = _processDCABuy(_dcaId, dca, amount, protocolFee);
+        uint256 buyQty = _processDCABuy(_dcaId, dca, swapInfo, amount, protocolFee);
 
         // did a swap happen successfully?
         if (buyQty > 0) {
@@ -176,6 +177,7 @@ ICaskDCAManager
     function _processDCABuy(
         bytes32 _dcaId,
         ICaskDCA.DCA memory dca,
+        ICaskDCA.SwapInfo memory swapInfo,
         uint256 _amount,
         uint256 _protocolFee
     ) internal returns(uint256) {
@@ -202,11 +204,11 @@ ICaskDCAManager
         uint256 inputAmount = IERC20Metadata(inputAsset).balanceOf(address(this)) - beforeBalance;
         require(inputAmount > 0, "!INVALID(inputAmount)");
 
-        uint256 minOutput = _swapMinOutput(dca, inputAmount);
+        uint256 minOutput = _swapMinOutput(dca, swapInfo, inputAmount);
 
         if (minOutput > 0) { // ok to attempt swap
 
-            uint256 amountOut = _performSwap(dca, inputAmount, minOutput);
+            uint256 amountOut = _performSwap(dca, swapInfo, inputAmount, minOutput);
 
             if (amountOut > 0) { // swap successful
                 // any non-withdrawn vault shares are the fee portion - send to fee distributor
@@ -237,6 +239,7 @@ ICaskDCAManager
 
     function _swapMinOutput(
         ICaskDCA.DCA memory dca,
+        ICaskDCA.SwapInfo memory swapInfo,
         uint256 _inputAmount
     ) internal view returns(uint256) {
         ICaskVault.Asset memory inputAssetInfo = caskVault.getAsset(dca.path[0]);
@@ -245,7 +248,7 @@ ICaskDCAManager
         if (dca.priceFeed != address(0)) {
             minOutput = _convertPrice(inputAssetInfo, dca.path[dca.path.length-1], dca.priceFeed, _inputAmount);
         }
-        uint256 amountOut = _amountOut(dca, _inputAmount);
+        uint256 amountOut = _amountOut(dca, swapInfo, _inputAmount);
         if (minOutput > 0) {
             minOutput = minOutput - ((minOutput * dca.maxSlippageBps) / 10000);
             if (amountOut < minOutput) {
@@ -260,14 +263,15 @@ ICaskDCAManager
 
     function _performSwap(
         ICaskDCA.DCA memory dca,
+        ICaskDCA.SwapInfo memory swapInfo,
         uint256 _inputAmount,
         uint256 _minOutput
     ) internal returns(uint256) {
-        if (dca.swapProtocol == ICaskDCA.SwapProtocol.UNIV2) {
+        if (swapInfo.swapProtocol == ICaskDCA.SwapProtocol.UNIV2) {
             return _performSwapUniV2(dca, _inputAmount, _minOutput);
-        } else if (dca.swapProtocol == ICaskDCA.SwapProtocol.UNIV3) {
-            return _performSwapUniV3(dca, _inputAmount, _minOutput);
-        } else if (dca.swapProtocol == ICaskDCA.SwapProtocol.GMX) {
+        } else if (swapInfo.swapProtocol == ICaskDCA.SwapProtocol.UNIV3) {
+            return _performSwapUniV3(dca, swapInfo, _inputAmount, _minOutput);
+        } else if (swapInfo.swapProtocol == ICaskDCA.SwapProtocol.GMX) {
             return _performSwapGMX(dca, _inputAmount, _minOutput);
         }
         revert("!INVALID(swapProtocol)");
@@ -275,14 +279,15 @@ ICaskDCAManager
 
     function _amountOut(
         ICaskDCA.DCA memory dca,
+        ICaskDCA.SwapInfo memory swapInfo,
         uint256 _inputAmount
     ) internal view returns(uint256) {
-        if (dca.swapProtocol == ICaskDCA.SwapProtocol.UNIV2) {
+        if (swapInfo.swapProtocol == ICaskDCA.SwapProtocol.UNIV2) {
             return _amountOutUniV2(dca, _inputAmount);
-        } else if (dca.swapProtocol == ICaskDCA.SwapProtocol.UNIV3) {
+        } else if (swapInfo.swapProtocol == ICaskDCA.SwapProtocol.UNIV3) {
             require(dca.priceFeed != address(0), "!INVALID(priceFeed)"); // univ3 requires external oracle
             return type(uint256).max; // no direct pool slippage check for uni-v3
-        } else if (dca.swapProtocol == ICaskDCA.SwapProtocol.GMX) {
+        } else if (swapInfo.swapProtocol == ICaskDCA.SwapProtocol.GMX) {
             require(dca.priceFeed != address(0), "!INVALID(priceFeed)"); // gmx requires external oracle
             return type(uint256).max; // slippage-less trading on gmx!
         }
@@ -324,6 +329,7 @@ ICaskDCAManager
 
     function _performSwapUniV3(
         ICaskDCA.DCA memory dca,
+        ICaskDCA.SwapInfo memory swapInfo,
         uint256 _inputAmount,
         uint256 _minOutput
     ) internal returns(uint256) {
@@ -335,7 +341,7 @@ ICaskDCAManager
 
         ISwapRouter.ExactInputParams memory params =
             ISwapRouter.ExactInputParams({
-                path: dca.swapData,
+                path: swapInfo.swapData,
                 recipient: dca.to,
                 deadline: block.timestamp + 60,
                 amountIn: _inputAmount,
@@ -371,6 +377,7 @@ ICaskDCAManager
 
     function _checkMinMaxPrice(
         ICaskDCA.DCA memory dca,
+        ICaskDCA.SwapInfo memory swapInfo,
         ICaskVault.Asset memory inputAssetInfo,
         address _outputAsset
     ) internal view returns(bool) {
@@ -394,7 +401,7 @@ ICaskDCAManager
             pricePerOutputUnit =
                     outputAssetOneUnit *
                     outputAssetOneUnit /
-                    _amountOut(dca, uint256(10 ** inputAssetInfo.assetDecimals));
+                    _amountOut(dca, swapInfo, uint256(10 ** inputAssetInfo.assetDecimals));
         }
 
         if (dca.minPrice > 0 && pricePerOutputUnit < dca.minPrice) {

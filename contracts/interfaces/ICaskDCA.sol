@@ -52,6 +52,9 @@ interface ICaskDCA {
         uint32 processAt;
         DCAStatus status;
         address[] path;
+    }
+
+    struct SwapInfo {
         SwapProtocol swapProtocol;
         bytes swapData;
     }
@@ -66,6 +69,8 @@ interface ICaskDCA {
     ) external returns(bytes32);
 
     function getDCA(bytes32 _dcaId) external view returns (DCA memory);
+
+    function getSwapInfo(bytes32 _dcaId) external view returns (SwapInfo memory);
 
     function getUserDCA(address _user, uint256 _idx) external view returns (bytes32);
 

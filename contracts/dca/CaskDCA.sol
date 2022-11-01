@@ -42,6 +42,8 @@ BaseRelayRecipient
     /** @dev minimum slippage allowed for a DCA. */
     uint256 public minSlippage;
 
+    /** @dev swap type and optional swap data for a DCA. */
+    mapping(bytes32 => SwapInfo) private swapInfoMap; // dcaId => DCASwapInfo
 
     function initialize(
         bytes32 _assetsMerkleRoot
@@ -113,8 +115,10 @@ BaseRelayRecipient
         dca.createdAt = uint32(block.timestamp);
         dca.processAt = uint32(block.timestamp);
         dca.status = DCAStatus.Active;
-        dca.swapProtocol = _swapProtocol;
-        dca.swapData = _swapData;
+
+        SwapInfo storage swapData = swapInfoMap[dcaId];
+        swapData.swapProtocol = _swapProtocol;
+        swapData.swapData = _swapData;
 
         userDCAs[_msgSender()].push(dcaId);
 
@@ -184,6 +188,12 @@ BaseRelayRecipient
         bytes32 _dcaId
     ) external override view returns (DCA memory) {
         return dcaMap[_dcaId];
+    }
+
+    function getSwapInfo(
+        bytes32 _dcaId
+    ) external override view returns (SwapInfo memory) {
+        return swapInfoMap[_dcaId];
     }
 
     function getUserDCA(
