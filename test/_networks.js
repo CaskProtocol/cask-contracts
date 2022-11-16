@@ -9,6 +9,11 @@ const isMainnet = hre.network.name.startsWith('mainnet_');
 const isTestnet = hre.network.name.startsWith('testnet_');
 const isInternal = hre.network.name.startsWith('internal_');
 
+const supportChainlinkAutomation =
+    hre.network.name === 'mainnet_arbitrum' ||
+    hre.network.name === 'mainnet_avalanche' ||
+    hre.network.name === 'mainnet_polygon';
+
 const isTest = process.env.IS_TEST === "true";
 
 const isDevnet = isLocalhost || isMemnet;
@@ -30,4 +35,5 @@ module.exports = {
     isRealChain,
     isDaoChain,
     isProtocolChain,
+    supportChainlinkAutomation,
 };

@@ -102,4 +102,9 @@ interface ICaskDCA {
     event DCACanceled(bytes32 indexed dcaId, address indexed user);
 
     event DCACompleted(bytes32 indexed dcaId, address indexed user);
+
+    event AssetAdminChange(address indexed newAdmin);
+
+    event AssetsMerkleRootChanged(bytes32 prevRoot, bytes32 newRoot);
+
 }

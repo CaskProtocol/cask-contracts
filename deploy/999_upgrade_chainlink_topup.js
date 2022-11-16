@@ -1,5 +1,6 @@
 const {
     isProtocolChain,
+    supportChainlinkAutomation,
     isDevnet,
 } = require("../test/_networks");
 
@@ -32,6 +33,6 @@ const main = async (hre) => {
 main.id = "999_upgrade_chainlink_topup";
 main.tags = ["upgrade_chainlink_topup"];
 main.dependencies = ["chainlink_topup"];
-main.skip = () => !isProtocolChain || isDevnet;
+main.skip = () => !isProtocolChain || !supportChainlinkAutomation || isDevnet;
 
 module.exports = main;

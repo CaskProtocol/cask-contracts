@@ -6,6 +6,7 @@ const {
 
 const {
     isProtocolChain,
+    supportChainlinkAutomation,
     isMemnet,
     isDevnet,
     isTestnet,
@@ -124,6 +125,6 @@ const main = async (hre) => {
 main.id = "012_chainlink_topup";
 main.tags = ["chainlink_topup"];
 main.dependencies = ["vault","chainlink_topup_mocks"];
-main.skip = () => !isProtocolChain;
+main.skip = () => !isProtocolChain || !supportChainlinkAutomation;
 
 module.exports = main;

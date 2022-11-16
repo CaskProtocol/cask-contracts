@@ -45,6 +45,18 @@ BaseRelayRecipient
     /** @dev swap type and optional swap data for a DCA. */
     mapping(bytes32 => SwapInfo) private swapInfoMap; // dcaId => DCASwapInfo
 
+    /** @dev previous merkle root of approved assets. */
+    bytes32 public prevAssetsMerkleRoot;
+
+    /** @dev address allowed to update asset merkle root. */
+    address assetsAdmin;
+
+
+    modifier onlyAssetsAdmin() {
+        require(_msgSender() == address(assetsAdmin), "!AUTH");
+        _;
+    }
+
     function initialize(
         bytes32 _assetsMerkleRoot
     ) public initializer {
@@ -52,9 +64,11 @@ BaseRelayRecipient
         __Pausable_init();
 
         assetsMerkleRoot = _assetsMerkleRoot;
+        prevAssetsMerkleRoot = assetsMerkleRoot;
         minAmount = 1;
         minPeriod = 86400;
         minSlippage = 10;
+        assetsAdmin = _msgSender();
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -179,8 +193,11 @@ BaseRelayRecipient
         address[] calldata _assetSpec,
         bytes32[] calldata _merkleProof
     ) internal view returns(bool) {
-        return MerkleProof.verify(_merkleProof, assetsMerkleRoot,
-            keccak256(abi.encode(_swapProtocol, _swapData, _assetSpec[0], _assetSpec[1], _assetSpec[2:])));
+        bytes32 assetSpecHash =
+            keccak256(abi.encode(_swapProtocol, _swapData, _assetSpec[0], _assetSpec[1], _assetSpec[2:]));
+
+        return MerkleProof.verify(_merkleProof, assetsMerkleRoot, assetSpecHash) ||
+            MerkleProof.verify(_merkleProof, prevAssetsMerkleRoot, assetSpecHash);
     }
 
 
@@ -290,10 +307,19 @@ BaseRelayRecipient
         _setTrustedForwarder(_forwarder);
     }
 
+    function setAssetsAdmin(
+        address _assetsAdmin
+    ) external onlyOwner {
+        assetsAdmin = _assetsAdmin;
+        emit AssetAdminChange(assetsAdmin);
+    }
+
     function setAssetsMerkleRoot(
         bytes32 _assetsMerkleRoot
-    ) external onlyOwner {
+    ) external onlyAssetsAdmin {
+        prevAssetsMerkleRoot = assetsMerkleRoot;
         assetsMerkleRoot = _assetsMerkleRoot;
+        emit AssetsMerkleRootChanged(prevAssetsMerkleRoot, assetsMerkleRoot);
     }
 
     function setMinAmount(

@@ -87,6 +87,9 @@ const transferOwnerships = async ({ethers, getNamedAccounts}) => {
     const dcaManager = await ethers.getContract("CaskDCAManager");
 
     await withConfirmation(
+        dca.setAssetsAdmin(governorAddr)
+    );
+    await withConfirmation(
         dca.transferOwnership(governorAddr)
     );
     await withConfirmation(

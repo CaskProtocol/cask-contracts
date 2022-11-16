@@ -31,6 +31,7 @@ addresses.mainnet_polygon.LINK_USD = "0xd9FFdb71EbE7496cC440152d43986Aae0AB76665
 addresses.mainnet_polygon.link_swap_router = "0xa5e0829caced8ffdd4de3c43696c57f7d7a678ff";
 addresses.mainnet_polygon.link_swap_path = [
     "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+    "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619",
     "0x53e0bca35ec356bd5dddfebbd1fc0fd03fabad39"
 ];
 addresses.mainnet_polygon.link_peg_swap = "0xAA1DC356dc4B18f30C347798FD5379F3D77ABC5b";
@@ -98,6 +99,18 @@ addresses.mainnet_bsc.USDC_USD = "0x51597f405303C4377E36123cBc172b13269EA163";
 addresses.mainnet_arbitrum = {};
 addresses.mainnet_arbitrum.USDC = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
 addresses.mainnet_arbitrum.USDC_USD = "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3";
+
+addresses.mainnet_arbitrum.ERC20LINK = "0x0000000000000000000000000000000000000000";
+addresses.mainnet_arbitrum.ERC677LINK = "0xf97f4df75117a78c1a5a0dbb814af92458539fb4";
+addresses.mainnet_arbitrum.LINK_USD = "0x86E53CF1B870786351Da77A57575e79CB55812CB";
+addresses.mainnet_arbitrum.link_swap_router = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
+addresses.mainnet_arbitrum.link_swap_path = [
+    "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+    "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+    "0xf97f4df75117a78c1a5a0dbb814af92458539fb4"
+];
+addresses.mainnet_arbitrum.link_peg_swap = "0x0000000000000000000000000000000000000000";
+
 
 /* optimism addresses */
 addresses.mainnet_optimism = {};
