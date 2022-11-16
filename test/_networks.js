@@ -10,6 +10,7 @@ const isTestnet = hre.network.name.startsWith('testnet_');
 const isInternal = hre.network.name.startsWith('internal_');
 
 const supportChainlinkAutomation =
+    isLocalhost || isMemnet || isTestnet || isInternal ||
     hre.network.name === 'mainnet_arbitrum' ||
     hre.network.name === 'mainnet_avalanche' ||
     hre.network.name === 'mainnet_polygon';
