@@ -49,7 +49,7 @@ BaseRelayRecipient
     bytes32 public prevAssetsMerkleRoot;
 
     /** @dev address allowed to update asset merkle root. */
-    address assetsAdmin;
+    address public assetsAdmin;
 
 
     modifier onlyAssetsAdmin() {
