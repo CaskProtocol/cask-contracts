@@ -74,7 +74,9 @@ async function cltuPegSwapFixture() {
             networkAddresses.USDC,
             chainlinkAddresses.ERC20LINK
         ],
-        chainlinkAddresses.link_peg_swap
+        chainlinkAddresses.link_peg_swap,
+        0,
+        '0x'
     );
 
     return fixture;

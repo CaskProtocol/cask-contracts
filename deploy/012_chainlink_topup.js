@@ -49,16 +49,23 @@ const deployChainlinkTopup = async ({ethers, getNamedAccounts}) => {
         ktuManager.initialize(
             ktu.address,
             vault.address,
+            governorAddr
+        )
+    );
+    log("Initialized CaskChainlinkTopupManager");
+    await withConfirmation(
+        ktuManager.setChainklinkAddresses(
             chainlinkAddresses.ERC20LINK,
             chainlinkAddresses.ERC677LINK,
             chainlinkAddresses.LINK_USD,
             chainlinkAddresses.link_swap_router,
             chainlinkAddresses.link_swap_path,
             chainlinkAddresses.link_peg_swap,
-            governorAddr
+            0,
+            '0x'
         )
     );
-    log("Initialized CaskChainlinkTopupManager");
+    log("Chainlink configuration set in CaskChainlinkTopupManager");
 
     if (isMemnet) {
         await withConfirmation(

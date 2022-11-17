@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.0;
 
-import "../chainlink_topup/AutomationRegistryBaseInterface.sol";
-import "../chainlink_topup/LinkTokenInterface.sol";
+import "../interfaces/AutomationRegistryBaseInterface.sol";
+import "../interfaces/LinkTokenInterface.sol";
 import "../erc677/IERC677Receiver.sol";
 
 contract MockAutomationRegistry is AutomationRegistryBaseInterface, IERC677Receiver {

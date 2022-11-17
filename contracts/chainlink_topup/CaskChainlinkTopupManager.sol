@@ -7,15 +7,17 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "../interfaces/IGMXRouter.sol";
+import "../interfaces/AutomationRegistryBaseInterface.sol";
+import "../interfaces/VRFCoordinatorV2Interface.sol";
+import "../interfaces/LinkTokenInterface.sol";
+import "../interfaces/IPegSwap.sol";
 
 import "../interfaces/ICaskVault.sol";
 import "../job_queue/CaskJobQueue.sol";
 import "./ICaskChainlinkTopupManager.sol";
 import "./ICaskChainlinkTopup.sol";
-import "./AutomationRegistryBaseInterface.sol";
-import "./VRFCoordinatorV2Interface.sol";
-import "./LinkTokenInterface.sol";
-import "./IPegSwap.sol";
 
 
 contract CaskChainlinkTopupManager is
@@ -42,8 +44,10 @@ ICaskChainlinkTopupManager
     LinkTokenInterface public linkFundingToken;
     AggregatorV3Interface public linkPriceFeed;
     address[] public linkSwapPath;
-    IUniswapV2Router02 public linkSwapRouter;
+    address public linkSwapRouter;
     IPegSwap public pegswap;
+    SwapProtocol public linkSwapProtocol;
+    bytes public linkSwapData;
 
 
     /************************** PARAMETERS **************************/
@@ -71,23 +75,10 @@ ICaskChainlinkTopupManager
     function initialize(
         address _caskChainlinkTopup,
         address _caskVault,
-        address _linkBridgeToken,
-        address _linkFundingToken,
-        address _linkPriceFeed,
-        address _linkSwapRouter,
-        address[] calldata _linkSwapPath,
-        address _pegswap,
         address _feeDistributor
     ) public initializer {
         caskChainlinkTopup = ICaskChainlinkTopup(_caskChainlinkTopup);
         caskVault = ICaskVault(_caskVault);
-
-        linkBridgeToken = IERC20Metadata(_linkBridgeToken);
-        linkFundingToken = LinkTokenInterface(_linkFundingToken);
-        linkPriceFeed = AggregatorV3Interface(_linkPriceFeed);
-        linkSwapRouter = IUniswapV2Router02(_linkSwapRouter);
-        linkSwapPath = _linkSwapPath;
-        pegswap = IPegSwap(_pegswap);
         feeDistributor = _feeDistributor;
 
         maxSkips = 0;
@@ -207,10 +198,12 @@ ICaskChainlinkTopupManager
         bytes32 _chainlinkTopupId,
         uint256 _protocolFee
     ) internal returns(uint256) {
+        require(linkSwapRouter != address(0), "!NOT_CONFIGURED");
+
         ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
             caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
-        uint256 beforeBalance = IERC20Metadata(address(caskVault.getBaseAsset())).balanceOf(address(this));
+        uint256 beforeBalance = IERC20Metadata(linkSwapPath[0]).balanceOf(address(this));
 
         // perform a 'payment' to this contract, fee is taken out manually after a successful swap
         try caskVault.protocolPayment(chainlinkTopup.user, address(this), chainlinkTopup.topupAmount, 0) {
@@ -229,21 +222,18 @@ ICaskChainlinkTopupManager
         if (withdrawShares > caskVault.balanceOf(address(this))) {
             withdrawShares = caskVault.balanceOf(address(this));
         }
-        caskVault.withdraw(caskVault.getBaseAsset(), withdrawShares);
+        caskVault.withdraw(linkSwapPath[0], withdrawShares);
 
         // calculate actual amount of baseAsset that was received from payment/withdraw
-        uint256 amountIn = IERC20Metadata(caskVault.getBaseAsset()).balanceOf(address(this)) - beforeBalance;
+        uint256 amountIn = IERC20Metadata(linkSwapPath[0]).balanceOf(address(this)) - beforeBalance;
         require(amountIn > 0, "!INVALID(amountIn)");
-
-        // let swap router spend the amount of newly acquired baseAsset
-        IERC20Metadata(caskVault.getBaseAsset()).safeIncreaseAllowance(address(linkSwapRouter), amountIn);
 
         uint256 amountOutMin = 0;
 
         // if there is a pricefeed calc max slippage
         if (address(linkPriceFeed) != address(0)) {
             amountOutMin = _convertPrice(
-                caskVault.getAsset(caskVault.getBaseAsset()),
+                caskVault.getAsset(linkSwapPath[0]),
                 linkSwapPath[linkSwapPath.length - 1],
                 address(linkPriceFeed),
                 amountIn);
@@ -252,14 +242,13 @@ ICaskChainlinkTopupManager
 
         uint256 amountFundingTokenBefore = linkFundingToken.balanceOf(address(this));
 
-        // perform swap
-        linkSwapRouter.swapExactTokensForTokens(
-            amountIn,
-            amountOutMin,
-            linkSwapPath,
-            address(this),
-            block.timestamp + 1 hours
-        );
+        if (linkSwapProtocol == SwapProtocol.UNIV2) {
+            _performSwapUniV2(amountIn, amountOutMin);
+        } else if (linkSwapProtocol == SwapProtocol.UNIV3) {
+            _performSwapUniV3(amountIn, amountOutMin);
+        } else if (linkSwapProtocol == SwapProtocol.GMX) {
+            _performSwapGMX(amountIn, amountOutMin);
+        }
 
         // any non-withdrawn shares are the fee portion - send to fee distributor
         caskVault.transfer(feeDistributor, caskVault.balanceOf(address(this)));
@@ -276,6 +265,44 @@ ICaskChainlinkTopupManager
         _doTopup(_chainlinkTopupId, amountFundingTokenOut);
 
         return amountFundingTokenOut;
+    }
+
+    function _performSwapUniV2(
+        uint256 _inputAmount,
+        uint256 _minOutput
+    ) internal {
+        IERC20Metadata(linkSwapPath[0]).safeIncreaseAllowance(linkSwapRouter, _inputAmount);
+        IUniswapV2Router02(linkSwapRouter).swapExactTokensForTokens(
+            _inputAmount,
+            _minOutput,
+            linkSwapPath,
+            address(this),
+            block.timestamp + 1 hours
+        );
+    }
+
+    function _performSwapUniV3(
+        uint256 _inputAmount,
+        uint256 _minOutput
+    ) internal {
+        IERC20Metadata(linkSwapPath[0]).safeIncreaseAllowance(linkSwapRouter, _inputAmount);
+        ISwapRouter.ExactInputParams memory params =
+            ISwapRouter.ExactInputParams({
+                path: linkSwapData,
+                recipient: address(this),
+                deadline: block.timestamp + 60,
+                amountIn: _inputAmount,
+                amountOutMinimum: _minOutput
+            });
+        ISwapRouter(linkSwapRouter).exactInput(params);
+    }
+
+    function _performSwapGMX(
+        uint256 _inputAmount,
+        uint256 _minOutput
+    ) internal {
+        IERC20Metadata(linkSwapPath[0]).safeIncreaseAllowance(linkSwapRouter, _inputAmount);
+        IGMXRouter(linkSwapRouter).swap(linkSwapPath, _inputAmount, _minOutput, address(this));
     }
 
     function _topupBalance(
@@ -435,6 +462,7 @@ ICaskChainlinkTopupManager
         maxSwapSlippageBps = _maxSwapSlippageBps;
         queueBucketSize = _queueBucketSize;
         maxQueueAge = _maxQueueAge;
+        emit SetParameters();
     }
 
     function setChainklinkAddresses(
@@ -443,14 +471,19 @@ ICaskChainlinkTopupManager
         address _linkPriceFeed,
         address _linkSwapRouter,
         address[] calldata _linkSwapPath,
-        address _pegswap
+        address _pegswap,
+        SwapProtocol _linkSwapProtocol,
+        bytes calldata _linkSwapData
     ) external onlyOwner {
         linkBridgeToken = IERC20Metadata(_linkBridgeToken);
         linkFundingToken = LinkTokenInterface(_linkFundingToken);
         linkPriceFeed = AggregatorV3Interface(_linkPriceFeed);
-        linkSwapRouter = IUniswapV2Router02(_linkSwapRouter);
+        linkSwapRouter = _linkSwapRouter;
         linkSwapPath = _linkSwapPath;
         pegswap = IPegSwap(_pegswap);
+        linkSwapProtocol = _linkSwapProtocol;
+        linkSwapData = _linkSwapData;
+        emit SetChainlinkAddresses();
     }
 
     function setFeeDistributor(
