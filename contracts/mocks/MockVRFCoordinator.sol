@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity ^0.8.0;
 
-import "../chainlink_topup/VRFCoordinatorV2Interface.sol";
+import "../interfaces/VRFCoordinatorV2Interface.sol";
 import "../erc677/IERC677Receiver.sol";
 
 contract MockVRFCoordinator is VRFCoordinatorV2Interface, IERC677Receiver {
