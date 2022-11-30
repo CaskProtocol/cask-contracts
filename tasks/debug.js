@@ -133,9 +133,16 @@ async function _debug_vault(taskArguments, hre) {
 
 async function _debug_subscriptions(taskArguments, hre) {
 
+    let subscriptions;
+    try {
+        subscriptions = await hre.ethers.getContract("CaskSubscriptions");
+    } catch(e) {
+        console.log(`CaskSubscriptions failed to load - skipping CaskSubscriptions`);
+        return;
+    }
     const vault = await hre.ethers.getContract("CaskVault");
     const subscriptionPlans = await hre.ethers.getContract("CaskSubscriptionPlans");
-    const subscriptions = await hre.ethers.getContract("CaskSubscriptions");
+
     const subscriptionManager = await hre.ethers.getContract("CaskSubscriptionManager");
     const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
     const baseAsset = await vault.getBaseAsset();
@@ -212,8 +219,14 @@ async function _debug_subscriptions(taskArguments, hre) {
 
 async function _debug_dca(taskArguments, hre) {
 
+    let dca;
+    try {
+        dca = await hre.ethers.getContract("CaskDCA");
+    } catch(e) {
+        console.log(`CaskDCA failed to load - skipping CaskDCA`);
+        return;
+    }
     const vault = await hre.ethers.getContract("CaskVault");
-    const dca = await hre.ethers.getContract("CaskDCA");
     const dcaManager = await hre.ethers.getContract("CaskDCAManager");
     const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
     const baseAsset = await vault.getBaseAsset();
@@ -287,8 +300,14 @@ async function _debug_dca(taskArguments, hre) {
 
 async function _debug_p2p(taskArguments, hre) {
 
+    let p2p;
+    try {
+        p2p = await hre.ethers.getContract("CaskP2P");
+    } catch(e) {
+        console.log(`CaskP2P failed to load - skipping CaskP2P`);
+        return;
+    }
     const vault = await hre.ethers.getContract("CaskVault");
-    const p2p = await hre.ethers.getContract("CaskP2P");
     const p2pManager = await hre.ethers.getContract("CaskP2PManager");
     const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
     const baseAsset = await vault.getBaseAsset();
@@ -352,8 +371,14 @@ async function _debug_p2p(taskArguments, hre) {
 
 async function _debug_chainlinkTopup(taskArguments, hre) {
 
+    let cltu;
+    try {
+        cltu = await hre.ethers.getContract("CaskChainlinkTopup");
+    } catch(e) {
+        console.log(`CaskChainlinkTopup failed to load - skipping CaskChainlinkTopup`);
+        return;
+    }
     const vault = await hre.ethers.getContract("CaskVault");
-    const cltu = await hre.ethers.getContract("CaskChainlinkTopup");
     const cltuManager = await hre.ethers.getContract("CaskChainlinkTopupManager");
     const defaultProxyAdmin = await hre.ethers.getContract("DefaultProxyAdmin");
     const linkBridgeToken = await cltuManager.linkBridgeToken();

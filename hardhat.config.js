@@ -55,6 +55,9 @@ const ARBITRUM_STRATEGIST = "0xdd5873a087e0c15EE0F017FEf3335eb1E59f9fA0";
 const OPTIMISM_GOVERNOR = "0x145bEA5B40c181Ed8BaE1064c4eCE394aCCD5589";
 const OPTIMISM_STRATEGIST = "0x145bEA5B40c181Ed8BaE1064c4eCE394aCCD5589";
 
+const BSC_GOVERNOR = "0xCeaB160B6E33a7d546eBF8737C952fFB27FfD0D1";
+const BSC_STRATEGIST = "0xCeaB160B6E33a7d546eBF8737C952fFB27FfD0D1";
+
 // testnet networks - common across all testnets
 const TESTNET_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
 const TESTNET_GOVERNOR = "0x4486EDD9E810062675163ffe32ed70fD52191541";
@@ -218,6 +221,14 @@ module.exports = {
       timeout: 300000,
       gasPrice: parseInt(process.env.OPTIMISM_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
+    mainnet_bsc: {
+      url: `${process.env.BSC_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.BSC_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+      gasPrice: parseInt(process.env.BSC_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+    },
     testnet_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
@@ -326,6 +337,7 @@ module.exports = {
       mainnet_gnosis: DEPLOYER,
       mainnet_arbitrum: DEPLOYER,
       mainnet_optimism: DEPLOYER,
+      mainnet_bsc: DEPLOYER,
 
       default: 0,
       localhost: 0,
@@ -351,6 +363,7 @@ module.exports = {
       mainnet_gnosis: GNOSIS_GOVERNOR,
       mainnet_arbitrum: ARBITRUM_GOVERNOR,
       mainnet_optimism: OPTIMISM_GOVERNOR,
+      mainnet_bsc: BSC_GOVERNOR,
 
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
@@ -376,6 +389,7 @@ module.exports = {
       mainnet_gnosis: GNOSIS_STRATEGIST,
       mainnet_arbitrum: ARBITRUM_STRATEGIST,
       mainnet_optimism: OPTIMISM_STRATEGIST,
+      mainnet_bsc: BSC_STRATEGIST,
 
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
@@ -434,6 +448,7 @@ module.exports = {
       mainnet_gnosis: KEEPER,
       mainnet_arbitrum: KEEPER,
       mainnet_optimism: KEEPER,
+      mainnet_bsc: KEEPER,
 
       default: 11,
       localhost: process.env.FORK === "true" ? KEEPER : 11,
@@ -465,6 +480,7 @@ module.exports = {
       gnosis: process.env.GNOSISSCAN_API_KEY,
       arbitrumOne: process.env.ARBSCAN_API_KEY,
       optimisticEthereum: process.env.OPTIMISTIC_ETHERSCAN_API_KEY,
+      bsc: process.env.BSCSCAN_API_KEY,
     },
     customChains: [
       {
