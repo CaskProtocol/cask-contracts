@@ -16,7 +16,7 @@ const { debug } = require("./tasks/debug");
 const { fund } = require("./tasks/fund");
 const { fixtures } = require("./tasks/fixtures");
 const { keeper } = require("./tasks/keeper");
-const { dcaMerkleRoot, dcaLiquidity, dcaPublishManifests } = require("./tasks/dca");
+const { dcaLiquidity, dcaUpdateMerkleRoot } = require("./tasks/dca");
 
 
 // production
@@ -24,6 +24,7 @@ const DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
 const KEEPER = "0xa942e8a09dF292Ef66F3d02755E5B5AB04b90709";
 const DCA_KEEPER = "0x4a83a3Cc100cE3F36d498dE2922cbd0e5200d493";
 const P2P_KEEPER = "0x810146EC490051817ae4399F383B9052569B6Ad7"
+const DCA_ASSET_ADMIN = "0x111d587aeE1c58200De9e4B5b69e9d870b30C6Cb";
 
 // production networks - each chain has their own governor/strategist (multisigs)
 const ETHEREUM_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
@@ -116,6 +117,9 @@ task("keeper", "Run a keeper")
     .setAction(keeper);
 
 task("dca:liquidity", "Add liquidity to the mock uniswap router for DCA swaps", dcaLiquidity);
+task("dca:updateMerkleroot", "Set the DCA asset merkleroot")
+    .addParam("merkleroot","New asset merkleroot")
+    .setAction(dcaUpdateMerkleRoot);
 
 
 module.exports = {
@@ -463,6 +467,22 @@ module.exports = {
       testnet_aurora: TESTNET_KEEPER,
       testnet_ogoerli: TESTNET_KEEPER,
       testnet_agoerli: TESTNET_KEEPER,
+    },
+    dcaAssetAdminAddr: {
+      mainnet_polygon: DCA_ASSET_ADMIN,
+      mainnet_avalanche: DCA_ASSET_ADMIN,
+      mainnet_fantom: DCA_ASSET_ADMIN,
+      mainnet_celo: DCA_ASSET_ADMIN,
+      mainnet_aurora: DCA_ASSET_ADMIN,
+      mainnet_moonbeam: DCA_ASSET_ADMIN,
+      mainnet_gnosis: DCA_ASSET_ADMIN,
+      mainnet_arbitrum: DCA_ASSET_ADMIN,
+      mainnet_optimism: DCA_ASSET_ADMIN,
+      mainnet_bsc: DCA_ASSET_ADMIN,
+
+      default: 12,
+      localhost: process.env.FORK === "true" ? DCA_ASSET_ADMIN : 12,
+      hardhat: process.env.FORK === "true" ? DCA_ASSET_ADMIN : 12,
     },
   },
   etherscan: {
