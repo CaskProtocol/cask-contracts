@@ -363,6 +363,8 @@ async function _debug_chainlinkTopup(taskArguments, hre) {
     const linkSwapPathOut = await cltuManager.linkSwapPath(1);
     const linkSwapRouter = await cltuManager.linkSwapRouter();
     const pegswap = await cltuManager.pegswap();
+    const linkSwapProtocol = await cltuManager.linkSwapProtocol();
+    const linkSwapData = await cltuManager.linkSwapData();
 
     const baseAsset = await vault.getBaseAsset();
     const baseAssetInfo = await vault.getAsset(baseAsset);
@@ -396,6 +398,8 @@ async function _debug_chainlinkTopup(taskArguments, hre) {
     console.log(`linkSwapPath:                                          ${linkSwapPathIn} -> ${linkSwapPathOut}`);
     console.log(`linkSwapRouter:                                        ${linkSwapRouter}`);
     console.log(`pegswap:                                               ${pegswap}`);
+    console.log(`linkSwapProtocol:                                      ${linkSwapProtocol}`);
+    console.log(`linkSwapData:                                          ${linkSwapData}`);
 
     //
     // ChainlinkTopup Config

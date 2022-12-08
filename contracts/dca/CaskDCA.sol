@@ -103,7 +103,7 @@ BaseRelayRecipient
         bytes calldata _swapData,
         address _to,
         uint256[] calldata _priceSpec // period, amount, totalAmount, maxSlippageBps, minPrice, maxPrice
-    ) external override returns(bytes32) {
+    ) external override whenNotPaused returns(bytes32) {
         require(_assetSpec.length >= 4, "!INVALID(assetSpec)");
         require(_priceSpec.length == 6, "!INVALID(priceSpec)");
         require(_priceSpec[0] >= minPeriod, "!INVALID(period)");
@@ -149,7 +149,7 @@ BaseRelayRecipient
 
     function pauseDCA(
         bytes32 _dcaId
-    ) external override onlyUser(_dcaId) {
+    ) external override onlyUser(_dcaId) whenNotPaused {
         DCA storage dca = dcaMap[_dcaId];
         require(dca.status == DCAStatus.Active, "!NOT_ACTIVE");
 
@@ -160,7 +160,7 @@ BaseRelayRecipient
 
     function resumeDCA(
         bytes32 _dcaId
-    ) external override onlyUser(_dcaId) {
+    ) external override onlyUser(_dcaId) whenNotPaused {
         DCA storage dca = dcaMap[_dcaId];
         require(dca.status == DCAStatus.Paused, "!NOT_PAUSED");
 
@@ -177,7 +177,7 @@ BaseRelayRecipient
 
     function cancelDCA(
         bytes32 _dcaId
-    ) external override onlyUser(_dcaId) {
+    ) external override onlyUser(_dcaId) whenNotPaused {
         DCA storage dca = dcaMap[_dcaId];
         require(dca.status == DCAStatus.Active ||
                 dca.status == DCAStatus.Paused, "!INVALID(status)");

@@ -72,7 +72,7 @@ BaseRelayRecipient
         uint256 _amount,
         uint256 _totalAmount,
         uint32 _period
-    ) external override returns(bytes32) {
+    ) external override whenNotPaused returns(bytes32) {
         require(_amount >= minAmount, "!INVALID(amount)");
         require(_period >= minPeriod, "!INVALID(period)");
 
@@ -104,7 +104,7 @@ BaseRelayRecipient
 
     function pauseP2P(
         bytes32 _p2pId
-    ) external override onlyUser(_p2pId) {
+    ) external override onlyUser(_p2pId) whenNotPaused {
         P2P storage p2p = p2pMap[_p2pId];
         require(p2p.status == P2PStatus.Active, "!NOT_ACTIVE");
 
@@ -115,7 +115,7 @@ BaseRelayRecipient
 
     function resumeP2P(
         bytes32 _p2pId
-    ) external override onlyUser(_p2pId) {
+    ) external override onlyUser(_p2pId) whenNotPaused {
         P2P storage p2p = p2pMap[_p2pId];
         require(p2p.status == P2PStatus.Paused, "!NOT_PAUSED");
 
@@ -132,7 +132,7 @@ BaseRelayRecipient
 
     function cancelP2P(
         bytes32 _p2pId
-    ) external override onlyUser(_p2pId) {
+    ) external override onlyUser(_p2pId) whenNotPaused {
         P2P storage p2p = p2pMap[_p2pId];
         require(p2p.status == P2PStatus.Active ||
             p2p.status == P2PStatus.Paused, "!INVALID(status)");

@@ -33,7 +33,7 @@ ICaskDCAManager
     ICaskVault public caskVault;
 
     /** @dev merkle root of allowed assets definitions. */
-    bytes32 public assetsMerkleRoot;
+    bytes32 public reserved1;
 
     /** @dev map of assetSpecs that are deemed unsafe and any active DCA to them will be canceled */
     mapping(bytes32 => bool) public blacklistedAssetspecs;
@@ -65,6 +65,9 @@ ICaskDCAManager
         address _caskVault,
         address _feeDistributor
     ) public initializer {
+        require(_caskDCA != address(0), "!INVALID(caskDCA)");
+        require(_caskVault != address(0), "!INVALID(caskVault)");
+        require(_feeDistributor != address(0), "!INVALID(feeDistributor)");
         caskDCA = ICaskDCA(_caskDCA);
         caskVault = ICaskVault(_caskVault);
         feeDistributor = _feeDistributor;
@@ -145,6 +148,9 @@ ICaskDCAManager
 
             try caskVault.protocolPayment(dca.user, address(this), dcaFeeMin) {
                 caskDCA.managerSkipped(_dcaId, ICaskDCA.SkipReason.OutsideLimits);
+                if (maxSkips > 0 && dca.numSkips >= maxSkips) {
+                    caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Pause);
+                }
             } catch (bytes memory) {
                 caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Cancel);
             }
@@ -490,6 +496,7 @@ ICaskDCAManager
     function setFeeDistributor(
         address _feeDistributor
     ) external onlyOwner {
+        require(_feeDistributor != address(0), "!INVALID(feeDistributor)");
         feeDistributor = _feeDistributor;
         emit SetFeeDistributor(_feeDistributor);
     }
