@@ -161,7 +161,7 @@ KeeperCompatibleInterface
 
             ICaskSubscriptions.PlanInfo memory planData = _parsePlanData(subscription.planData);
 
-            if (stakedBalance > 0) {
+            if (stakedBalance > 0 && planData.period > 0) {
                 uint256 loadFactor = 365 / (planData.period / 1 days);
                 uint256 noFeeTarget = subscriptions.getProviderSubscriptionCount(subscription.provider, false, 0) *
                 stakeTargetFactor * loadFactor;

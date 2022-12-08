@@ -78,7 +78,7 @@ BaseRelayRecipient
         uint256 _targetId,
         address _registry,
         TopupType _topupType
-    ) external override returns(bytes32) {
+    ) external override whenNotPaused returns(bytes32) {
         require(_topupAmount >= minTopupAmount, "!INVALID(topupAmount)");
         require(_topupType == TopupType.Automation ||
                 _topupType == TopupType.VRF ||
@@ -116,7 +116,7 @@ BaseRelayRecipient
 
     function pauseChainlinkTopup(
         bytes32 _chainlinkTopupId
-    ) external override onlyUser(_chainlinkTopupId) {
+    ) external override onlyUser(_chainlinkTopupId) whenNotPaused {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active, "!NOT_ACTIVE");
 
@@ -130,7 +130,7 @@ BaseRelayRecipient
 
     function resumeChainlinkTopup(
         bytes32 _chainlinkTopupId
-    ) external override onlyUser(_chainlinkTopupId) {
+    ) external override onlyUser(_chainlinkTopupId) whenNotPaused {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
         require(chainlinkTopup.status == ChainlinkTopupStatus.Paused, "!NOT_PAUSED");
 
@@ -147,7 +147,7 @@ BaseRelayRecipient
 
     function cancelChainlinkTopup(
         bytes32 _chainlinkTopupId
-    ) external override onlyUser(_chainlinkTopupId) {
+    ) external override onlyUser(_chainlinkTopupId) whenNotPaused {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active ||
                 chainlinkTopup.status == ChainlinkTopupStatus.Paused, "!INVALID(status)");

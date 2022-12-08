@@ -77,6 +77,9 @@ ICaskChainlinkTopupManager
         address _caskVault,
         address _feeDistributor
     ) public initializer {
+        require(_caskChainlinkTopup != address(0), "!INVALID(caskChainlinkTopup)");
+        require(_caskVault != address(0), "!INVALID(caskVault)");
+        require(_feeDistributor != address(0), "!INVALID(feeDistributor)");
         caskChainlinkTopup = ICaskChainlinkTopup(_caskChainlinkTopup);
         caskVault = ICaskVault(_caskVault);
         feeDistributor = _feeDistributor;
@@ -454,6 +457,8 @@ ICaskChainlinkTopupManager
         uint32 _queueBucketSize,
         uint32 _maxQueueAge
     ) external onlyOwner {
+        require(_topupFeeBps < 10000, "!INVALID(topupFeeBps)");
+
         maxSkips = _maxSkips;
         topupFeeBps = _topupFeeBps;
         topupFeeMin = _topupFeeMin;
@@ -489,6 +494,7 @@ ICaskChainlinkTopupManager
     function setFeeDistributor(
         address _feeDistributor
     ) external onlyOwner {
+        require(_feeDistributor != address(0), "!INVALID(feeDistributor)");
         feeDistributor = _feeDistributor;
         emit SetFeeDistributor(_feeDistributor);
     }
@@ -496,6 +502,7 @@ ICaskChainlinkTopupManager
     function allowRegistry(
         address _registry
     ) external onlyOwner {
+        require(_registry != address(0), "!INVALID(registry)");
         allowedRegistries[_registry] = true;
 
         emit RegistryAllowed(_registry);
@@ -504,6 +511,7 @@ ICaskChainlinkTopupManager
     function disallowRegistry(
         address _registry
     ) external onlyOwner {
+        require(allowedRegistries[_registry], "!REGISTRY_NOT_ALLOWED");
         allowedRegistries[_registry] = false;
 
         emit RegistryDisallowed(_registry);
