@@ -1,5 +1,4 @@
 const {
-    usdcUnits,
     hour,
 } = require("../utils/units");
 
@@ -31,6 +30,8 @@ const deploySubscriptions = async ({ethers, getNamedAccounts}) => {
     await deployProxyWithConfirmation('CaskSubscriptionManager');
 
     const vault = await ethers.getContract("CaskVault");
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
 
     const subscriptionPlans = await ethers.getContract("CaskSubscriptionPlans");
     await withConfirmation(
@@ -57,8 +58,8 @@ const deploySubscriptions = async ({ethers, getNamedAccounts}) => {
     if (isMemnet) {
         await withConfirmation(
             subscriptionManager.setParameters(
-                usdcUnits('0.50'), // paymentMinValue
-                usdcUnits('0.05'), // paymentFeeMin
+                ethers.utils.parseUnits('0.50', baseAssetInfo.assetDecimals), // paymentMinValue
+                ethers.utils.parseUnits('0.05', baseAssetInfo.assetDecimals), // paymentFeeMin
                 ethers.BigNumber.from('100'), // paymentFeeRateMin
                 ethers.BigNumber.from('100'), // paymentFeeRateMax
                 ethers.BigNumber.from('0'), // stakeTargetFactor

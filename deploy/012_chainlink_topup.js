@@ -1,5 +1,4 @@
 const {
-    usdcUnits,
     hour,
     day,
 } = require("../utils/units");
@@ -37,6 +36,8 @@ const deployChainlinkTopup = async ({ethers, getNamedAccounts}) => {
     await deployProxyWithConfirmation('CaskChainlinkTopupManager');
 
     const vault = await ethers.getContract("CaskVault");
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
 
     const ktu = await ethers.getContract("CaskChainlinkTopup");
     await withConfirmation(
@@ -72,7 +73,7 @@ const deployChainlinkTopup = async ({ethers, getNamedAccounts}) => {
             ktuManager.setParameters(
                 5, // maxSkips
                 60, // topupFeeBps (0.6%)
-                usdcUnits('0.1'), // topupFeeMin
+                ethers.utils.parseUnits('0.1', baseAssetInfo.assetDecimals), // topupFeeMin
                 86400+3600, // maxPriceFeedAge (1 day + 1 hour)
                 1, // maxTopupsPerRun
                 100, // maxSwapSlippageBps

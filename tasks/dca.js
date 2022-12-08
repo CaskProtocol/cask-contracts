@@ -31,6 +31,29 @@ async function dcaLiquidity(taskArguments, hre) {
     console.log(`Funded swap liquidity for USDC/ABC (${usdc.address}/${abc.address}) pair at router ${router.address}`);
 }
 
+
+async function dcaUpdateMerkleRoot(taskArguments, hre) {
+    const {
+        isMainnet,
+    } = require("../test/_networks");
+
+    const dca = await ethers.getContract("CaskDCA");
+
+    let dcaAssetAdmin;
+    if (isMainnet) {
+        dcaAssetAdmin = new ethers.Wallet(process.env['DCA_ASSET_ADMIN_PK'], hre.ethers.provider);
+    } else {
+        const {dcaAssetAdminAddr} = await hre.getNamedAccounts();
+        dcaAssetAdmin = await ethers.provider.getSigner(dcaAssetAdminAddr);
+    }
+
+    console.log(`Setting DCA assets merkleroot on ${hre.network.name} as dcaAssetAdmin ${dcaAssetAdmin.address} to ${taskArguments.merkleroot}`);
+
+    const resp = await dca.connect(dcaAssetAdmin).setAssetsMerkleRoot(taskArguments.merkleroot);
+    console.log(`Transaction: ${resp.hash}`);
+}
+
 module.exports = {
     dcaLiquidity,
+    dcaUpdateMerkleRoot,
 };

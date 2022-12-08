@@ -90,11 +90,6 @@ addresses.mainnet_gnosis = {};
 addresses.mainnet_gnosis.USDC = "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83";
 addresses.mainnet_gnosis.USDC_USD = "0x26C31ac71010aF62E6B486D1132E266D6298857D";
 
-/* bsc addresses */
-addresses.mainnet_bsc = {};
-addresses.mainnet_bsc.USDC = "0x672147dd47674757c457eb155baa382cc10705dd";
-addresses.mainnet_bsc.USDC_USD = "0x51597f405303C4377E36123cBc172b13269EA163";
-
 /* arbitrum addresses */
 addresses.mainnet_arbitrum = {};
 addresses.mainnet_arbitrum.USDC = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8";
@@ -117,6 +112,21 @@ addresses.mainnet_optimism = {};
 addresses.mainnet_optimism.USDC = "0x7f5c764cbc14f9669b88837ca1490cca17c31607";
 addresses.mainnet_optimism.USDC_USD = "0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3";
 
+/* bsc addresses */
+addresses.mainnet_bsc = {}
+addresses.mainnet_bsc.USDC = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
+addresses.mainnet_bsc.USDC_USD = "0x51597f405303C4377E36123cBc172b13269EA163";
+
+addresses.mainnet_bsc.ERC20LINK = "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD";
+addresses.mainnet_bsc.ERC677LINK = "0x404460C6A5EdE2D891e8297795264fDe62ADBB75";
+addresses.mainnet_bsc.LINK_USD = "0xca236E327F629f9Fc2c30A4E95775EbF0B89fac8";
+addresses.mainnet_bsc.link_swap_router = "0x10ed43c718714eb63d5aa57b78b54704e256024e";
+addresses.mainnet_bsc.link_swap_path = [
+    "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+    "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+    "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD"
+];
+addresses.mainnet_bsc.link_peg_swap = "0x1FCc3B22955e76Ca48bF025f1A6993685975Bb9e";
 
 
 /******* TESTNET ADDRESSES *********/
