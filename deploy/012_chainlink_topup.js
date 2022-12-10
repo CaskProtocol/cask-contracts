@@ -62,8 +62,8 @@ const deployChainlinkTopup = async ({ethers, getNamedAccounts}) => {
             chainlinkAddresses.link_swap_router,
             chainlinkAddresses.link_swap_path,
             chainlinkAddresses.link_peg_swap,
-            0,
-            '0x'
+            chainlinkAddresses.link_swap_protocol,
+            chainlinkAddresses.link_swap_data
         )
     );
     log("Chainlink configuration set in CaskChainlinkTopupManager");

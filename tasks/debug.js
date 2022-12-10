@@ -272,6 +272,7 @@ async function _debug_dca(taskArguments, hre) {
     console.log("====================");
     console.log(`CaskDCA dcaManager:                             ${await dca.dcaManager()}`);
     console.log(`CaskDCA assetsMerkleRoot:                       ${await dca.assetsMerkleRoot()}`);
+    console.log(`CaskDCA assetAdmin:                             ${await dca.assetsAdmin()}`);
     console.log(`CaskDCA minAmount:                              ${minAmount} (${formatUnits(minAmount, baseAssetInfo.assetDecimals)} ${baseAssetSymbol})`);
     console.log(`CaskDCA minPeriod:                              ${minPeriod} seconds`);
     console.log(`CaskDCA minSlippage:                            ${minSlippage} bps (${minSlippage / 100}%)`);
