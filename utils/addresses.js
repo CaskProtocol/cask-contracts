@@ -112,6 +112,20 @@ addresses.mainnet_optimism = {};
 addresses.mainnet_optimism.USDC = "0x7f5c764cbc14f9669b88837ca1490cca17c31607";
 addresses.mainnet_optimism.USDC_USD = "0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3";
 
+addresses.mainnet_optimism.ERC20LINK = "0x0000000000000000000000000000000000000000";
+addresses.mainnet_optimism.ERC677LINK = "0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6";
+addresses.mainnet_optimism.LINK_USD = "0xCc232dcFAAE6354cE191Bd574108c1aD03f86450";
+addresses.mainnet_optimism.link_swap_router = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+addresses.mainnet_optimism.link_swap_path = [
+    "0x7f5c764cbc14f9669b88837ca1490cca17c31607",
+    "0x4200000000000000000000000000000000000006",
+    "0x350a791Bfc2C21F9Ed5d10980Dad2e2638ffa7f6"
+];
+addresses.mainnet_optimism.link_swap_protocol = 1;
+addresses.mainnet_optimism.link_swap_data = "0x7f5c764cbc14f9669b88837ca1490cca17c316070001f44200000000000000000000000000000000000006000bb8350a791bfc2c21f9ed5d10980dad2e2638ffa7f6";
+addresses.mainnet_optimism.link_peg_swap = "0x0000000000000000000000000000000000000000";
+
+
 /* bsc addresses */
 addresses.mainnet_bsc = {}
 addresses.mainnet_bsc.USDC = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";

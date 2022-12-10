@@ -14,6 +14,7 @@ const supportChainlinkAutomation =
     hre.network.name === 'mainnet_arbitrum' ||
     hre.network.name === 'mainnet_avalanche' ||
     hre.network.name === 'mainnet_polygon' ||
+    hre.network.name === 'mainnet_optimism' ||
     hre.network.name === 'mainnet_bsc';
 
 const isTest = process.env.IS_TEST === "true";
