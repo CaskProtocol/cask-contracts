@@ -24,11 +24,6 @@ interface ICaskVault is IERC20MetadataUpgradeable {
         Band
     }
 
-    enum PriceFeedType {
-        Chainlink,
-        Band
-    }
-
     // sources for payments
     enum FundingSource {
         Cask,

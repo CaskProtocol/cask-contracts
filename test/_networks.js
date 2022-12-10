@@ -10,6 +10,14 @@ const isTestnet = hre.network.name.startsWith('testnet_');
 const isInternal = hre.network.name.startsWith('internal_');
 const isBandOracle = hre.network.name.includes('celo') || hre.network.name.includes('alfajores');
 
+const supportChainlinkAutomation =
+    isLocalhost || isMemnet || isTestnet || isInternal ||
+    hre.network.name === 'mainnet_arbitrum' ||
+    hre.network.name === 'mainnet_avalanche' ||
+    hre.network.name === 'mainnet_polygon' ||
+    hre.network.name === 'mainnet_optimism' ||
+    hre.network.name === 'mainnet_bsc';
+
 const isTest = process.env.IS_TEST === "true";
 
 const isDevnet = isLocalhost || isMemnet;
@@ -31,4 +39,6 @@ module.exports = {
     isRealChain,
     isDaoChain,
     isProtocolChain,
+    isBandOracle,
+    supportChainlinkAutomation,
 };
