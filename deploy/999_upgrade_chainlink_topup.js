@@ -1,5 +1,6 @@
 const {
     isProtocolChain,
+    supportChainlinkAutomation,
     isDevnet,
 } = require("../test/_networks");
 
@@ -18,7 +19,6 @@ const {
 
 const deployUpgrades = async () => {
 
-    await upgradeProxyWithConfirmation('CaskVault');
     await upgradeProxyWithConfirmation('CaskChainlinkTopup');
     await upgradeProxyWithConfirmation('CaskChainlinkTopupManager');
 
@@ -32,7 +32,7 @@ const main = async (hre) => {
 
 main.id = "999_upgrade_chainlink_topup";
 main.tags = ["upgrade_chainlink_topup"];
-main.dependencies = ["vault","chainlink_topup"];
-main.skip = () => !isProtocolChain || isDevnet;
+main.dependencies = ["chainlink_topup"];
+main.skip = () => !isProtocolChain || !supportChainlinkAutomation || isDevnet;
 
 module.exports = main;

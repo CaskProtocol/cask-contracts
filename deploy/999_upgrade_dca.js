@@ -18,7 +18,6 @@ const {
 
 const deployUpgrades = async () => {
 
-    await upgradeProxyWithConfirmation('CaskVault');
     await upgradeProxyWithConfirmation('CaskDCA');
     await upgradeProxyWithConfirmation('CaskDCAManager');
 
@@ -32,7 +31,7 @@ const main = async (hre) => {
 
 main.id = "999_upgrade_dca";
 main.tags = ["upgrade_dca"];
-main.dependencies = ["vault","dca"];
+main.dependencies = ["dca"];
 main.skip = () => !isProtocolChain || isDevnet;
 
 module.exports = main;

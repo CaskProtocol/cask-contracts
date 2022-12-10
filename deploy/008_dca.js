@@ -31,6 +31,8 @@ const deployDCA = async ({ethers, getNamedAccounts}) => {
     await deployProxyWithConfirmation('CaskDCAManager');
 
     const vault = await ethers.getContract("CaskVault");
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
 
     const assetsMerkleRoot =  ethers.utils.hexZeroPad(0, 32);
 
@@ -51,8 +53,8 @@ const deployDCA = async ({ethers, getNamedAccounts}) => {
             dcaManager.setParameters(
                 5, // maxSkips
                 30, // dcaFeeBps (0.3%)
-                usdcUnits('0.1'), // dcaFeeMin
-                usdcUnits('1.00'), // dcaMinValue
+                ethers.utils.parseUnits('0.1', baseAssetInfo.assetDecimals), // dcaFeeMin
+                ethers.utils.parseUnits('1.00', baseAssetInfo.assetDecimals), // dcaMinValue
                 86400+3600, // maxPriceFeedAge (1 day + 1 hour)
                 24 * hour, // queueBucketSize
                 20 * day // maxQueueAge
@@ -86,6 +88,9 @@ const transferOwnerships = async ({ethers, getNamedAccounts}) => {
     const dca = await ethers.getContract("CaskDCA");
     const dcaManager = await ethers.getContract("CaskDCAManager");
 
+    await withConfirmation(
+        dca.setAssetsAdmin(governorAddr)
+    );
     await withConfirmation(
         dca.transferOwnership(governorAddr)
     );

@@ -78,11 +78,14 @@ BaseRelayRecipient
         uint256 _targetId,
         address _registry,
         TopupType _topupType
-    ) external override returns(bytes32) {
+    ) external override whenNotPaused returns(bytes32) {
         require(_topupAmount >= minTopupAmount, "!INVALID(topupAmount)");
         require(_topupType == TopupType.Automation ||
-                _topupType == TopupType.VRF, "!INVALID(topupType)");
-        require(chainlinkTopupManager.registryAllowed(_registry), "!INVALID(registry)");
+                _topupType == TopupType.VRF ||
+                _topupType == TopupType.Direct, "!INVALID(topupType)");
+        if (_topupType != TopupType.Direct) {
+            require(chainlinkTopupManager.registryAllowed(_registry), "!INVALID(registry)");
+        }
 
         bytes32 chainlinkTopupId = keccak256(abi.encodePacked(_msgSender(), _targetId, _registry,
             block.number, block.timestamp));
@@ -101,6 +104,8 @@ BaseRelayRecipient
 
         _assignChainlinkTopupToGroup(chainlinkTopupId);
 
+        chainlinkTopupManager.registerChainlinkTopup(chainlinkTopupId);
+
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active, "!UNPROCESSABLE");
 
         emit ChainlinkTopupCreated(chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.lowBalance,
@@ -111,7 +116,7 @@ BaseRelayRecipient
 
     function pauseChainlinkTopup(
         bytes32 _chainlinkTopupId
-    ) external override onlyUser(_chainlinkTopupId) {
+    ) external override onlyUser(_chainlinkTopupId) whenNotPaused {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active, "!NOT_ACTIVE");
 
@@ -125,13 +130,16 @@ BaseRelayRecipient
 
     function resumeChainlinkTopup(
         bytes32 _chainlinkTopupId
-    ) external override onlyUser(_chainlinkTopupId) {
+    ) external override onlyUser(_chainlinkTopupId) whenNotPaused {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
         require(chainlinkTopup.status == ChainlinkTopupStatus.Paused, "!NOT_PAUSED");
 
         _assignChainlinkTopupToGroup(_chainlinkTopupId);
 
+        chainlinkTopup.numSkips = 0;
         chainlinkTopup.status = ChainlinkTopupStatus.Active;
+
+        chainlinkTopupManager.registerChainlinkTopup(_chainlinkTopupId);
 
         emit ChainlinkTopupResumed(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
             chainlinkTopup.registry, chainlinkTopup.topupType);
@@ -139,7 +147,7 @@ BaseRelayRecipient
 
     function cancelChainlinkTopup(
         bytes32 _chainlinkTopupId
-    ) external override onlyUser(_chainlinkTopupId) {
+    ) external override onlyUser(_chainlinkTopupId) whenNotPaused {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
         require(chainlinkTopup.status == ChainlinkTopupStatus.Active ||
                 chainlinkTopup.status == ChainlinkTopupStatus.Paused, "!INVALID(status)");
@@ -233,11 +241,6 @@ BaseRelayRecipient
 
         ChainlinkTopupGroup storage chainlinkTopupGroup = chainlinkTopupGroupMap[chainlinkTopupGroupId];
         chainlinkTopupGroup.chainlinkTopups.push(_chainlinkTopupId);
-
-        if (chainlinkTopupGroup.chainlinkTopups.length == 1) { // register only if new/reinitialized group
-            chainlinkTopupGroup.processAt = uint32(block.timestamp);
-            chainlinkTopupManager.registerChainlinkTopupGroup(chainlinkTopupGroupId);
-        }
     }
 
     /************************** MANAGER FUNCTIONS **************************/
@@ -252,6 +255,8 @@ BaseRelayRecipient
         if (_command == ManagerCommand.Pause) {
 
             chainlinkTopup.status = ChainlinkTopupStatus.Paused;
+
+            _removeChainlinkTopupFromGroup(_chainlinkTopupId);
 
             emit ChainlinkTopupPaused(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,
                 chainlinkTopup.registry, chainlinkTopup.topupType);
@@ -276,6 +281,7 @@ BaseRelayRecipient
     ) external override onlyManager {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
 
+        chainlinkTopup.retryAfter = 0;
         chainlinkTopup.currentAmount += _amount;
         chainlinkTopup.currentBuyQty += _buyQty;
         chainlinkTopup.numTopups += 1;
@@ -284,23 +290,14 @@ BaseRelayRecipient
             chainlinkTopup.registry, chainlinkTopup.topupType, _amount, _buyQty, _fee);
     }
 
-    function managerProcessedGroup(
-        uint256 _chainlinkTopupGroupId,
-        uint32 _nextProcessAt
-    ) external override onlyManager {
-        ChainlinkTopupGroup storage chainlinkTopupGroup = chainlinkTopupGroupMap[_chainlinkTopupGroupId];
-
-        chainlinkTopupGroup.processAt = _nextProcessAt;
-
-        emit ChainlinkTopupGroupProcessed(_chainlinkTopupGroupId);
-    }
-
     function managerSkipped(
         bytes32 _chainlinkTopupId,
+        uint32 _retryAfter,
         SkipReason _skipReason
     ) external override onlyManager {
         ChainlinkTopup storage chainlinkTopup = chainlinkTopupMap[_chainlinkTopupId];
 
+        chainlinkTopup.retryAfter = _retryAfter;
         chainlinkTopup.numSkips += 1;
 
         emit ChainlinkTopupSkipped(_chainlinkTopupId, chainlinkTopup.user, chainlinkTopup.targetId,

@@ -53,6 +53,7 @@ const ChainlinkTopupType = {
     None: 0,
     Automation: 1,
     VRF: 2,
+    Direct: 3,
 };
 
 const ChainlinkTopupStatus = {
@@ -161,9 +162,10 @@ const getChainlinkAddresses = async (deployments) => {
                     addresses[hre.network.name].ERC677LINK ||
                         (await deployments.get("MockERC677LINK")).address
                 ],
-            // link_peg_swap: addresses[hre.network.name].link_peg_swap ||
-            //     (await deployments.get("MockPegSwap")).address,
-            link_peg_swap: addresses.zero,
+            link_swap_protocol: addresses[hre.network.name].link_swap_protocol || 0,
+            link_swap_data: addresses[hre.network.name].link_swap_data || '0x',
+            link_peg_swap: addresses[hre.network.name].link_peg_swap ||
+                (await deployments.get("MockPegSwap")).address,
         };
     }
 };
@@ -178,7 +180,7 @@ const subscriptionPerformUpkeep = async(performData) => {
     return subscriptionManager.performUpkeep(performData);
 };
 
-const runSubscriptionKeeper = async(limit= 10, minDepth = 0) => {
+const runSubscriptionKeeper = (limit= 10, minDepth = 0) => {
     const results = [];
     results.push(runSubscriptionKeeperType(1, limit, minDepth)); // active
     results.push(runSubscriptionKeeperType(2, limit, minDepth)); // past due
@@ -194,7 +196,7 @@ const runSubscriptionKeeperType = async(checkType, limit= 10, minDepth = 0) => {
     if (checkUpkeep.upkeepNeeded) {
         return subscriptionPerformUpkeep(checkUpkeep.performData);
     } else {
-        return false;
+        return Promise.resolve(false);
     }
 }
 
@@ -215,7 +217,7 @@ const dcaPerformUpkeep = async(performData) => {
     return dcaManager.performUpkeep(performData);
 };
 
-const runDCAKeeper = async(limit= 10, minDepth = 0) => {
+const runDCAKeeper = (limit= 10, minDepth = 0) => {
     return runDCAKeeperType(1, limit, minDepth);
 };
 
@@ -228,7 +230,7 @@ const runDCAKeeperType = async(queueId, limit= 10, minDepth = 0) => {
     if (checkUpkeep.upkeepNeeded) {
         return dcaPerformUpkeep(checkUpkeep.performData);
     } else {
-        return false;
+        return Promise.resolve(false);
     }
 }
 
@@ -249,7 +251,7 @@ const p2pPerformUpkeep = async(performData) => {
     return p2pManager.performUpkeep(performData);
 };
 
-const runP2PKeeper = async(limit= 10, minDepth = 0) => {
+const runP2PKeeper = (limit= 10, minDepth = 0) => {
     return runP2PKeeperType(1, limit, minDepth);
 };
 
@@ -262,7 +264,7 @@ const runP2PKeeperType = async(queueId, limit= 10, minDepth = 0) => {
     if (checkUpkeep.upkeepNeeded) {
         return p2pPerformUpkeep(checkUpkeep.performData);
     } else {
-        return false;
+        return Promise.resolve(false);
     }
 }
 
@@ -283,7 +285,7 @@ const cltuPerformUpkeep = async(performData) => {
     return cltuManager.performUpkeep(performData);
 };
 
-const runCLTUKeeper = async(limit= 10, minDepth = 0) => {
+const runCLTUKeeper = (limit= 10, minDepth = 0) => {
     return runCLTUKeeperType(1, limit, minDepth);
 };
 
@@ -296,7 +298,7 @@ const runCLTUKeeperType = async(queueId, limit= 10, minDepth = 0) => {
     if (checkUpkeep.upkeepNeeded) {
         return cltuPerformUpkeep(checkUpkeep.performData);
     } else {
-        return false;
+        return Promise.resolve(false);
     }
 }
 

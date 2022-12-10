@@ -7,15 +7,17 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "../interfaces/IGMXRouter.sol";
+import "../interfaces/AutomationRegistryBaseInterface.sol";
+import "../interfaces/VRFCoordinatorV2Interface.sol";
+import "../interfaces/LinkTokenInterface.sol";
+import "../interfaces/IPegSwap.sol";
 
 import "../interfaces/ICaskVault.sol";
 import "../job_queue/CaskJobQueue.sol";
 import "./ICaskChainlinkTopupManager.sol";
 import "./ICaskChainlinkTopup.sol";
-import "./AutomationRegistryBaseInterface.sol";
-import "./VRFCoordinatorV2Interface.sol";
-import "./LinkTokenInterface.sol";
-import "./IPegSwap.sol";
 
 
 contract CaskChainlinkTopupManager is
@@ -42,8 +44,10 @@ ICaskChainlinkTopupManager
     LinkTokenInterface public linkFundingToken;
     AggregatorV3Interface public linkPriceFeed;
     address[] public linkSwapPath;
-    IUniswapV2Router02 public linkSwapRouter;
+    address public linkSwapRouter;
     IPegSwap public pegswap;
+    SwapProtocol public linkSwapProtocol;
+    bytes public linkSwapData;
 
 
     /************************** PARAMETERS **************************/
@@ -71,23 +75,13 @@ ICaskChainlinkTopupManager
     function initialize(
         address _caskChainlinkTopup,
         address _caskVault,
-        address _linkBridgeToken,
-        address _linkFundingToken,
-        address _linkPriceFeed,
-        address _linkSwapRouter,
-        address[] calldata _linkSwapPath,
-        address _pegswap,
         address _feeDistributor
     ) public initializer {
+        require(_caskChainlinkTopup != address(0), "!INVALID(caskChainlinkTopup)");
+        require(_caskVault != address(0), "!INVALID(caskVault)");
+        require(_feeDistributor != address(0), "!INVALID(feeDistributor)");
         caskChainlinkTopup = ICaskChainlinkTopup(_caskChainlinkTopup);
         caskVault = ICaskVault(_caskVault);
-
-        linkBridgeToken = IERC20Metadata(_linkBridgeToken);
-        linkFundingToken = LinkTokenInterface(_linkFundingToken);
-        linkPriceFeed = AggregatorV3Interface(_linkPriceFeed);
-        linkSwapRouter = IUniswapV2Router02(_linkSwapRouter);
-        linkSwapPath = _linkSwapPath;
-        pegswap = IPegSwap(_pegswap);
         feeDistributor = _feeDistributor;
 
         maxSkips = 0;
@@ -102,10 +96,22 @@ ICaskChainlinkTopupManager
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function registerChainlinkTopupGroup(
-        uint256 _chainlinkTopupGroupId
+    function registerChainlinkTopup(
+        bytes32 _chainlinkTopupId
     ) override external nonReentrant whenNotPaused {
-        processWorkUnit(QUEUE_ID_KEEPER_TOPUP, bytes32(_chainlinkTopupGroupId));
+
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
+            caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
+        require(chainlinkTopup.groupId > 0, "!INVALID(groupId)");
+
+        _processChainlinkTopup(_chainlinkTopupId);
+
+        ICaskChainlinkTopup.ChainlinkTopupGroup memory chainlinkTopupGroup =
+            caskChainlinkTopup.getChainlinkTopupGroup(chainlinkTopup.groupId);
+
+        if (chainlinkTopupGroup.chainlinkTopups.length == 1) { // register only if new/reinitialized group
+            scheduleWorkUnit(QUEUE_ID_KEEPER_TOPUP, bytes32(chainlinkTopup.groupId), uint32(block.timestamp));
+        }
     }
 
     function processWorkUnit(
@@ -116,11 +122,8 @@ ICaskChainlinkTopupManager
         ICaskChainlinkTopup.ChainlinkTopupGroup memory chainlinkTopupGroup =
             caskChainlinkTopup.getChainlinkTopupGroup(uint256(_chainlinkTopupGroupId));
 
-        uint32 timestamp = uint32(block.timestamp);
-
-        // not time to process yet, re-queue for processAt time
-        if (chainlinkTopupGroup.processAt > timestamp) {
-            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(chainlinkTopupGroup.processAt));
+        // empty group - stop processing
+        if (chainlinkTopupGroup.chainlinkTopups.length == 0) {
             return;
         }
 
@@ -133,14 +136,10 @@ ICaskChainlinkTopupManager
         }
 
         if (count >= chainlinkTopupGroup.chainlinkTopups.length || count < maxTopupsPerGroupRun) {
-            // everything in this group has been processed - move group to next check period
-            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId,
-                bucketAt(chainlinkTopupGroup.processAt + queueBucketSize));
-            caskChainlinkTopup.managerProcessedGroup(uint256(_chainlinkTopupGroupId),
-                chainlinkTopupGroup.processAt + queueBucketSize);
+            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, uint32(block.timestamp));
         } else {
             // still more to do - schedule an immediate re-run
-            scheduleWorkUnit(_queueId, _chainlinkTopupGroupId, bucketAt(currentBucket()));
+            requeueWorkUnit(_queueId, _chainlinkTopupGroupId);
         }
 
     }
@@ -161,8 +160,15 @@ ICaskChainlinkTopupManager
             return false;
         }
 
-        // topup target not active
-        if (!_topupValid(_chainlinkTopupId) || !allowedRegistries[chainlinkTopup.registry]) {
+        if (chainlinkTopup.retryAfter >= uint32(block.timestamp)) {
+            return false;
+        }
+
+        // topup target not active or registry not allowed
+        if (!_topupValid(_chainlinkTopupId) ||
+            (chainlinkTopup.topupType != ICaskChainlinkTopup.TopupType.Direct &&
+                !allowedRegistries[chainlinkTopup.registry]))
+        {
             caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Cancel);
             return false;
         }
@@ -195,16 +201,22 @@ ICaskChainlinkTopupManager
         bytes32 _chainlinkTopupId,
         uint256 _protocolFee
     ) internal returns(uint256) {
+        require(linkSwapRouter != address(0), "!NOT_CONFIGURED");
+
         ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
             caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
-        uint256 beforeBalance = IERC20Metadata(address(caskVault.getBaseAsset())).balanceOf(address(this));
+        uint256 beforeBalance = IERC20Metadata(linkSwapPath[0]).balanceOf(address(this));
 
         // perform a 'payment' to this contract, fee is taken out manually after a successful swap
         try caskVault.protocolPayment(chainlinkTopup.user, address(this), chainlinkTopup.topupAmount, 0) {
             // noop
         } catch (bytes memory) {
-            caskChainlinkTopup.managerSkipped(_chainlinkTopupId, ICaskChainlinkTopup.SkipReason.PaymentFailed);
+            caskChainlinkTopup.managerSkipped(
+                _chainlinkTopupId,
+                uint32(block.timestamp) + queueBucketSize,
+                ICaskChainlinkTopup.SkipReason.PaymentFailed
+            );
             return 0;
         }
 
@@ -213,21 +225,18 @@ ICaskChainlinkTopupManager
         if (withdrawShares > caskVault.balanceOf(address(this))) {
             withdrawShares = caskVault.balanceOf(address(this));
         }
-        caskVault.withdraw(caskVault.getBaseAsset(), withdrawShares);
+        caskVault.withdraw(linkSwapPath[0], withdrawShares);
 
         // calculate actual amount of baseAsset that was received from payment/withdraw
-        uint256 amountIn = IERC20Metadata(caskVault.getBaseAsset()).balanceOf(address(this)) - beforeBalance;
+        uint256 amountIn = IERC20Metadata(linkSwapPath[0]).balanceOf(address(this)) - beforeBalance;
         require(amountIn > 0, "!INVALID(amountIn)");
-
-        // let swap router spend the amount of newly acquired baseAsset
-        IERC20Metadata(caskVault.getBaseAsset()).safeIncreaseAllowance(address(linkSwapRouter), amountIn);
 
         uint256 amountOutMin = 0;
 
         // if there is a pricefeed calc max slippage
         if (address(linkPriceFeed) != address(0)) {
             amountOutMin = _convertPrice(
-                caskVault.getAsset(caskVault.getBaseAsset()),
+                caskVault.getAsset(linkSwapPath[0]),
                 linkSwapPath[linkSwapPath.length - 1],
                 address(linkPriceFeed),
                 amountIn);
@@ -236,34 +245,22 @@ ICaskChainlinkTopupManager
 
         uint256 amountFundingTokenBefore = linkFundingToken.balanceOf(address(this));
 
-        // perform swap
-        try linkSwapRouter.swapExactTokensForTokens(
-            amountIn,
-            amountOutMin,
-            linkSwapPath,
-            address(this),
-            block.timestamp + 1 hours
-        ) returns (uint256[] memory amounts) {
-            require(amounts.length >= 2, "!INVALID(amounts)");
-
-            // any non-withdrawn shares are the fee portion - send to fee distributor
-            caskVault.transfer(feeDistributor, caskVault.balanceOf(address(this)));
-
-        } catch (bytes memory) {
-
-            // undo withdraw and send shares back to user
-            IERC20Metadata(caskVault.getBaseAsset()).safeIncreaseAllowance(address(caskVault), amountIn);
-            caskVault.deposit(caskVault.getBaseAsset(), amountIn);
-            caskVault.transfer(chainlinkTopup.user, caskVault.balanceOf(address(this))); // refund full amount
-
-            caskChainlinkTopup.managerSkipped(_chainlinkTopupId, ICaskChainlinkTopup.SkipReason.SwapFailed);
-            return 0;
+        if (linkSwapProtocol == SwapProtocol.UNIV2) {
+            _performSwapUniV2(amountIn, amountOutMin);
+        } else if (linkSwapProtocol == SwapProtocol.UNIV3) {
+            _performSwapUniV3(amountIn, amountOutMin);
+        } else if (linkSwapProtocol == SwapProtocol.GMX) {
+            _performSwapGMX(amountIn, amountOutMin);
         }
+
+        // any non-withdrawn shares are the fee portion - send to fee distributor
+        caskVault.transfer(feeDistributor, caskVault.balanceOf(address(this)));
 
         if (address(pegswap) != address(0)) {
             uint256 amountBridgeOut = linkBridgeToken.balanceOf(address(this));
             IERC20Metadata(address(linkBridgeToken)).safeIncreaseAllowance(address(pegswap), amountBridgeOut);
             pegswap.swap(amountBridgeOut, address(linkBridgeToken), address(linkFundingToken));
+            require(linkFundingToken.balanceOf(address(this)) >= amountBridgeOut, "!PEG_SWAP");
         }
 
         uint256 amountFundingTokenOut = linkFundingToken.balanceOf(address(this)) - amountFundingTokenBefore;
@@ -271,6 +268,44 @@ ICaskChainlinkTopupManager
         _doTopup(_chainlinkTopupId, amountFundingTokenOut);
 
         return amountFundingTokenOut;
+    }
+
+    function _performSwapUniV2(
+        uint256 _inputAmount,
+        uint256 _minOutput
+    ) internal {
+        IERC20Metadata(linkSwapPath[0]).safeIncreaseAllowance(linkSwapRouter, _inputAmount);
+        IUniswapV2Router02(linkSwapRouter).swapExactTokensForTokens(
+            _inputAmount,
+            _minOutput,
+            linkSwapPath,
+            address(this),
+            block.timestamp + 1 hours
+        );
+    }
+
+    function _performSwapUniV3(
+        uint256 _inputAmount,
+        uint256 _minOutput
+    ) internal {
+        IERC20Metadata(linkSwapPath[0]).safeIncreaseAllowance(linkSwapRouter, _inputAmount);
+        ISwapRouter.ExactInputParams memory params =
+            ISwapRouter.ExactInputParams({
+                path: linkSwapData,
+                recipient: address(this),
+                deadline: block.timestamp + 60,
+                amountIn: _inputAmount,
+                amountOutMinimum: _minOutput
+            });
+        ISwapRouter(linkSwapRouter).exactInput(params);
+    }
+
+    function _performSwapGMX(
+        uint256 _inputAmount,
+        uint256 _minOutput
+    ) internal {
+        IERC20Metadata(linkSwapPath[0]).safeIncreaseAllowance(linkSwapRouter, _inputAmount);
+        IGMXRouter(linkSwapRouter).swap(linkSwapPath, _inputAmount, _minOutput, address(this));
     }
 
     function _topupBalance(
@@ -288,6 +323,9 @@ ICaskChainlinkTopupManager
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
             VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
             (balance,,,) = coordinator.getSubscription(uint64(chainlinkTopup.targetId));
+
+        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Direct) {
+            balance = uint96(linkFundingToken.balanceOf(chainlinkTopup.registry));
         }
 
         return uint256(balance);
@@ -327,6 +365,9 @@ ICaskChainlinkTopupManager
             } catch {
                 return false;
             }
+
+        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Direct) {
+            return chainlinkTopup.registry != address(0);
         }
 
         return false;
@@ -346,6 +387,14 @@ ICaskChainlinkTopupManager
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
             linkFundingToken.transferAndCall(chainlinkTopup.registry, _amount,
                 abi.encode(uint64(chainlinkTopup.targetId)));
+
+        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Direct) {
+            if (chainlinkTopup.targetId > 0) {
+                linkFundingToken.transferAndCall(chainlinkTopup.registry, _amount,
+                    abi.encode(chainlinkTopup.targetId));
+            } else {
+                linkFundingToken.transfer(chainlinkTopup.registry, _amount);
+            }
         }
     }
 
@@ -408,6 +457,8 @@ ICaskChainlinkTopupManager
         uint32 _queueBucketSize,
         uint32 _maxQueueAge
     ) external onlyOwner {
+        require(_topupFeeBps < 10000, "!INVALID(topupFeeBps)");
+
         maxSkips = _maxSkips;
         topupFeeBps = _topupFeeBps;
         topupFeeMin = _topupFeeMin;
@@ -416,6 +467,7 @@ ICaskChainlinkTopupManager
         maxSwapSlippageBps = _maxSwapSlippageBps;
         queueBucketSize = _queueBucketSize;
         maxQueueAge = _maxQueueAge;
+        emit SetParameters();
     }
 
     function setChainklinkAddresses(
@@ -424,19 +476,25 @@ ICaskChainlinkTopupManager
         address _linkPriceFeed,
         address _linkSwapRouter,
         address[] calldata _linkSwapPath,
-        address _pegswap
+        address _pegswap,
+        SwapProtocol _linkSwapProtocol,
+        bytes calldata _linkSwapData
     ) external onlyOwner {
         linkBridgeToken = IERC20Metadata(_linkBridgeToken);
         linkFundingToken = LinkTokenInterface(_linkFundingToken);
         linkPriceFeed = AggregatorV3Interface(_linkPriceFeed);
-        linkSwapRouter = IUniswapV2Router02(_linkSwapRouter);
+        linkSwapRouter = _linkSwapRouter;
         linkSwapPath = _linkSwapPath;
         pegswap = IPegSwap(_pegswap);
+        linkSwapProtocol = _linkSwapProtocol;
+        linkSwapData = _linkSwapData;
+        emit SetChainlinkAddresses();
     }
 
     function setFeeDistributor(
         address _feeDistributor
     ) external onlyOwner {
+        require(_feeDistributor != address(0), "!INVALID(feeDistributor)");
         feeDistributor = _feeDistributor;
         emit SetFeeDistributor(_feeDistributor);
     }
@@ -444,6 +502,7 @@ ICaskChainlinkTopupManager
     function allowRegistry(
         address _registry
     ) external onlyOwner {
+        require(_registry != address(0), "!INVALID(registry)");
         allowedRegistries[_registry] = true;
 
         emit RegistryAllowed(_registry);
@@ -452,6 +511,7 @@ ICaskChainlinkTopupManager
     function disallowRegistry(
         address _registry
     ) external onlyOwner {
+        require(allowedRegistries[_registry], "!REGISTRY_NOT_ALLOWED");
         allowedRegistries[_registry] = false;
 
         emit RegistryDisallowed(_registry);

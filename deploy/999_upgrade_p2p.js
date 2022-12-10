@@ -18,7 +18,6 @@ const {
 
 const deployUpgrades = async () => {
 
-    await upgradeProxyWithConfirmation('CaskVault');
     await upgradeProxyWithConfirmation('CaskP2P');
     await upgradeProxyWithConfirmation('CaskP2PManager');
 
@@ -32,7 +31,7 @@ const main = async (hre) => {
 
 main.id = "999_upgrade_p2p";
 main.tags = ["upgrade_p2p"];
-main.dependencies = ["vault","p2p"];
+main.dependencies = ["p2p"];
 main.skip = () => !isProtocolChain || isDevnet;
 
 module.exports = main;

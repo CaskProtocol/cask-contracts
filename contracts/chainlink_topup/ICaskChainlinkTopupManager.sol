@@ -3,7 +3,13 @@ pragma solidity ^0.8.0;
 
 interface ICaskChainlinkTopupManager {
 
-    function registerChainlinkTopupGroup(uint256 _chainlinkTopupId) external;
+    enum SwapProtocol {
+        UNIV2,
+        UNIV3,
+        GMX
+    }
+
+    function registerChainlinkTopup(bytes32 _chainlinkTopupId) external;
 
     function registryAllowed(address _registry) external view returns(bool);
 
@@ -15,4 +21,10 @@ interface ICaskChainlinkTopupManager {
 
     /** @dev Emitted when a registry is disallowed. */
     event RegistryDisallowed(address registry);
+
+    /** @dev Emitted when manager parameters are changed. */
+    event SetParameters();
+
+    /** @dev Emitted when chainlink addresses are changed. */
+    event SetChainlinkAddresses();
 }

@@ -42,6 +42,20 @@ BaseRelayRecipient
     /** @dev minimum slippage allowed for a DCA. */
     uint256 public minSlippage;
 
+    /** @dev swap type and optional swap data for a DCA. */
+    mapping(bytes32 => SwapInfo) private swapInfoMap; // dcaId => DCASwapInfo
+
+    /** @dev previous merkle root of approved assets. */
+    bytes32 public prevAssetsMerkleRoot;
+
+    /** @dev address allowed to update asset merkle root. */
+    address public assetsAdmin;
+
+
+    modifier onlyAssetsAdmin() {
+        require(_msgSender() == address(assetsAdmin), "!AUTH");
+        _;
+    }
 
     function initialize(
         bytes32 _assetsMerkleRoot
@@ -50,9 +64,11 @@ BaseRelayRecipient
         __Pausable_init();
 
         assetsMerkleRoot = _assetsMerkleRoot;
+        prevAssetsMerkleRoot = assetsMerkleRoot;
         minAmount = 1;
         minPeriod = 86400;
         minSlippage = 10;
+        assetsAdmin = _msgSender();
     }
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
@@ -83,24 +99,20 @@ BaseRelayRecipient
     function createDCA(
         address[] calldata _assetSpec, // router, priceFeed, path...
         bytes32[] calldata _merkleProof,
+        SwapProtocol _swapProtocol,
+        bytes calldata _swapData,
         address _to,
-        uint256 _amount,
-        uint256 _totalAmount,
-        uint32 _period,
-        uint256 _slippageBps,
-        uint256 _minPrice,
-        uint256 _maxPrice
-    ) external override returns(bytes32) {
-        require(_amount >= minAmount, "!INVALID(amount)");
-        require(_period >= minPeriod, "!INVALID(period)");
-        require(_slippageBps >= minSlippage, "!INVALID(slippageBps)");
+        uint256[] calldata _priceSpec // period, amount, totalAmount, maxSlippageBps, minPrice, maxPrice
+    ) external override whenNotPaused returns(bytes32) {
         require(_assetSpec.length >= 4, "!INVALID(assetSpec)");
-        require(_verifyAssetSpec(_assetSpec, _merkleProof), "!INVALID(assetSpec)");
+        require(_priceSpec.length == 6, "!INVALID(priceSpec)");
+        require(_priceSpec[0] >= minPeriod, "!INVALID(period)");
+        require(_priceSpec[1] >= minAmount, "!INVALID(amount)");
+        require(_priceSpec[3] >= minSlippage, "!INVALID(maxSlippageBps)");
+        require(_verifyAssetSpec(_swapProtocol, _swapData, _assetSpec, _merkleProof), "!INVALID(assetSpec)");
 
-        bytes32 dcaId = keccak256(abi.encodePacked(_msgSender(), _assetSpec, _amount, _period,
+        bytes32 dcaId = keccak256(abi.encodePacked(_msgSender(), _swapProtocol, _swapData, _assetSpec, _priceSpec,
             block.number, block.timestamp));
-
-        uint32 timestamp = uint32(block.timestamp);
 
         DCA storage dca = dcaMap[dcaId];
         dca.user = _msgSender();
@@ -108,15 +120,19 @@ BaseRelayRecipient
         dca.router = _assetSpec[0];
         dca.priceFeed = _assetSpec[1];
         dca.path = _assetSpec[2:];
-        dca.amount = _amount;
-        dca.totalAmount = _totalAmount;
-        dca.period = _period;
-        dca.minPrice = _minPrice;
-        dca.maxPrice = _maxPrice;
-        dca.slippageBps = _slippageBps;
-        dca.createdAt = timestamp;
-        dca.processAt = timestamp;
+        dca.amount = _priceSpec[1];
+        dca.totalAmount = _priceSpec[2];
+        dca.period = uint32(_priceSpec[0]);
+        dca.minPrice = _priceSpec[4];
+        dca.maxPrice = _priceSpec[5];
+        dca.maxSlippageBps = _priceSpec[3];
+        dca.createdAt = uint32(block.timestamp);
+        dca.processAt = uint32(block.timestamp);
         dca.status = DCAStatus.Active;
+
+        SwapInfo storage swapData = swapInfoMap[dcaId];
+        swapData.swapProtocol = _swapProtocol;
+        swapData.swapData = _swapData;
 
         userDCAs[_msgSender()].push(dcaId);
 
@@ -126,14 +142,14 @@ BaseRelayRecipient
         require(dca.numBuys == 1, "!UNPROCESSABLE"); // make sure first DCA purchase succeeded
 
         emit DCACreated(dcaId, dca.user, dca.to, dca.path[0], dca.path[dca.path.length-1],
-            _amount, _totalAmount, _period);
+            dca.amount, dca.totalAmount, dca.period);
 
         return dcaId;
     }
 
     function pauseDCA(
         bytes32 _dcaId
-    ) external override onlyUser(_dcaId) {
+    ) external override onlyUser(_dcaId) whenNotPaused {
         DCA storage dca = dcaMap[_dcaId];
         require(dca.status == DCAStatus.Active, "!NOT_ACTIVE");
 
@@ -144,7 +160,7 @@ BaseRelayRecipient
 
     function resumeDCA(
         bytes32 _dcaId
-    ) external override onlyUser(_dcaId) {
+    ) external override onlyUser(_dcaId) whenNotPaused {
         DCA storage dca = dcaMap[_dcaId];
         require(dca.status == DCAStatus.Paused, "!NOT_PAUSED");
 
@@ -161,7 +177,7 @@ BaseRelayRecipient
 
     function cancelDCA(
         bytes32 _dcaId
-    ) external override onlyUser(_dcaId) {
+    ) external override onlyUser(_dcaId) whenNotPaused {
         DCA storage dca = dcaMap[_dcaId];
         require(dca.status == DCAStatus.Active ||
                 dca.status == DCAStatus.Paused, "!INVALID(status)");
@@ -172,11 +188,16 @@ BaseRelayRecipient
     }
 
     function _verifyAssetSpec(
+        SwapProtocol _swapProtocol,
+        bytes calldata _swapData,
         address[] calldata _assetSpec,
         bytes32[] calldata _merkleProof
     ) internal view returns(bool) {
-        return MerkleProof.verify(_merkleProof, assetsMerkleRoot,
-            keccak256(abi.encode(_assetSpec[0], _assetSpec[1], _assetSpec[2:])));
+        bytes32 assetSpecHash =
+            keccak256(abi.encode(_swapProtocol, _swapData, _assetSpec[0], _assetSpec[1], _assetSpec[2:]));
+
+        return MerkleProof.verify(_merkleProof, assetsMerkleRoot, assetSpecHash) ||
+            MerkleProof.verify(_merkleProof, prevAssetsMerkleRoot, assetSpecHash);
     }
 
 
@@ -184,6 +205,12 @@ BaseRelayRecipient
         bytes32 _dcaId
     ) external override view returns (DCA memory) {
         return dcaMap[_dcaId];
+    }
+
+    function getSwapInfo(
+        bytes32 _dcaId
+    ) external override view returns (SwapInfo memory) {
+        return swapInfoMap[_dcaId];
     }
 
     function getUserDCA(
@@ -280,10 +307,19 @@ BaseRelayRecipient
         _setTrustedForwarder(_forwarder);
     }
 
+    function setAssetsAdmin(
+        address _assetsAdmin
+    ) external onlyOwner {
+        assetsAdmin = _assetsAdmin;
+        emit AssetAdminChange(assetsAdmin);
+    }
+
     function setAssetsMerkleRoot(
         bytes32 _assetsMerkleRoot
-    ) external onlyOwner {
+    ) external onlyAssetsAdmin {
+        prevAssetsMerkleRoot = assetsMerkleRoot;
         assetsMerkleRoot = _assetsMerkleRoot;
+        emit AssetsMerkleRootChanged(prevAssetsMerkleRoot, assetsMerkleRoot);
     }
 
     function setMinAmount(

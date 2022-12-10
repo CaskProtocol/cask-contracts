@@ -1,6 +1,5 @@
 const {
     usdtUnits,
-    usdcUnits,
     daiUnits,
 } = require("../utils/units");
 
@@ -52,11 +51,13 @@ const configureVault = async ({deployments, ethers, getNamedAccounts}) => {
     const sDeployer = await ethers.provider.getSigner(deployerAddr);
 
     const vault = await ethers.getContract("CaskVault");
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
 
     await withConfirmation(
-        vault.connect(sDeployer).setMinDeposit(usdcUnits('0.01'))
+        vault.connect(sDeployer).setMinDeposit(ethers.utils.parseUnits('0.01', baseAssetInfo.assetDecimals))
     );
-    log("set minDeposit to 0.01 USDC");
+    log("set minDeposit to 0.01");
 
     if (isDevnet || isTestnet || isInternal) {
         // add testnet assets to vault

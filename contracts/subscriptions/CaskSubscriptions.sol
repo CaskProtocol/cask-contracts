@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
@@ -20,7 +19,6 @@ ERC721Upgradeable,
 OwnableUpgradeable,
 PausableUpgradeable
 {
-    using ECDSA for bytes32;
 
     /************************** PARAMETERS **************************/
 
@@ -725,24 +723,25 @@ PausableUpgradeable
         bytes32 _discountMerkleRoot,
         bytes memory _providerSignature
     ) internal view returns (address) {
-        address recovered = keccak256(abi.encode(_nonce, _planMerkleRoot, _discountMerkleRoot))
-            .toEthSignedMessageHash()
-            .recover(_providerSignature);
-        require(address(bytes20(providerAddr << 96)) == recovered, "!INVALID(proof)");
-        require(_nonce == subscriptionPlans.getProviderProfile(recovered).nonce, "!PROVIDER_NONCE");
-        return recovered;
+        address provider = address(bytes20(providerAddr << 96));
+        require(subscriptionPlans.verifyProviderSignature(
+                provider,
+                _nonce,
+                _planMerkleRoot,
+                _discountMerkleRoot,
+                _providerSignature
+        ), "!INVALID(signature)");
+        return provider;
     }
 
     function _verifyNetworkData(
         bytes32 _networkData,
         bytes memory _networkSignature
-    ) internal pure returns (address) {
-        address network = keccak256(abi.encode(_networkData))
-            .toEthSignedMessageHash()
-            .recover(_networkSignature);
+    ) internal view returns (address) {
         NetworkInfo memory networkInfo = _parseNetworkData(_networkData);
-        require(networkInfo.network == network, "!INVALID(network)");
-        return network;
+        require(subscriptionPlans.verifyNetworkData(networkInfo.network, _networkData, _networkSignature),
+            "!INVALID(networkSignature)");
+        return networkInfo.network;
     }
 
 }

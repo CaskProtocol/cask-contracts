@@ -1,11 +1,10 @@
 const {
-    usdcUnits,
     hour,
     day,
 } = require("../utils/units");
 
 const {
-    isProtocolChain,
+    supportChainlinkAutomation,
     isMemnet,
     isDevnet,
     isTestnet,
@@ -15,6 +14,7 @@ const {
 const {
     getChainlinkAddresses
 } = require("../test/_helpers");
+
 
 const {
     log,
@@ -36,6 +36,8 @@ const deployChainlinkTopup = async ({ethers, getNamedAccounts}) => {
     await deployProxyWithConfirmation('CaskChainlinkTopupManager');
 
     const vault = await ethers.getContract("CaskVault");
+    const baseAsset = await vault.getBaseAsset();
+    const baseAssetInfo = await vault.getAsset(baseAsset);
 
     const ktu = await ethers.getContract("CaskChainlinkTopup");
     await withConfirmation(
@@ -48,23 +50,30 @@ const deployChainlinkTopup = async ({ethers, getNamedAccounts}) => {
         ktuManager.initialize(
             ktu.address,
             vault.address,
+            governorAddr
+        )
+    );
+    log("Initialized CaskChainlinkTopupManager");
+    await withConfirmation(
+        ktuManager.setChainklinkAddresses(
             chainlinkAddresses.ERC20LINK,
             chainlinkAddresses.ERC677LINK,
             chainlinkAddresses.LINK_USD,
             chainlinkAddresses.link_swap_router,
             chainlinkAddresses.link_swap_path,
             chainlinkAddresses.link_peg_swap,
-            governorAddr
+            chainlinkAddresses.link_swap_protocol,
+            chainlinkAddresses.link_swap_data
         )
     );
-    log("Initialized CaskChainlinkTopupManager");
+    log("Chainlink configuration set in CaskChainlinkTopupManager");
 
     if (isMemnet) {
         await withConfirmation(
             ktuManager.setParameters(
                 5, // maxSkips
                 60, // topupFeeBps (0.6%)
-                usdcUnits('0.1'), // topupFeeMin
+                ethers.utils.parseUnits('0.1', baseAssetInfo.assetDecimals), // topupFeeMin
                 86400+3600, // maxPriceFeedAge (1 day + 1 hour)
                 1, // maxTopupsPerRun
                 100, // maxSwapSlippageBps
@@ -121,6 +130,6 @@ const main = async (hre) => {
 main.id = "012_chainlink_topup";
 main.tags = ["chainlink_topup"];
 main.dependencies = ["vault","chainlink_topup_mocks"];
-main.skip = () => !isProtocolChain;
+main.skip = () => !supportChainlinkAutomation;
 
 module.exports = main;

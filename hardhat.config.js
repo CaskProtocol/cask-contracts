@@ -16,7 +16,7 @@ const { debug } = require("./tasks/debug");
 const { fund } = require("./tasks/fund");
 const { fixtures } = require("./tasks/fixtures");
 const { keeper } = require("./tasks/keeper");
-const { dcaMerkleRoot, dcaLiquidity, dcaPublishManifests } = require("./tasks/dca");
+const { dcaLiquidity, dcaUpdateMerkleRoot } = require("./tasks/dca");
 
 
 // production
@@ -24,6 +24,7 @@ const DEPLOYER = "0x54812dBaB593674CD4F1216264895be48B55C5e3";
 const KEEPER = "0xa942e8a09dF292Ef66F3d02755E5B5AB04b90709";
 const DCA_KEEPER = "0x4a83a3Cc100cE3F36d498dE2922cbd0e5200d493";
 const P2P_KEEPER = "0x810146EC490051817ae4399F383B9052569B6Ad7"
+const DCA_ASSET_ADMIN = "0x111d587aeE1c58200De9e4B5b69e9d870b30C6Cb";
 
 // production networks - each chain has their own governor/strategist (multisigs)
 const ETHEREUM_GOVERNOR = "0xCaf497e32B5446530ea52647ee997602222AD1E4";
@@ -51,6 +52,12 @@ const GNOSIS_STRATEGIST = "0xEF9c41A52920343c75c74b2A45b73DB1FB67b2f2";
 
 const ARBITRUM_GOVERNOR = "0xdd5873a087e0c15EE0F017FEf3335eb1E59f9fA0";
 const ARBITRUM_STRATEGIST = "0xdd5873a087e0c15EE0F017FEf3335eb1E59f9fA0";
+
+const OPTIMISM_GOVERNOR = "0x145bEA5B40c181Ed8BaE1064c4eCE394aCCD5589";
+const OPTIMISM_STRATEGIST = "0x145bEA5B40c181Ed8BaE1064c4eCE394aCCD5589";
+
+const BSC_GOVERNOR = "0xCeaB160B6E33a7d546eBF8737C952fFB27FfD0D1";
+const BSC_STRATEGIST = "0xCeaB160B6E33a7d546eBF8737C952fFB27FfD0D1";
 
 // testnet networks - common across all testnets
 const TESTNET_DEPLOYER = "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0";
@@ -84,6 +91,9 @@ task("debug:p2p", "Print info about P2P contracts and their configs", async (tas
 task("debug:vault", "Print info about vault contracts and their configs", async (taskArguments, hre) => {
   return debug(taskArguments, hre, 'vault');
 });
+task("debug:chainlinkTopup", "Print info about chainlinkTopup contracts and their configs", async (taskArguments, hre) => {
+  return debug(taskArguments, hre, 'chainlinkTopup');
+});
 task("debug", "Print info about all contracts and their configs", async (taskArguments, hre) => {
   return debug(taskArguments, hre, 'all');
 });
@@ -107,6 +117,9 @@ task("keeper", "Run a keeper")
     .setAction(keeper);
 
 task("dca:liquidity", "Add liquidity to the mock uniswap router for DCA swaps", dcaLiquidity);
+task("dca:updateMerkleroot", "Set the DCA asset merkleroot")
+    .addParam("merkleroot","New asset merkleroot")
+    .setAction(dcaUpdateMerkleRoot);
 
 
 module.exports = {
@@ -203,6 +216,22 @@ module.exports = {
       ],
       timeout: 300000,
       gasPrice: parseInt(process.env.ARBITRUM_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+    },
+    mainnet_optimism: {
+      url: `${process.env.OPTIMISM_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.OPTIMISM_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+      gasPrice: parseInt(process.env.OPTIMISM_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+    },
+    mainnet_bsc: {
+      url: `${process.env.BSC_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.BSC_DEPLOYER_PK || process.env.DEPLOYER_PK || privateKeys[0],
+      ],
+      timeout: 300000,
+      gasPrice: parseInt(process.env.BSC_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
     testnet_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
@@ -311,6 +340,8 @@ module.exports = {
       mainnet_moonbeam: DEPLOYER,
       mainnet_gnosis: DEPLOYER,
       mainnet_arbitrum: DEPLOYER,
+      mainnet_optimism: DEPLOYER,
+      mainnet_bsc: DEPLOYER,
 
       default: 0,
       localhost: 0,
@@ -335,6 +366,8 @@ module.exports = {
       mainnet_moonbeam: MOONBEAM_GOVERNOR,
       mainnet_gnosis: GNOSIS_GOVERNOR,
       mainnet_arbitrum: ARBITRUM_GOVERNOR,
+      mainnet_optimism: OPTIMISM_GOVERNOR,
+      mainnet_bsc: BSC_GOVERNOR,
 
       default: 1,
       localhost: process.env.FORK === "true" ? POLYGON_GOVERNOR : 1,
@@ -359,6 +392,8 @@ module.exports = {
       mainnet_moonbeam: MOONBEAM_STRATEGIST,
       mainnet_gnosis: GNOSIS_STRATEGIST,
       mainnet_arbitrum: ARBITRUM_STRATEGIST,
+      mainnet_optimism: OPTIMISM_STRATEGIST,
+      mainnet_bsc: BSC_STRATEGIST,
 
       default: 2,
       localhost: process.env.FORK === "true" ? POLYGON_STRATEGIST : 2,
@@ -416,6 +451,8 @@ module.exports = {
       mainnet_moonbeam: KEEPER,
       mainnet_gnosis: KEEPER,
       mainnet_arbitrum: KEEPER,
+      mainnet_optimism: KEEPER,
+      mainnet_bsc: KEEPER,
 
       default: 11,
       localhost: process.env.FORK === "true" ? KEEPER : 11,
@@ -430,6 +467,22 @@ module.exports = {
       testnet_aurora: TESTNET_KEEPER,
       testnet_ogoerli: TESTNET_KEEPER,
       testnet_agoerli: TESTNET_KEEPER,
+    },
+    dcaAssetAdminAddr: {
+      mainnet_polygon: DCA_ASSET_ADMIN,
+      mainnet_avalanche: DCA_ASSET_ADMIN,
+      mainnet_fantom: DCA_ASSET_ADMIN,
+      mainnet_celo: DCA_ASSET_ADMIN,
+      mainnet_aurora: DCA_ASSET_ADMIN,
+      mainnet_moonbeam: DCA_ASSET_ADMIN,
+      mainnet_gnosis: DCA_ASSET_ADMIN,
+      mainnet_arbitrum: DCA_ASSET_ADMIN,
+      mainnet_optimism: DCA_ASSET_ADMIN,
+      mainnet_bsc: DCA_ASSET_ADMIN,
+
+      default: 12,
+      localhost: process.env.FORK === "true" ? DCA_ASSET_ADMIN : 12,
+      hardhat: process.env.FORK === "true" ? DCA_ASSET_ADMIN : 12,
     },
   },
   etherscan: {
@@ -446,6 +499,8 @@ module.exports = {
       moonbeam: process.env.MOONSCAN_API_KEY,
       gnosis: process.env.GNOSISSCAN_API_KEY,
       arbitrumOne: process.env.ARBSCAN_API_KEY,
+      optimisticEthereum: process.env.OPTIMISTIC_ETHERSCAN_API_KEY,
+      bsc: process.env.BSCSCAN_API_KEY,
     },
     customChains: [
       {

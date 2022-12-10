@@ -31,5 +31,4 @@ module.exports = {
     isRealChain,
     isDaoChain,
     isProtocolChain,
-    isBandOracle,
 };

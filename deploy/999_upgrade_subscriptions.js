@@ -18,7 +18,6 @@ const {
 
 const deployUpgrades = async () => {
 
-    await upgradeProxyWithConfirmation('CaskVault');
     await upgradeProxyWithConfirmation('CaskSubscriptionPlans');
     await upgradeProxyWithConfirmation('CaskSubscriptions');
     await upgradeProxyWithConfirmation('CaskSubscriptionManager');
@@ -33,7 +32,7 @@ const main = async (hre) => {
 
 main.id = "999_upgrade_subscriptions";
 main.tags = ["upgrade_subscriptions"];
-main.dependencies = ["vault","subscriptions"];
+main.dependencies = ["subscriptions"];
 main.skip = () => !isProtocolChain || isDevnet;
 
 module.exports = main;

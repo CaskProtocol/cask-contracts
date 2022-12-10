@@ -3,12 +3,11 @@ const { CaskSDK } = require('@caskprotocol/sdk');
 
 const {
     usdcUnits,
-    day, month, daiUnits,
+    day, month,
 } = require("../utils/units");
 
 const {
-    runSubscriptionKeeper,
-    advanceTimeRunSubscriptionKeeper, SubscriptionStatus,
+    advanceTimeRunSubscriptionKeeper,
 } = require("./_helpers");
 
 const {
@@ -154,7 +153,7 @@ describe("CaskSubscriptions Bad Values", function () {
 
         // confirm subscription canceled since price was too low
         const result = await consumerASubscriptions.getSubscription(subscriptionId);
-        expect(result.subscription.status).to.equal(SubscriptionStatus.Canceled);
+        expect(result.subscription.status).to.equal(CaskSDK.subscriptionStatus.CANCELED);
 
     });
 
