@@ -109,11 +109,6 @@ ICaskDCAManager
             return;
         }
 
-        if (dca.amount < dcaMinValue) {
-            caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Cancel);
-            return;
-        }
-
         uint32 timestamp = uint32(block.timestamp);
 
         // not time to process yet, re-queue for processAt time
@@ -125,6 +120,11 @@ ICaskDCAManager
         uint256 amount = dca.amount;
         if (dca.totalAmount > 0 && amount > dca.totalAmount - dca.currentAmount) {
             amount = dca.totalAmount - dca.currentAmount;
+        }
+
+        if (amount < dcaMinValue) {
+            caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Cancel);
+            return;
         }
 
         uint256 protocolFee = (amount * dcaFeeBps) / 10000;
