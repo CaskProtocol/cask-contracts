@@ -348,7 +348,7 @@ ICaskChainlinkTopupManager
                 address admin,
                 uint64 maxValidBlocknumber
             ) {
-                return maxValidBlocknumber == type(uint64).max;
+                return maxValidBlocknumber == type(uint32).max;
             } catch {
                 return false;
             }

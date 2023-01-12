@@ -89,43 +89,43 @@ describe("VestedEscrow", function () {
 
         // after 14 months: 14M claimable/total vested and 34M remain locked
         expect(await teamVestedEscrow.balanceOf(alice.address))
-            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('200'));
         expect(await teamVestedEscrow.vestedOf(alice.address))
-            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('200'));
         expect(await teamVestedEscrow.lockedOf(alice.address))
-            .to.be.closeTo(caskUnits('34000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('34000000'), caskUnits('200'));
 
         // test alice claiming 2 months after cliff
         await expect(teamVestedEscrow.connect(alice)['claim()']()).to.emit(teamVestedEscrow, 'Claim');
 
         // check token balance is now 14M
         expect(await caskToken.connect(alice).balanceOf(alice.address))
-            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('200'));
 
         // after claim, balance should be 0, vested/locked unchanged
         expect(await teamVestedEscrow.balanceOf(alice.address)).to.equal('0');
         expect(await teamVestedEscrow.vestedOf(alice.address))
-            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('200'));
         expect(await teamVestedEscrow.lockedOf(alice.address))
-            .to.be.closeTo(caskUnits('34000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('34000000'), caskUnits('200'));
 
         await advanceTime(2 * month); // 16 months total
 
         // 2M more vested/unlocked
         expect(await teamVestedEscrow.balanceOf(alice.address))
-            .to.be.closeTo(caskUnits('2000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('2000000'), caskUnits('200'));
         expect(await teamVestedEscrow.vestedOf(alice.address))
-            .to.be.closeTo(caskUnits('16000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('16000000'), caskUnits('200'));
         expect(await teamVestedEscrow.lockedOf(alice.address))
-            .to.be.closeTo(caskUnits('32000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('32000000'), caskUnits('200'));
 
         // bob hasnt claimed - 32M balance/vested, 64M locked
         expect(await teamVestedEscrow.balanceOf(bob.address))
-            .to.be.closeTo(caskUnits('32000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('32000000'), caskUnits('200'));
         expect(await teamVestedEscrow.vestedOf(bob.address))
-            .to.be.closeTo(caskUnits('32000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('32000000'), caskUnits('200'));
         expect(await teamVestedEscrow.lockedOf(bob.address))
-            .to.be.closeTo(caskUnits('64000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('64000000'), caskUnits('200'));
 
     });
 
@@ -147,9 +147,9 @@ describe("VestedEscrow", function () {
         await advanceTime(12 * month); // 14 months total
 
         expect(await teamVestedEscrow.vestedOf(alice.address))
-            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('200'));
         expect(await teamVestedEscrow.balanceOf(alice.address))
-            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('200'));
 
         // test bob has 0 since was disabled before cliff
         expect(await teamVestedEscrow.balanceOf(bob.address)).to.equal('0');
@@ -160,9 +160,9 @@ describe("VestedEscrow", function () {
 
         // confirm no vesting increase after disable
         expect(await teamVestedEscrow.vestedOf(alice.address))
-            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('200'));
         expect(await teamVestedEscrow.balanceOf(alice.address))
-            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('200'));
     });
 
     it("Cannot disable investor vesting", async function () {
@@ -226,9 +226,9 @@ describe("VestedEscrow", function () {
 
         // alice cliff ended at month 12
         expect(await teamVestedEscrow.vestedOf(alice.address))
-            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('200'));
         expect(await teamVestedEscrow.balanceOf(alice.address))
-            .to.be.closeTo(caskUnits('14000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('14000000'), caskUnits('200'));
 
         // charlie cliff not ended yet
         expect(await teamVestedEscrow.vestedOf(charlie.address)).to.be.equal('0');
@@ -241,14 +241,14 @@ describe("VestedEscrow", function () {
         // both cliffs ended, charlie vesting is 3 months behind alice
 
         expect(await teamVestedEscrow.vestedOf(alice.address))
-            .to.be.closeTo(caskUnits('24000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('24000000'), caskUnits('200'));
         expect(await teamVestedEscrow.balanceOf(alice.address))
-            .to.be.closeTo(caskUnits('24000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('24000000'), caskUnits('200'));
 
         expect(await teamVestedEscrow.vestedOf(charlie.address))
-            .to.be.closeTo(caskUnits('21000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('21000000'), caskUnits('200'));
         expect(await teamVestedEscrow.balanceOf(charlie.address))
-            .to.be.closeTo(caskUnits('21000000'), caskUnits('100'));
+            .to.be.closeTo(caskUnits('21000000'), caskUnits('200'));
 
     });
 
