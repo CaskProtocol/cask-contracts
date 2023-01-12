@@ -1,0 +1,510 @@
+{
+  "address": "0x5a363708469A62a8e0555CFfE894EB0aFEa43dae",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint96",
+          "name": "amount",
+          "type": "uint96"
+        }
+      ],
+      "name": "addFunds",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelUpkeep",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getCanceledUpkeepList",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getConfig",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "paymentPremiumPPB",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint24",
+          "name": "checkFrequencyBlocks",
+          "type": "uint24"
+        },
+        {
+          "internalType": "uint32",
+          "name": "checkGasLimit",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint24",
+          "name": "stalenessSeconds",
+          "type": "uint24"
+        },
+        {
+          "internalType": "uint16",
+          "name": "gasCeilingMultiplier",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint256",
+          "name": "fallbackGasPrice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "fallbackLinkPrice",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "query",
+          "type": "address"
+        }
+      ],
+      "name": "getKeeperInfo",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "payee",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "active",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint96",
+          "name": "balance",
+          "type": "uint96"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getKeeperList",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "getUpkeep",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "executeGas",
+          "type": "uint32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "checkData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint96",
+          "name": "balance",
+          "type": "uint96"
+        },
+        {
+          "internalType": "address",
+          "name": "lastKeeper",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
+        },
+        {
+          "internalType": "uint64",
+          "name": "maxValidBlocknumber",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getUpkeepCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_linkToken",
+          "type": "address"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "linkToken",
+      "outputs": [
+        {
+          "internalType": "contract LinkTokenInterface",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "onTokenTransfer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "performData",
+          "type": "bytes"
+        }
+      ],
+      "name": "performUpkeep",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "target",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "gasLimit",
+          "type": "uint32"
+        },
+        {
+          "internalType": "address",
+          "name": "admin",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "checkData",
+          "type": "bytes"
+        }
+      ],
+      "name": "registerUpkeep",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint96",
+          "name": "amount",
+          "type": "uint96"
+        }
+      ],
+      "name": "spendFunds",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "upkeepAdmins",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "upkeepBalance",
+      "outputs": [
+        {
+          "internalType": "uint96",
+          "name": "",
+          "type": "uint96"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "upkeepCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "upkeepPerforms",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x11ade5e5ef591a49ca2d00c750b377e5329fdaa53beb5704fecf4e6a7172c883",
+  "receipt": {
+    "to": null,
+    "from": "0x83e50cD4123bAA60f6d6c8A83ca85Ac72e826bD0",
+    "contractAddress": "0x5a363708469A62a8e0555CFfE894EB0aFEa43dae",
+    "transactionIndex": 0,
+    "gasUsed": "704514",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x5535686b3805af2804b3866fa4b00202dcbfc0fb431ec74ecfa9081de8e2cf4b",
+    "transactionHash": "0x11ade5e5ef591a49ca2d00c750b377e5329fdaa53beb5704fecf4e6a7172c883",
+    "logs": [],
+    "blockNumber": 15637348,
+    "cumulativeGasUsed": "704514",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "7cefdf1870fe8121007619f1bae7798a",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.9+commit.e5eed63a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint96\",\"name\":\"amount\",\"type\":\"uint96\"}],\"name\":\"addFunds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"}],\"name\":\"cancelUpkeep\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getCanceledUpkeepList\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getConfig\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"paymentPremiumPPB\",\"type\":\"uint32\"},{\"internalType\":\"uint24\",\"name\":\"checkFrequencyBlocks\",\"type\":\"uint24\"},{\"internalType\":\"uint32\",\"name\":\"checkGasLimit\",\"type\":\"uint32\"},{\"internalType\":\"uint24\",\"name\":\"stalenessSeconds\",\"type\":\"uint24\"},{\"internalType\":\"uint16\",\"name\":\"gasCeilingMultiplier\",\"type\":\"uint16\"},{\"internalType\":\"uint256\",\"name\":\"fallbackGasPrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"fallbackLinkPrice\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"query\",\"type\":\"address\"}],\"name\":\"getKeeperInfo\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"payee\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"active\",\"type\":\"bool\"},{\"internalType\":\"uint96\",\"name\":\"balance\",\"type\":\"uint96\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getKeeperList\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"}],\"name\":\"getUpkeep\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"executeGas\",\"type\":\"uint32\"},{\"internalType\":\"bytes\",\"name\":\"checkData\",\"type\":\"bytes\"},{\"internalType\":\"uint96\",\"name\":\"balance\",\"type\":\"uint96\"},{\"internalType\":\"address\",\"name\":\"lastKeeper\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"admin\",\"type\":\"address\"},{\"internalType\":\"uint64\",\"name\":\"maxValidBlocknumber\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getUpkeepCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_linkToken\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"linkToken\",\"outputs\":[{\"internalType\":\"contract LinkTokenInterface\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"onTokenTransfer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"performData\",\"type\":\"bytes\"}],\"name\":\"performUpkeep\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"target\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"gasLimit\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"admin\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"checkData\",\"type\":\"bytes\"}],\"name\":\"registerUpkeep\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"id\",\"type\":\"uint256\"},{\"internalType\":\"uint96\",\"name\":\"amount\",\"type\":\"uint96\"}],\"name\":\"spendFunds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"upkeepAdmins\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"upkeepBalance\",\"outputs\":[{\"internalType\":\"uint96\",\"name\":\"\",\"type\":\"uint96\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"upkeepCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"upkeepPerforms\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/mocks/MockAutomationRegistry.sol\":\"MockAutomationRegistry\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/erc677/IERC677Receiver.sol\":{\"content\":\"// SPDX-License-Identifier: agpl-3.0\\npragma solidity ^0.8.0;\\n\\ninterface IERC677Receiver {\\n    function onTokenTransfer(\\n        address sender,\\n        uint value,\\n        bytes memory data\\n    )\\n    external;\\n}\",\"keccak256\":\"0xa1df26a04c7406c17bbdb0aa4f852fa96209d1f0665a50900b86bfa3fb2b73b8\",\"license\":\"agpl-3.0\"},\"contracts/interfaces/AutomationRegistryBaseInterface.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.0;\\n\\ninterface AutomationRegistryBaseInterface {\\n    function registerUpkeep(\\n        address target,\\n        uint32 gasLimit,\\n        address admin,\\n        bytes calldata checkData\\n    ) external returns (\\n        uint256 id\\n    );\\n    function performUpkeep(\\n        uint256 id,\\n        bytes calldata performData\\n    ) external returns (\\n        bool success\\n    );\\n    function cancelUpkeep(\\n        uint256 id\\n    ) external;\\n    function addFunds(\\n        uint256 id,\\n        uint96 amount\\n    ) external;\\n\\n    function getUpkeep(uint256 id)\\n    external view returns (\\n        address target,\\n        uint32 executeGas,\\n        bytes memory checkData,\\n        uint96 balance,\\n        address lastKeeper,\\n        address admin,\\n        uint64 maxValidBlocknumber\\n    );\\n    function getUpkeepCount()\\n    external view returns (uint256);\\n    function getCanceledUpkeepList()\\n    external view returns (uint256[] memory);\\n    function getKeeperList()\\n    external view returns (address[] memory);\\n    function getKeeperInfo(address query)\\n    external view returns (\\n        address payee,\\n        bool active,\\n        uint96 balance\\n    );\\n    function getConfig()\\n    external view returns (\\n        uint32 paymentPremiumPPB,\\n        uint24 checkFrequencyBlocks,\\n        uint32 checkGasLimit,\\n        uint24 stalenessSeconds,\\n        uint16 gasCeilingMultiplier,\\n        uint256 fallbackGasPrice,\\n        uint256 fallbackLinkPrice\\n    );\\n}\",\"keccak256\":\"0xc924f25110230e51118b76ae133a64bfe96f959054c6a8273b944b5112253797\",\"license\":\"MIT\"},\"contracts/interfaces/LinkTokenInterface.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.8.0;\\n\\ninterface LinkTokenInterface {\\n    function allowance(address owner, address spender) external view returns (uint256 remaining);\\n\\n    function approve(address spender, uint256 value) external returns (bool success);\\n\\n    function balanceOf(address owner) external view returns (uint256 balance);\\n\\n    function decimals() external view returns (uint8 decimalPlaces);\\n\\n    function decreaseApproval(address spender, uint256 addedValue) external returns (bool success);\\n\\n    function increaseApproval(address spender, uint256 subtractedValue) external;\\n\\n    function name() external view returns (string memory tokenName);\\n\\n    function symbol() external view returns (string memory tokenSymbol);\\n\\n    function totalSupply() external view returns (uint256 totalTokensIssued);\\n\\n    function transfer(address to, uint256 value) external returns (bool success);\\n\\n    function transferAndCall(\\n        address to,\\n        uint256 value,\\n        bytes calldata data\\n    ) external returns (bool success);\\n\\n    function transferFrom(\\n        address from,\\n        address to,\\n        uint256 value\\n    ) external returns (bool success);\\n}\",\"keccak256\":\"0x5c0afbbda1035ab2c4a64d7d18b18d1b2a5a88ef0168fc574667f0ab1382c378\",\"license\":\"MIT\"},\"contracts/mocks/MockAutomationRegistry.sol\":{\"content\":\"// SPDX-License-Identifier: agpl-3.0\\npragma solidity ^0.8.0;\\n\\nimport \\\"../interfaces/AutomationRegistryBaseInterface.sol\\\";\\nimport \\\"../interfaces/LinkTokenInterface.sol\\\";\\nimport \\\"../erc677/IERC677Receiver.sol\\\";\\n\\ncontract MockAutomationRegistry is AutomationRegistryBaseInterface, IERC677Receiver {\\n\\n    mapping(uint256 => address) public upkeepAdmins;\\n    mapping(uint256 => uint96) public upkeepBalance;\\n    mapping(uint256 => uint256) public upkeepPerforms;\\n    uint256 public upkeepCount;\\n\\n    LinkTokenInterface public linkToken;\\n\\n    function initialize(\\n        address _linkToken\\n    ) external {\\n        linkToken = LinkTokenInterface(_linkToken);\\n    }\\n\\n    function registerUpkeep(\\n        address target,\\n        uint32 gasLimit,\\n        address admin,\\n        bytes calldata checkData\\n    ) external returns(uint256) {\\n        upkeepCount += 1;\\n\\n        upkeepAdmins[upkeepCount] = admin;\\n        return upkeepCount;\\n    }\\n\\n    function performUpkeep(\\n        uint256 id,\\n        bytes calldata performData\\n    ) external returns (\\n        bool success\\n    ) {\\n        require(upkeepAdmins[id] != address(0), \\\"!invalid\\\");\\n        upkeepPerforms[id] += 1;\\n        return true;\\n    }\\n\\n    function cancelUpkeep(\\n        uint256 id\\n    ) external {\\n        require(upkeepAdmins[id] != address(0), \\\"!invalid\\\");\\n        upkeepCount -= 1;\\n        upkeepBalance[id] = 0;\\n        upkeepAdmins[id] = address(0);\\n    }\\n\\n    function addFunds(\\n        uint256 id,\\n        uint96 amount\\n    ) external {\\n        require(upkeepAdmins[id] != address(0), \\\"!invalid\\\");\\n        linkToken.transferFrom(msg.sender, address(this), amount);\\n        upkeepBalance[id] += amount;\\n    }\\n\\n    function spendFunds(\\n        uint256 id,\\n        uint96 amount\\n    ) external {\\n        require(upkeepAdmins[id] != address(0), \\\"!invalid\\\");\\n        require(amount <= upkeepBalance[id], \\\"!balance\\\");\\n        upkeepBalance[id] -= amount;\\n    }\\n\\n    function getUpkeep(uint256 id)\\n    external view returns (\\n        address target,\\n        uint32 executeGas,\\n        bytes memory checkData,\\n        uint96 balance,\\n        address lastKeeper,\\n        address admin,\\n        uint64 maxValidBlocknumber\\n    ) {return (address(0), 0, bytes(\\\"\\\"), upkeepBalance[id], address(0), upkeepAdmins[id], type(uint64).max);}\\n\\n    function getUpkeepCount()\\n    external view returns (uint256) {return upkeepCount;}\\n\\n    function getCanceledUpkeepList()\\n    external view returns (uint256[] memory) {return new uint256[](0);}\\n\\n    function getKeeperList()\\n    external view returns (address[] memory) { return new address[](0);}\\n\\n    function getKeeperInfo(address query)\\n    external view returns (\\n        address payee,\\n        bool active,\\n        uint96 balance\\n    ) {return (address(0), true, 0);}\\n\\n    function getConfig()\\n    external view returns (\\n        uint32 paymentPremiumPPB,\\n        uint24 checkFrequencyBlocks,\\n        uint32 checkGasLimit,\\n        uint24 stalenessSeconds,\\n        uint16 gasCeilingMultiplier,\\n        uint256 fallbackGasPrice,\\n        uint256 fallbackLinkPrice\\n    ) {return (0, 0, 0, 0, 0, 0, 0);}\\n\\n    function onTokenTransfer(\\n        address sender,\\n        uint256 amount,\\n        bytes calldata data\\n    ) external {\\n        uint256 id = abi.decode(data, (uint256));\\n\\n        require(upkeepAdmins[id] != address(0), \\\"!invalid\\\");\\n        upkeepBalance[id] += uint96(amount);\\n    }\\n}\",\"keccak256\":\"0x3decb293d7ccfbd5f82c37ef7d6a373a5c18ebb3449ba377ebe19bf6a2711e88\",\"license\":\"agpl-3.0\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50610bc8806100206000396000f3fe608060405234801561001057600080fd5b50600436106101165760003560e01c80637bbaf1ea116100a2578063c4d66de811610071578063c4d66de814610302578063c7c3a19a14610332578063c8048022146103a0578063da5c6741146103b3578063fecf27c9146103c657600080fd5b80637bbaf1ea1461027e578063948108f7146102a1578063a4c0ed36146102b4578063c3f909d4146102c757600080fd5b80633717a7f6116100e95780633717a7f6146101cb57806357970e93146101e057806360767ec51461020b5780637323f3d01461024c5780637612a4421461025557600080fd5b806315a126ea1461011b5780631e12b8a51461013d57806329da4c52146101845780632cb6864d146101b2575b600080fd5b6040805160008152602081019182905261013491610771565b60405180910390f35b61015661014b3660046107da565b600060018193909250565b604080516001600160a01b03909416845291151560208401526001600160601b031690820152606001610134565b6101a46101923660046107fc565b60026020526000908152604090205481565b604051908152602001610134565b6040805160008152602081019182905261013491610815565b6101de6101d936600461084d565b6103ce565b005b6004546101f3906001600160a01b031681565b6040516001600160a01b039091168152602001610134565b6102346102193660046107fc565b6001602052600090815260409020546001600160601b031681565b6040516001600160601b039091168152602001610134565b6101a460035481565b6101f36102633660046107fc565b6000602081905290815260409020546001600160a01b031681565b61029161028c3660046108d2565b6104b0565b6040519015158152602001610134565b6101de6102af36600461084d565b610512565b6101de6102c236600461091e565b610601565b60408051600080825260208201819052918101829052606081018290526080810182905260a0810182905260c081019190915260e001610134565b6101de6103103660046107da565b600480546001600160a01b0319166001600160a01b0392909216919091179055565b61038d6103403660046107fc565b60408051602080820183526000808352938452600181528284205490849052918320549293849391926001600160601b03169184916001600160a01b039091169067ffffffffffffffff90565b6040516101349796959493929190610978565b6101de6103ae3660046107fc565b610698565b6101a46103c1366004610a35565b61071e565b6003546101a4565b6000828152602081905260409020546001600160a01b031661040b5760405162461bcd60e51b815260040161040290610ab6565b60405180910390fd5b6000828152600160205260409020546001600160601b0390811690821611156104615760405162461bcd60e51b81526020600482015260086024820152672162616c616e636560c01b6044820152606401610402565b600082815260016020526040812080548392906104889084906001600160601b0316610aee565b92506101000a8154816001600160601b0302191690836001600160601b031602179055505050565b6000838152602081905260408120546001600160a01b03166104e45760405162461bcd60e51b815260040161040290610ab6565b6000848152600260205260408120805460019290610503908490610b16565b90915550600195945050505050565b6000828152602081905260409020546001600160a01b03166105465760405162461bcd60e51b815260040161040290610ab6565b600480546040516323b872dd60e01b815233928101929092523060248301526001600160601b03831660448301526001600160a01b0316906323b872dd90606401602060405180830381600087803b1580156105a157600080fd5b505af11580156105b5573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906105d99190610b2e565b50600082815260016020526040812080548392906104889084906001600160601b0316610b50565b600061060f828401846107fc565b6000818152602081905260409020549091506001600160a01b03166106465760405162461bcd60e51b815260040161040290610ab6565b6000818152600160205260408120805486929061066d9084906001600160601b0316610b50565b92506101000a8154816001600160601b0302191690836001600160601b031602179055505050505050565b6000818152602081905260409020546001600160a01b03166106cc5760405162461bcd60e51b815260040161040290610ab6565b6001600360008282546106df9190610b7b565b9091555050600090815260016020908152604080832080546bffffffffffffffffffffffff1916905590829052902080546001600160a01b0319169055565b60006001600360008282546107339190610b16565b909155505060038054600090815260208190526040902080546001600160a01b0387166001600160a01b031990911617905554905095945050505050565b6020808252825182820181905260009190848201906040850190845b818110156107b25783516001600160a01b03168352928401929184019160010161078d565b50909695505050505050565b80356001600160a01b03811681146107d557600080fd5b919050565b6000602082840312156107ec57600080fd5b6107f5826107be565b9392505050565b60006020828403121561080e57600080fd5b5035919050565b6020808252825182820181905260009190848201906040850190845b818110156107b257835183529284019291840191600101610831565b6000806040838503121561086057600080fd5b8235915060208301356001600160601b038116811461087e57600080fd5b809150509250929050565b60008083601f84011261089b57600080fd5b50813567ffffffffffffffff8111156108b357600080fd5b6020830191508360208285010111156108cb57600080fd5b9250929050565b6000806000604084860312156108e757600080fd5b83359250602084013567ffffffffffffffff81111561090557600080fd5b61091186828701610889565b9497909650939450505050565b6000806000806060858703121561093457600080fd5b61093d856107be565b935060208501359250604085013567ffffffffffffffff81111561096057600080fd5b61096c87828801610889565b95989497509550505050565b60018060a01b03881681526000602063ffffffff89168184015260e0604084015287518060e085015260005b818110156109c157898101830151858201610100015282016109a4565b818111156109d457600061010083870101525b50601f01601f191683016101000191506109fb905060608301876001600160601b03169052565b6001600160a01b03851660808301526001600160a01b03841660a083015267ffffffffffffffff831660c083015298975050505050505050565b600080600080600060808688031215610a4d57600080fd5b610a56866107be565b9450602086013563ffffffff81168114610a6f57600080fd5b9350610a7d604087016107be565b9250606086013567ffffffffffffffff811115610a9957600080fd5b610aa588828901610889565b969995985093965092949392505050565b602080825260089082015267085a5b9d985b1a5960c21b604082015260600190565b634e487b7160e01b600052601160045260246000fd5b60006001600160601b0383811690831681811015610b0e57610b0e610ad8565b039392505050565b60008219821115610b2957610b29610ad8565b500190565b600060208284031215610b4057600080fd5b815180151581146107f557600080fd5b60006001600160601b03808316818516808303821115610b7257610b72610ad8565b01949350505050565b600082821015610b8d57610b8d610ad8565b50039056fea264697066735822122078cccf11fd10a252a22f8e55c39e8c282ce82b2c51cdebc2cce3bb459ab8010564736f6c63430008090033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106101165760003560e01c80637bbaf1ea116100a2578063c4d66de811610071578063c4d66de814610302578063c7c3a19a14610332578063c8048022146103a0578063da5c6741146103b3578063fecf27c9146103c657600080fd5b80637bbaf1ea1461027e578063948108f7146102a1578063a4c0ed36146102b4578063c3f909d4146102c757600080fd5b80633717a7f6116100e95780633717a7f6146101cb57806357970e93146101e057806360767ec51461020b5780637323f3d01461024c5780637612a4421461025557600080fd5b806315a126ea1461011b5780631e12b8a51461013d57806329da4c52146101845780632cb6864d146101b2575b600080fd5b6040805160008152602081019182905261013491610771565b60405180910390f35b61015661014b3660046107da565b600060018193909250565b604080516001600160a01b03909416845291151560208401526001600160601b031690820152606001610134565b6101a46101923660046107fc565b60026020526000908152604090205481565b604051908152602001610134565b6040805160008152602081019182905261013491610815565b6101de6101d936600461084d565b6103ce565b005b6004546101f3906001600160a01b031681565b6040516001600160a01b039091168152602001610134565b6102346102193660046107fc565b6001602052600090815260409020546001600160601b031681565b6040516001600160601b039091168152602001610134565b6101a460035481565b6101f36102633660046107fc565b6000602081905290815260409020546001600160a01b031681565b61029161028c3660046108d2565b6104b0565b6040519015158152602001610134565b6101de6102af36600461084d565b610512565b6101de6102c236600461091e565b610601565b60408051600080825260208201819052918101829052606081018290526080810182905260a0810182905260c081019190915260e001610134565b6101de6103103660046107da565b600480546001600160a01b0319166001600160a01b0392909216919091179055565b61038d6103403660046107fc565b60408051602080820183526000808352938452600181528284205490849052918320549293849391926001600160601b03169184916001600160a01b039091169067ffffffffffffffff90565b6040516101349796959493929190610978565b6101de6103ae3660046107fc565b610698565b6101a46103c1366004610a35565b61071e565b6003546101a4565b6000828152602081905260409020546001600160a01b031661040b5760405162461bcd60e51b815260040161040290610ab6565b60405180910390fd5b6000828152600160205260409020546001600160601b0390811690821611156104615760405162461bcd60e51b81526020600482015260086024820152672162616c616e636560c01b6044820152606401610402565b600082815260016020526040812080548392906104889084906001600160601b0316610aee565b92506101000a8154816001600160601b0302191690836001600160601b031602179055505050565b6000838152602081905260408120546001600160a01b03166104e45760405162461bcd60e51b815260040161040290610ab6565b6000848152600260205260408120805460019290610503908490610b16565b90915550600195945050505050565b6000828152602081905260409020546001600160a01b03166105465760405162461bcd60e51b815260040161040290610ab6565b600480546040516323b872dd60e01b815233928101929092523060248301526001600160601b03831660448301526001600160a01b0316906323b872dd90606401602060405180830381600087803b1580156105a157600080fd5b505af11580156105b5573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906105d99190610b2e565b50600082815260016020526040812080548392906104889084906001600160601b0316610b50565b600061060f828401846107fc565b6000818152602081905260409020549091506001600160a01b03166106465760405162461bcd60e51b815260040161040290610ab6565b6000818152600160205260408120805486929061066d9084906001600160601b0316610b50565b92506101000a8154816001600160601b0302191690836001600160601b031602179055505050505050565b6000818152602081905260409020546001600160a01b03166106cc5760405162461bcd60e51b815260040161040290610ab6565b6001600360008282546106df9190610b7b565b9091555050600090815260016020908152604080832080546bffffffffffffffffffffffff1916905590829052902080546001600160a01b0319169055565b60006001600360008282546107339190610b16565b909155505060038054600090815260208190526040902080546001600160a01b0387166001600160a01b031990911617905554905095945050505050565b6020808252825182820181905260009190848201906040850190845b818110156107b25783516001600160a01b03168352928401929184019160010161078d565b50909695505050505050565b80356001600160a01b03811681146107d557600080fd5b919050565b6000602082840312156107ec57600080fd5b6107f5826107be565b9392505050565b60006020828403121561080e57600080fd5b5035919050565b6020808252825182820181905260009190848201906040850190845b818110156107b257835183529284019291840191600101610831565b6000806040838503121561086057600080fd5b8235915060208301356001600160601b038116811461087e57600080fd5b809150509250929050565b60008083601f84011261089b57600080fd5b50813567ffffffffffffffff8111156108b357600080fd5b6020830191508360208285010111156108cb57600080fd5b9250929050565b6000806000604084860312156108e757600080fd5b83359250602084013567ffffffffffffffff81111561090557600080fd5b61091186828701610889565b9497909650939450505050565b6000806000806060858703121561093457600080fd5b61093d856107be565b935060208501359250604085013567ffffffffffffffff81111561096057600080fd5b61096c87828801610889565b95989497509550505050565b60018060a01b03881681526000602063ffffffff89168184015260e0604084015287518060e085015260005b818110156109c157898101830151858201610100015282016109a4565b818111156109d457600061010083870101525b50601f01601f191683016101000191506109fb905060608301876001600160601b03169052565b6001600160a01b03851660808301526001600160a01b03841660a083015267ffffffffffffffff831660c083015298975050505050505050565b600080600080600060808688031215610a4d57600080fd5b610a56866107be565b9450602086013563ffffffff81168114610a6f57600080fd5b9350610a7d604087016107be565b9250606086013567ffffffffffffffff811115610a9957600080fd5b610aa588828901610889565b969995985093965092949392505050565b602080825260089082015267085a5b9d985b1a5960c21b604082015260600190565b634e487b7160e01b600052601160045260246000fd5b60006001600160601b0383811690831681811015610b0e57610b0e610ad8565b039392505050565b60008219821115610b2957610b29610ad8565b500190565b600060208284031215610b4057600080fd5b815180151581146107f557600080fd5b60006001600160601b03808316818516808303821115610b7257610b72610ad8565b01949350505050565b600082821015610b8d57610b8d610ad8565b50039056fea264697066735822122078cccf11fd10a252a22f8e55c39e8c282ce82b2c51cdebc2cce3bb459ab8010564736f6c63430008090033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 18638,
+        "contract": "contracts/mocks/MockAutomationRegistry.sol:MockAutomationRegistry",
+        "label": "upkeepAdmins",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_mapping(t_uint256,t_address)"
+      },
+      {
+        "astId": 18642,
+        "contract": "contracts/mocks/MockAutomationRegistry.sol:MockAutomationRegistry",
+        "label": "upkeepBalance",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_mapping(t_uint256,t_uint96)"
+      },
+      {
+        "astId": 18646,
+        "contract": "contracts/mocks/MockAutomationRegistry.sol:MockAutomationRegistry",
+        "label": "upkeepPerforms",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_mapping(t_uint256,t_uint256)"
+      },
+      {
+        "astId": 18648,
+        "contract": "contracts/mocks/MockAutomationRegistry.sol:MockAutomationRegistry",
+        "label": "upkeepCount",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 18651,
+        "contract": "contracts/mocks/MockAutomationRegistry.sol:MockAutomationRegistry",
+        "label": "linkToken",
+        "offset": 0,
+        "slot": "4",
+        "type": "t_contract(LinkTokenInterface)17946"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_contract(LinkTokenInterface)17946": {
+        "encoding": "inplace",
+        "label": "contract LinkTokenInterface",
+        "numberOfBytes": "20"
+      },
+      "t_mapping(t_uint256,t_address)": {
+        "encoding": "mapping",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
+      },
+      "t_mapping(t_uint256,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_mapping(t_uint256,t_uint96)": {
+        "encoding": "mapping",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => uint96)",
+        "numberOfBytes": "32",
+        "value": "t_uint96"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      },
+      "t_uint96": {
+        "encoding": "inplace",
+        "label": "uint96",
+        "numberOfBytes": "12"
+      }
+    }
+  }
+}
