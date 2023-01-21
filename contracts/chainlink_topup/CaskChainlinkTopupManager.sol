@@ -191,9 +191,7 @@ ICaskChainlinkTopupManager
         }
 
         // topup target not active or registry not allowed
-        if (allowedRegistries[chainlinkTopup.registry] == ChainlinkRegistryType.NONE ||
-            !_topupValid(_chainlinkTopupId))
-        {
+        if (!_topupValid(_chainlinkTopupId)) {
             caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Cancel);
             return false;
         }
@@ -407,6 +405,11 @@ ICaskChainlinkTopupManager
             return _automationvalid(_chainlinkTopupId);
 
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
+            ChainlinkRegistryType ver = allowedRegistries[chainlinkTopup.registry];
+            if (ver != ChainlinkRegistryType.VRF_V2) {
+                return false;
+            }
+
             VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
             try coordinator.getSubscription(uint64(chainlinkTopup.targetId)) returns (
                 uint96 balance,
