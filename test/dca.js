@@ -507,6 +507,8 @@ describe("CaskDCA General", function () {
         expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(result.numSkips).to.equal(0);
 
+        await advanceTimeRunDCAKeeper(7 * 5 + 2, day);
+
         // change price of ABC so its no longer in range
         await priceFeed.setPrice(ethers.utils.parseUnits("1.5", 8)); // set ABC price to 1.5 USDC - above maxPrice
 
@@ -516,7 +518,8 @@ describe("CaskDCA General", function () {
         result = await userDCA.getDCA(dcaId);
         expect(result.status).to.equal(CaskSDK.dcaStatus.ACTIVE);
         expect(result.numSkips).to.equal(1);
-        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('89.9')); // minus minFee
+        expect(result.numBuys).to.equal(6);
+        expect(await userVault.currentValueOf(user.address)).to.equal(usdcUnits('39.9')); // minus minFee
     });
 
     it("DCA min value enforced", async function () {

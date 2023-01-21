@@ -88,14 +88,16 @@ ICaskJobQueue
     function checkUpkeep(
         bytes calldata checkData
     ) external view override returns(bool upkeepNeeded, bytes memory performData) {
+        if (paused()) {
+            return (false, "");
+        }
+
         (
         uint256 limit,
         uint256 minDepth,
         uint8 queueId
         ) = abi.decode(checkData, (uint256, uint256, uint8));
-
         uint32 bucket = currentBucket();
-        upkeepNeeded = false;
 
         uint32 checkBucket = queueBucket[queueId];
         if (checkBucket == 0) {
@@ -184,6 +186,14 @@ ICaskJobQueue
         }
         queue[_queueId][bucket].push(_workUnit);
         emit WorkUnitQueued(_queueId, _workUnit, bucket);
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     function setQueueBucketSize(

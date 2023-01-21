@@ -78,8 +78,9 @@ contract MockAutomationRegistry is AutomationRegistryBaseInterface, IERC677Recei
         uint96 balance,
         address lastKeeper,
         address admin,
-        uint64 maxValidBlocknumber
-    ) {return (address(0), 0, bytes(""), upkeepBalance[id], address(0), upkeepAdmins[id], type(uint64).max);}
+        uint64 maxValidBlocknumber,
+        uint96 amountSpent
+    ) {return (address(0), 0, bytes(""), upkeepBalance[id], address(0), upkeepAdmins[id], type(uint64).max, 0);}
 
     function getUpkeepCount()
     external view returns (uint256) {return upkeepCount;}
