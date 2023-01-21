@@ -56,6 +56,14 @@ const ChainlinkTopupType = {
     Direct: 3,
 };
 
+const ChainlinkRegistryType = {
+    None: 0,
+    AutomationV1_2: 1,
+    AutomationV1_3: 2,
+    AutomationV2_0: 3,
+    VRF_V2: 4,
+};
+
 const ChainlinkTopupStatus = {
     None: 0,
     Active: 1,
@@ -314,6 +322,7 @@ module.exports = {
     DCAStatus,
     P2PStatus,
     ChainlinkTopupType,
+    ChainlinkRegistryType,
     ChainlinkTopupStatus,
 
     advanceTime,

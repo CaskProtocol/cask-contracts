@@ -11,7 +11,8 @@ const {
 
 const {
     getNetworkAddresses,
-    getChainlinkAddresses
+    getChainlinkAddresses,
+    ChainlinkRegistryType
 } = require("../_helpers");
 
 
@@ -31,8 +32,11 @@ async function cltuFixture() {
     fixture.erc20Link = await ethers.getContract("MockERC20LINK");
     fixture.erc677Link = await ethers.getContract("MockERC677LINK");
 
-    await fixture.cltuManager.connect(fixture.governor).allowRegistry(fixture.automationRegistry.address);
-    await fixture.cltuManager.connect(fixture.governor).allowRegistry(fixture.vrfCoordinator.address);
+    await fixture.cltuManager.connect(fixture.governor).allowRegistry(fixture.automationRegistry.address,
+        ChainlinkRegistryType.AutomationV1_2);
+
+    await fixture.cltuManager.connect(fixture.governor).allowRegistry(fixture.vrfCoordinator.address,
+        ChainlinkRegistryType.VRF_V2);
 
     return fixture;
 }

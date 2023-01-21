@@ -9,6 +9,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "../interfaces/IGMXRouter.sol";
+import "../interfaces/ILBRouter.sol";
 
 import "../job_queue/CaskJobQueue.sol";
 import "../interfaces/ICaskDCAManager.sol";
@@ -138,9 +139,17 @@ ICaskDCAManager
         ICaskVault.Asset memory inputAssetInfo = caskVault.getAsset(inputAsset);
 
         if (!inputAssetInfo.allowed) {
-            scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
-            caskDCA.managerSkipped(_dcaId, ICaskDCA.SkipReason.AssetNotAllowed);
+            caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Cancel);
             return;
+        }
+
+        // allow skip count to be either number of purchases - 1 or maxSkip setting, whichever is lower
+        uint256 allowedSkips = dca.numBuys;
+        if (allowedSkips > 0) {
+            allowedSkips = allowedSkips - 1;
+        }
+        if (allowedSkips > maxSkips) {
+            allowedSkips = maxSkips;
         }
 
         if (!_checkMinMaxPrice(dca, swapInfo, inputAssetInfo, outputAsset)) {
@@ -148,7 +157,7 @@ ICaskDCAManager
 
             try caskVault.protocolPayment(dca.user, address(this), dcaFeeMin) {
                 caskDCA.managerSkipped(_dcaId, ICaskDCA.SkipReason.OutsideLimits);
-                if (maxSkips > 0 && dca.numSkips >= maxSkips) {
+                if (dca.numSkips > allowedSkips) {
                     caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Pause);
                 }
             } catch (bytes memory) {
@@ -170,7 +179,7 @@ ICaskDCAManager
             caskDCA.managerProcessed(_dcaId, amount, buyQty, protocolFee);
 
         } else {
-            if (maxSkips > 0 && dca.numSkips >= maxSkips) {
+            if (dca.numSkips > allowedSkips) {
                 caskDCA.managerCommand(_dcaId, ICaskDCA.ManagerCommand.Pause);
             } else {
                 scheduleWorkUnit(_queueId, _dcaId, bucketAt(dca.processAt + dca.period));
@@ -278,6 +287,8 @@ ICaskDCAManager
             return _performSwapUniV3(dca, swapInfo, _inputAmount, _minOutput);
         } else if (swapInfo.swapProtocol == ICaskDCA.SwapProtocol.GMX) {
             return _performSwapGMX(dca, _inputAmount, _minOutput);
+        } else if (swapInfo.swapProtocol == ICaskDCA.SwapProtocol.JoeV2) {
+            return _performSwapJoeV2(dca, swapInfo, _inputAmount, _minOutput);
         }
         revert("!INVALID(swapProtocol)");
     }
@@ -294,6 +305,9 @@ ICaskDCAManager
             return type(uint256).max; // no direct pool slippage check for uni-v3
         } else if (swapInfo.swapProtocol == ICaskDCA.SwapProtocol.GMX) {
             require(dca.priceFeed != address(0), "!INVALID(priceFeed)"); // gmx requires external oracle
+            return type(uint256).max; // slippage-less trading on gmx!
+        } else if (swapInfo.swapProtocol == ICaskDCA.SwapProtocol.JoeV2) {
+            require(dca.priceFeed != address(0), "!INVALID(priceFeed)"); // JoeV2 requires external oracle
             return type(uint256).max; // slippage-less trading on gmx!
         }
         revert("!INVALID(swapProtocol)");
@@ -378,6 +392,33 @@ ICaskDCAManager
         try IGMXRouter(dca.router).swap(dca.path, _inputAmount, _minOutput, dca.to) { } catch (bytes memory) {}
 
         return IERC20Metadata(outputAsset).balanceOf(address(this)) - beforeBalance;
+    }
+
+    function _performSwapJoeV2(
+        ICaskDCA.DCA memory dca,
+        ICaskDCA.SwapInfo memory swapInfo,
+        uint256 _inputAmount,
+        uint256 _minOutput
+    ) internal returns(uint256) {
+
+        // let swap router spend the amount of newly acquired inputAsset
+        IERC20Metadata(dca.path[0]).safeIncreaseAllowance(dca.router, _inputAmount);
+
+        uint256 buyAmount = 0;
+
+        // perform swap
+        try ILBRouter(dca.router).swapExactTokensForTokens(
+            _inputAmount,
+            _minOutput,
+            abi.decode(swapInfo.swapData, (uint256[])),
+            dca.path,
+            dca.to,
+            block.timestamp + 1 hours
+        ) returns (uint256 amountOut) {
+            buyAmount = amountOut;
+        } catch (bytes memory) { } // buyAmount stays 0
+
+        return buyAmount;
     }
 
     function _checkMinMaxPrice(
