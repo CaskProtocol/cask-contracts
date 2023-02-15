@@ -9,7 +9,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "../interfaces/IGMXRouter.sol";
-import "../interfaces/AutomationRegistryBaseInterface.sol";
+import "../interfaces/ILBRouter.sol";
 import "../interfaces/VRFCoordinatorV2Interface.sol";
 import "../interfaces/LinkTokenInterface.sol";
 import "../interfaces/IPegSwap.sol";
@@ -19,6 +19,32 @@ import "../job_queue/CaskJobQueue.sol";
 import "./ICaskChainlinkTopupManager.sol";
 import "./ICaskChainlinkTopup.sol";
 
+interface CLAutomationRegistryV1_2 {
+    function getUpkeep(uint256 id) external view returns (address target, uint32 executeGas, bytes memory checkData,
+        uint96 balance, address lastKeeper, address admin, uint64 maxValidBlocknumber, uint96 amountSpent);
+}
+
+interface CLAutomationRegistryV1_3 {
+    function getUpkeep(uint256 id) external view returns (address target, uint32 executeGas, bytes memory checkData,
+        uint96 balance, address lastKeeper, address admin, uint64 maxValidBlocknumber, uint96 amountSpent, bool paused);
+
+}
+
+interface CLAutomationRegistryV2_0 {
+    struct UpkeepInfo {
+        address target;
+        uint32 executeGas;
+        bytes checkData;
+        uint96 balance;
+        address admin;
+        uint64 maxValidBlocknumber;
+        uint32 lastPerformBlockNumber;
+        uint96 amountSpent;
+        bool paused;
+        bytes offchainConfig;
+    }
+    function getUpkeep(uint256 id) external view returns (UpkeepInfo memory upkeepInfo);
+}
 
 contract CaskChainlinkTopupManager is
 Initializable,
@@ -32,7 +58,7 @@ ICaskChainlinkTopupManager
 
 
     /** @dev map of registries address that are allowed */
-    mapping(address => bool) public allowedRegistries;
+    mapping(address => ChainlinkRegistryType) public allowedRegistries;
 
     /** @dev Pointer to CaskChainlinkTopup contract */
     ICaskChainlinkTopup public caskChainlinkTopup;
@@ -147,7 +173,7 @@ ICaskChainlinkTopupManager
     function registryAllowed(
         address _registry
     ) override external view returns(bool) {
-        return allowedRegistries[_registry];
+        return allowedRegistries[_registry] != ChainlinkRegistryType.NONE;
     }
 
     function _processChainlinkTopup(
@@ -165,10 +191,7 @@ ICaskChainlinkTopupManager
         }
 
         // topup target not active or registry not allowed
-        if (!_topupValid(_chainlinkTopupId) ||
-            (chainlinkTopup.topupType != ICaskChainlinkTopup.TopupType.Direct &&
-                !allowedRegistries[chainlinkTopup.registry]))
-        {
+        if (!_topupValid(_chainlinkTopupId)) {
             caskChainlinkTopup.managerCommand(_chainlinkTopupId, ICaskChainlinkTopup.ManagerCommand.Cancel);
             return false;
         }
@@ -245,12 +268,14 @@ ICaskChainlinkTopupManager
 
         uint256 amountFundingTokenBefore = linkFundingToken.balanceOf(address(this));
 
-        if (linkSwapProtocol == SwapProtocol.UNIV2) {
+        if (linkSwapProtocol == SwapProtocol.UniV2) {
             _performSwapUniV2(amountIn, amountOutMin);
-        } else if (linkSwapProtocol == SwapProtocol.UNIV3) {
+        } else if (linkSwapProtocol == SwapProtocol.UniV3) {
             _performSwapUniV3(amountIn, amountOutMin);
         } else if (linkSwapProtocol == SwapProtocol.GMX) {
             _performSwapGMX(amountIn, amountOutMin);
+        } else if (linkSwapProtocol == SwapProtocol.JoeV2) {
+            _performSwapJoeV2(amountIn, amountOutMin);
         }
 
         // any non-withdrawn shares are the fee portion - send to fee distributor
@@ -308,6 +333,21 @@ ICaskChainlinkTopupManager
         IGMXRouter(linkSwapRouter).swap(linkSwapPath, _inputAmount, _minOutput, address(this));
     }
 
+    function _performSwapJoeV2(
+        uint256 _inputAmount,
+        uint256 _minOutput
+    ) internal {
+        IERC20Metadata(linkSwapPath[0]).safeIncreaseAllowance(linkSwapRouter, _inputAmount);
+        ILBRouter(linkSwapRouter).swapExactTokensForTokens(
+            _inputAmount,
+            _minOutput,
+            abi.decode(linkSwapData, (uint256[])),
+            linkSwapPath,
+            address(this),
+            block.timestamp + 1 hours
+        );
+    }
+
     function _topupBalance(
         bytes32 _chainlinkTopupId
     ) internal view returns(uint256) {
@@ -317,9 +357,7 @@ ICaskChainlinkTopupManager
         uint96 balance = type(uint96).max;
 
         if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
-            AutomationRegistryBaseInterface automationRegistry = AutomationRegistryBaseInterface(chainlinkTopup.registry);
-            (,,,balance,,,) = automationRegistry.getUpkeep(chainlinkTopup.targetId);
-
+            balance = _automationBalance(_chainlinkTopupId);
         } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
             VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
             (balance,,,) = coordinator.getSubscription(uint64(chainlinkTopup.targetId));
@@ -331,6 +369,32 @@ ICaskChainlinkTopupManager
         return uint256(balance);
     }
 
+    function _automationBalance(
+        bytes32 _chainlinkTopupId
+    ) internal view returns(uint96) {
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
+            caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
+
+        uint96 balance;
+
+        ChainlinkRegistryType ver = allowedRegistries[chainlinkTopup.registry];
+
+        if (ver == ChainlinkRegistryType.Automation_V1_2) {
+            CLAutomationRegistryV1_2 automationRegistry = CLAutomationRegistryV1_2(chainlinkTopup.registry);
+            (,,,balance,,,,) = automationRegistry.getUpkeep(chainlinkTopup.targetId);
+        } else if (ver == ChainlinkRegistryType.Automation_V1_3) {
+            CLAutomationRegistryV1_3 automationRegistry = CLAutomationRegistryV1_3(chainlinkTopup.registry);
+            (,,,balance,,,,,) = automationRegistry.getUpkeep(chainlinkTopup.targetId);
+        } else if (ver == ChainlinkRegistryType.Automation_V2_0) {
+            CLAutomationRegistryV2_0 automationRegistry = CLAutomationRegistryV2_0(chainlinkTopup.registry);
+            balance = automationRegistry.getUpkeep(chainlinkTopup.targetId).balance;
+        } else {
+            revert("!REGISTRY_TYPE_UNKNOWN");
+        }
+
+        return balance;
+    }
+
     function _topupValid(
         bytes32 _chainlinkTopupId
     ) internal view returns(bool) {
@@ -338,22 +402,14 @@ ICaskChainlinkTopupManager
             caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
 
         if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.Automation) {
-            AutomationRegistryBaseInterface automationRegistry = AutomationRegistryBaseInterface(chainlinkTopup.registry);
-            try automationRegistry.getUpkeep(chainlinkTopup.targetId) returns (
-                address target,
-                uint32 executeGas,
-                bytes memory checkData,
-                uint96 balance,
-                address lastKeeper,
-                address admin,
-                uint64 maxValidBlocknumber
-            ) {
-                return maxValidBlocknumber == type(uint32).max;
-            } catch {
+            return _automationvalid(_chainlinkTopupId);
+
+        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
+            ChainlinkRegistryType ver = allowedRegistries[chainlinkTopup.registry];
+            if (ver != ChainlinkRegistryType.VRF_V2) {
                 return false;
             }
 
-        } else if (chainlinkTopup.topupType == ICaskChainlinkTopup.TopupType.VRF) {
             VRFCoordinatorV2Interface coordinator = VRFCoordinatorV2Interface(chainlinkTopup.registry);
             try coordinator.getSubscription(uint64(chainlinkTopup.targetId)) returns (
                 uint96 balance,
@@ -371,6 +427,58 @@ ICaskChainlinkTopupManager
         }
 
         return false;
+    }
+
+    function _automationvalid(
+        bytes32 _chainlinkTopupId
+    ) internal view returns(bool) {
+        ICaskChainlinkTopup.ChainlinkTopup memory chainlinkTopup =
+            caskChainlinkTopup.getChainlinkTopup(_chainlinkTopupId);
+
+        bool valid = false;
+
+        ChainlinkRegistryType ver = allowedRegistries[chainlinkTopup.registry];
+
+        if (ver == ChainlinkRegistryType.Automation_V1_2) {
+            CLAutomationRegistryV1_2 automationRegistry = CLAutomationRegistryV1_2(chainlinkTopup.registry);
+            try automationRegistry.getUpkeep(chainlinkTopup.targetId) returns (
+                address target,
+                uint32 executeGas,
+                bytes memory checkData,
+                uint96 balance,
+                address lastKeeper,
+                address admin,
+                uint64 maxValidBlocknumber,
+                uint96 amountSpent
+            ) {
+                valid = maxValidBlocknumber == type(uint64).max;
+            } catch { }
+        } else if (ver == ChainlinkRegistryType.Automation_V1_3) {
+            CLAutomationRegistryV1_3 automationRegistry = CLAutomationRegistryV1_3(chainlinkTopup.registry);
+            try automationRegistry.getUpkeep(chainlinkTopup.targetId) returns (
+                address target,
+                uint32 executeGas,
+                bytes memory checkData,
+                uint96 balance,
+                address lastKeeper,
+                address admin,
+                uint64 maxValidBlocknumber,
+                uint96 amountSpent,
+                bool paused
+            ) {
+                return maxValidBlocknumber == type(uint32).max;
+            } catch { }
+        } else if (ver == ChainlinkRegistryType.Automation_V2_0) {
+            CLAutomationRegistryV2_0 automationRegistry = CLAutomationRegistryV2_0(chainlinkTopup.registry);
+            try automationRegistry.getUpkeep(chainlinkTopup.targetId)
+                returns (CLAutomationRegistryV2_0.UpkeepInfo memory info)
+            {
+                valid = info.maxValidBlocknumber == type(uint32).max;
+            } catch { }
+        } else {
+            revert("!REGISTRY_TYPE_UNKNOWN");
+        }
+        return valid;
     }
 
     function _doTopup(
@@ -500,10 +608,11 @@ ICaskChainlinkTopupManager
     }
 
     function allowRegistry(
-        address _registry
+        address _registry,
+        ChainlinkRegistryType _registryType
     ) external onlyOwner {
         require(_registry != address(0), "!INVALID(registry)");
-        allowedRegistries[_registry] = true;
+        allowedRegistries[_registry] = _registryType;
 
         emit RegistryAllowed(_registry);
     }
@@ -511,8 +620,8 @@ ICaskChainlinkTopupManager
     function disallowRegistry(
         address _registry
     ) external onlyOwner {
-        require(allowedRegistries[_registry], "!REGISTRY_NOT_ALLOWED");
-        allowedRegistries[_registry] = false;
+        require(allowedRegistries[_registry] != ChainlinkRegistryType.NONE, "!REGISTRY_NOT_ALLOWED");
+        allowedRegistries[_registry] = ChainlinkRegistryType.NONE;
 
         emit RegistryDisallowed(_registry);
     }

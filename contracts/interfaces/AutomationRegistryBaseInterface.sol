@@ -32,7 +32,8 @@ interface AutomationRegistryBaseInterface {
         uint96 balance,
         address lastKeeper,
         address admin,
-        uint64 maxValidBlocknumber
+        uint64 maxValidBlocknumber,
+        uint96 amountSpent
     );
     function getUpkeepCount()
     external view returns (uint256);

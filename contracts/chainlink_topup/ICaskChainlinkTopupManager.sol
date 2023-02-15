@@ -4,9 +4,18 @@ pragma solidity ^0.8.0;
 interface ICaskChainlinkTopupManager {
 
     enum SwapProtocol {
-        UNIV2,
-        UNIV3,
-        GMX
+        UniV2,
+        UniV3,
+        GMX,
+        JoeV2
+    }
+
+    enum ChainlinkRegistryType {
+        NONE,
+        Automation_V1_2,
+        Automation_V1_3,
+        Automation_V2_0,
+        VRF_V2
     }
 
     function registerChainlinkTopup(bytes32 _chainlinkTopupId) external;
