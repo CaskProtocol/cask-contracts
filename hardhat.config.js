@@ -308,6 +308,15 @@ module.exports = {
       timeout: 300000,
       gasPrice: parseInt(process.env.AGOERLI_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
     },
+    testnet_goerlibase: {
+      url: `${process.env.GOERLIBASE_PROVIDER_URL || process.env.PROVIDER_URL}`,
+      accounts: [
+        process.env.GOERLIBASE_DEPLOYER_PK || process.env.TESTNET_DEPLOYER_PK || privateKeys[0],
+        process.env.GOERLIBASE_GOVERNOR_PK || process.env.TESTNET_GOVERNOR_PK || privateKeys[1],
+      ],
+      timeout: 300000,
+      gasPrice: parseInt(process.env.GOERLIBASE_GAS_PRICE || process.env.GAS_PRICE) || 'auto',
+    },
     internal_mumbai: {
       url: `${process.env.MUMBAI_PROVIDER_URL || process.env.PROVIDER_URL}`,
       accounts: [
@@ -355,6 +364,7 @@ module.exports = {
       testnet_aurora: TESTNET_DEPLOYER,
       testnet_ogoerli: TESTNET_DEPLOYER,
       testnet_agoerli: TESTNET_DEPLOYER,
+      testnet_goerlibase: TESTNET_DEPLOYER,
     },
     governorAddr: {
       ethereum: ETHEREUM_GOVERNOR,
@@ -382,6 +392,7 @@ module.exports = {
       testnet_aurora: TESTNET_GOVERNOR,
       testnet_ogoerli: TESTNET_GOVERNOR,
       testnet_agoerli: TESTNET_GOVERNOR,
+      testnet_goerlibase: TESTNET_GOVERNOR,
     },
     strategistAddr: {
       mainnet_polygon: POLYGON_STRATEGIST,
@@ -408,6 +419,7 @@ module.exports = {
       testnet_aurora: TESTNET_STRATEGIST,
       testnet_ogoerli: TESTNET_STRATEGIST,
       testnet_agoerli: TESTNET_STRATEGIST,
+      testnet_goerlibase: TESTNET_STRATEGIST,
     },
     consumerA: {
       default: 4
@@ -441,6 +453,7 @@ module.exports = {
       testnet_aurora: TESTNET_FAUCET_ADMIN,
       testnet_ogoerli: TESTNET_FAUCET_ADMIN,
       testnet_agoerli: TESTNET_FAUCET_ADMIN,
+      testnet_goerlibase: TESTNET_FAUCET_ADMIN,
     },
     keeperAddr: {
       mainnet_polygon: KEEPER,
@@ -467,6 +480,7 @@ module.exports = {
       testnet_aurora: TESTNET_KEEPER,
       testnet_ogoerli: TESTNET_KEEPER,
       testnet_agoerli: TESTNET_KEEPER,
+      testnet_goerlibase: TESTNET_KEEPER,
     },
     dcaAssetAdminAddr: {
       mainnet_polygon: DCA_ASSET_ADMIN,
