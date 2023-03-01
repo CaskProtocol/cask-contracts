@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
@@ -17,7 +18,8 @@ ICaskSubscriptions,
 BaseRelayRecipient,
 ERC721Upgradeable,
 OwnableUpgradeable,
-PausableUpgradeable
+PausableUpgradeable,
+ReentrancyGuardUpgradeable
 {
 
     /************************** PARAMETERS **************************/
@@ -124,7 +126,7 @@ PausableUpgradeable
         bytes memory _providerSignature,
         bytes memory _networkSignature,
         string calldata _cid
-    ) external override whenNotPaused {
+    ) external override nonReentrant whenNotPaused {
         uint256 subscriptionId = _createSubscription(_nonce, _planProof, _discountProof, _cancelAt,
             _providerSignature, _cid);
 
@@ -141,7 +143,7 @@ PausableUpgradeable
         uint32 _cancelAt,
         bytes memory _providerSignature,
         string calldata _cid
-    ) external override whenNotPaused {
+    ) external override nonReentrant whenNotPaused {
         _createSubscription(_nonce, _planProof, _discountProof, _cancelAt, _providerSignature, _cid);
     }
 
