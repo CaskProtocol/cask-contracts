@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
@@ -18,8 +17,7 @@ ICaskSubscriptions,
 BaseRelayRecipient,
 ERC721Upgradeable,
 OwnableUpgradeable,
-PausableUpgradeable,
-ReentrancyGuardUpgradeable
+PausableUpgradeable
 {
 
     /************************** PARAMETERS **************************/
@@ -43,6 +41,13 @@ ReentrancyGuardUpgradeable
     mapping(address => uint256) private providerActiveSubscriptionCount; // provider => count
     mapping(address => mapping(uint32 => uint256)) private planActiveSubscriptionCount; // provider => planId => count
     mapping(address => mapping(address => mapping(uint32 => uint256))) private consumerProviderPlanActiveCount;
+
+
+    /** for reentrancy guard impl */
+    uint256 private constant _RG_NOT_ENTERED = 1;
+    uint256 private constant _RG_ENTERED = 2;
+    uint256 private _rg_status;
+
 
     modifier onlyManager() {
         require(_msgSender() == address(subscriptionManager), "!AUTH");
@@ -746,4 +751,34 @@ ReentrancyGuardUpgradeable
         return networkInfo.network;
     }
 
+    /******* ReentrancyGuard *********/
+
+    function __ReentrancyGuard_init() internal onlyInitializing {
+        __ReentrancyGuard_init_unchained();
+    }
+
+    function __ReentrancyGuard_init_unchained() internal onlyInitializing {
+        _rg_status = _RG_NOT_ENTERED;
+    }
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and making it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(_rg_status != _RG_ENTERED, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        _rg_status = _RG_ENTERED;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        _rg_status = _RG_NOT_ENTERED;
+    }
 }
