@@ -36,6 +36,8 @@ addresses.mainnet_polygon.link_swap_path = [
 ];
 addresses.mainnet_polygon.link_peg_swap = "0xAA1DC356dc4B18f30C347798FD5379F3D77ABC5b";
 
+addresses.mainnet_polygon.ens_reverse_registry = addresses.zero;
+
 
 /* avalanche addresses */
 addresses.mainnet_avalanche = {};
@@ -56,12 +58,13 @@ addresses.mainnet_avalanche.link_swap_path = [
 ];
 addresses.mainnet_avalanche.link_peg_swap = "0x0000000000000000000000000000000000000000";
 
-
 // Chainlink feeds (https://docs.chain.link/docs/ethereum-addresses)
 addresses.mainnet_avalanche.DAI_USD = "0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300";
 addresses.mainnet_avalanche.USDC_USD = "0xF096872672F44d6EBA71458D74fe67F9a77a23B9";
 addresses.mainnet_avalanche.USDT_USD = "0xEBE676ee90Fe1112671f19b6B7459bC678B67e8a";
 addresses.mainnet_avalanche.FRAX_USD = "0xbBa56eF1565354217a3353a466edB82E8F25b08e";
+
+addresses.mainnet_avalanche.ens_reverse_registry = addresses.zero;
 
 
 /* fantom addresses */
@@ -69,26 +72,41 @@ addresses.mainnet_fantom = {};
 addresses.mainnet_fantom.USDC = "0x04068da6c83afcfa0e13ba15a6696662335d5b75";
 addresses.mainnet_fantom.USDC_USD = "0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c";
 
+addresses.mainnet_fantom.ens_reverse_registry = addresses.zero;
+
+
 /* celo addresses */
 addresses.mainnet_celo = {};
 addresses.mainnet_celo.USDC = "0x37f750b7cc259a2f741af45294f6a16572cf5cad";
 addresses.mainnet_celo.USDC_USD = "0xDA7a001b254CD22e46d3eAB04d937489c93174C3"; // band StdReferenceProxy
 addresses.mainnet_celo.USDC_PRICE_FEED_TYPE = 1; // celo uses band protocol oracles
 
+addresses.mainnet_celo.ens_reverse_registry = addresses.zero;
+
+
 /* aurora addresses */
 addresses.mainnet_aurora = {};
 addresses.mainnet_aurora.USDC = "0xb12bfca5a55806aaf64e99521918a4bf0fc40802";
 addresses.mainnet_aurora.USDC_USD = "0x06b35392094610C8D21FB2409855e231869B287F"; // flux price feed
+
+addresses.mainnet_aurora.ens_reverse_registry = addresses.zero;
+
 
 /* moonbeam addresses */
 addresses.mainnet_moonbeam = {};
 addresses.mainnet_moonbeam.USDC = "0x818ec0a7fe18ff94269904fced6ae3dae6d6dc0b";
 addresses.mainnet_moonbeam.USDC_USD = "0xA122591F60115D63421f66F752EF9f6e0bc73abC";
 
+addresses.mainnet_moonbeam.ens_reverse_registry = addresses.zero;
+
+
 /* gnosis addresses */
 addresses.mainnet_gnosis = {};
 addresses.mainnet_gnosis.USDC = "0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83";
 addresses.mainnet_gnosis.USDC_USD = "0x26C31ac71010aF62E6B486D1132E266D6298857D";
+
+addresses.mainnet_gnosis.ens_reverse_registry = addresses.zero;
+
 
 /* arbitrum addresses */
 addresses.mainnet_arbitrum = {};
@@ -105,6 +123,8 @@ addresses.mainnet_arbitrum.link_swap_path = [
     "0xf97f4df75117a78c1a5a0dbb814af92458539fb4"
 ];
 addresses.mainnet_arbitrum.link_peg_swap = "0x0000000000000000000000000000000000000000";
+
+addresses.mainnet_arbitrum.ens_reverse_registry = addresses.zero;
 
 
 /* optimism addresses */
@@ -125,6 +145,8 @@ addresses.mainnet_optimism.link_swap_protocol = 1;
 addresses.mainnet_optimism.link_swap_data = "0x7f5c764cbc14f9669b88837ca1490cca17c316070001f44200000000000000000000000000000000000006000bb8350a791bfc2c21f9ed5d10980dad2e2638ffa7f6";
 addresses.mainnet_optimism.link_peg_swap = "0x0000000000000000000000000000000000000000";
 
+addresses.mainnet_optimism.ens_reverse_registry = addresses.zero;
+
 
 /* bsc addresses */
 addresses.mainnet_bsc = {}
@@ -141,6 +163,8 @@ addresses.mainnet_bsc.link_swap_path = [
     "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD"
 ];
 addresses.mainnet_bsc.link_peg_swap = "0x1FCc3B22955e76Ca48bF025f1A6993685975Bb9e";
+
+addresses.mainnet_bsc.ens_reverse_registry = addresses.zero;
 
 
 /******* TESTNET ADDRESSES *********/

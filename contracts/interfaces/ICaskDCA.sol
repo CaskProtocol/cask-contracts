@@ -53,6 +53,7 @@ interface ICaskDCA {
         uint32 processAt;
         DCAStatus status;
         address[] path;
+        uint256 currentFees;
     }
 
     struct SwapInfo {

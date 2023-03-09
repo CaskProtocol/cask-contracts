@@ -10,15 +10,19 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+
 import "../interfaces/ICaskDCA.sol";
 import "../interfaces/ICaskDCAManager.sol";
+import "../interfaces/INFTRenderer.sol";
 
 contract CaskDCA is
 ICaskDCA,
 Initializable,
 OwnableUpgradeable,
 PausableUpgradeable,
-BaseRelayRecipient
+BaseRelayRecipient,
+IERC721Metadata
 {
     using SafeERC20 for IERC20Metadata;
 
@@ -50,6 +54,17 @@ BaseRelayRecipient
 
     /** @dev address allowed to update asset merkle root. */
     address public assetsAdmin;
+
+    /** @dev address of NFT renderer */
+    address public nftRenderer;
+
+    /** @dev mapping of user active token count */
+    mapping(address => uint256) private userBalances; // user => balance
+
+    /** for reentrancy guard impl */
+    uint256 private constant _RG_NOT_ENTERED = 1;
+    uint256 private constant _RG_ENTERED = 2;
+    uint256 private _rg_status;
 
 
     modifier onlyAssetsAdmin() {
@@ -103,7 +118,7 @@ BaseRelayRecipient
         bytes calldata _swapData,
         address _to,
         uint256[] calldata _priceSpec // period, amount, totalAmount, maxSlippageBps, minPrice, maxPrice
-    ) external override whenNotPaused returns(bytes32) {
+    ) external override nonReentrant whenNotPaused returns(bytes32) {
         require(_assetSpec.length >= 4, "!INVALID(assetSpec)");
         require(_priceSpec.length == 6, "!INVALID(priceSpec)");
         require(_priceSpec[0] >= minPeriod, "!INVALID(period)");
@@ -143,6 +158,9 @@ BaseRelayRecipient
 
         emit DCACreated(dcaId, dca.user, dca.to, dca.path[0], dca.path[dca.path.length-1],
             dca.amount, dca.totalAmount, dca.period);
+
+        userBalances[dca.user] += 1;
+        emit Transfer(address(0), dca.user, uint256(dcaId));
 
         return dcaId;
     }
@@ -185,6 +203,9 @@ BaseRelayRecipient
         dca.status = DCAStatus.Canceled;
 
         emit DCACanceled(_dcaId, dca.user);
+
+        userBalances[dca.user] -= 1;
+        emit Transfer(dca.user, address(0), uint256(_dcaId));
     }
 
     function _verifyAssetSpec(
@@ -248,6 +269,8 @@ BaseRelayRecipient
 
             emit DCACanceled(_dcaId, dca.user);
 
+            userBalances[dca.user] -= 1;
+            emit Transfer(dca.user, address(0), uint256(_dcaId));
         }
     }
 
@@ -275,12 +298,16 @@ BaseRelayRecipient
         dca.currentAmount += _amount;
         dca.currentQty += _buyQty;
         dca.numBuys += 1;
+        dca.currentFees += _fee;
 
         emit DCAProcessed(_dcaId, dca.user, _amount, _buyQty, _fee);
 
         if (dca.totalAmount > 0 && dca.currentAmount >= dca.totalAmount) {
             dca.status = DCAStatus.Complete;
             emit DCACompleted(_dcaId, dca.user);
+
+            userBalances[dca.user] -= 1;
+            emit Transfer(dca.user, address(0), uint256(_dcaId));
         }
 
     }
@@ -339,4 +366,160 @@ BaseRelayRecipient
     ) external onlyOwner {
         minSlippage = _minSlippage;
     }
+
+    function setNFTRenderer(
+        address _nftRenderer
+    ) external onlyOwner {
+        nftRenderer = _nftRenderer;
+    }
+
+
+    /******* ReentrancyGuard *********/
+
+    function __ReentrancyGuard_init() internal onlyInitializing {
+        __ReentrancyGuard_init_unchained();
+    }
+
+    function __ReentrancyGuard_init_unchained() internal onlyInitializing {
+        _rg_status = _RG_NOT_ENTERED;
+    }
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and making it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(_rg_status != _RG_ENTERED, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        _rg_status = _RG_ENTERED;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        _rg_status = _RG_NOT_ENTERED;
+    }
+
+
+    /******* ERC721 *********/
+
+    /**
+      * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+        return
+        interfaceId == type(IERC721).interfaceId ||
+        interfaceId == type(IERC721Metadata).interfaceId;
+    }
+
+    /**
+     * @dev See {IERC721-balanceOf}.
+     */
+    function balanceOf(address owner) public view override returns (uint256) {
+        require(owner != address(0), "ERC721: balance query for the zero address");
+        return userBalances[owner];
+    }
+
+    /**
+     * @dev See {IERC721-ownerOf}.
+     */
+    function ownerOf(uint256 tokenId) public view override returns (address) {
+        require(dcaMap[bytes32(tokenId)].user != address(0), "ERC721: owner query for nonexistent token");
+        require(dcaMap[bytes32(tokenId)].status == ICaskDCA.DCAStatus.Active ||
+                dcaMap[bytes32(tokenId)].status == ICaskDCA.DCAStatus.Paused, "ERC721: owner query for nonexistent token");
+        return dcaMap[bytes32(tokenId)].user;
+    }
+
+    /**
+     * @dev See {IERC721Metadata-name}.
+     */
+    function name() public view override returns (string memory) {
+        return "Cask DCA";
+    }
+
+    /**
+     * @dev See {IERC721Metadata-symbol}.
+     */
+    function symbol() public view override returns (string memory) {
+        return "CASKDCA";
+    }
+
+    /**
+     * @dev See {IERC721Metadata-tokenURI}.
+     */
+    function tokenURI(uint256 _dcaId) public view override returns (string memory) {
+        require(dcaMap[bytes32(_dcaId)].user != address(0), "URI query for nonexistent token");
+        if (nftRenderer == address(0)) {
+            return "";
+        }
+        return INFTRenderer(nftRenderer).tokenURI(address(this), _dcaId);
+    }
+
+    /**
+     * @dev See {IERC721-approve}.
+     */
+    function approve(address to, uint256 tokenId) public override {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-getApproved}.
+     */
+    function getApproved(uint256 tokenId) public view override returns (address) {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-setApprovalForAll}.
+     */
+    function setApprovalForAll(address operator, bool approved) public override {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-isApprovedForAll}.
+     */
+    function isApprovedForAll(address owner, address operator) public view override returns (bool) {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-transferFrom}.
+     */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-safeTransferFrom}.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-safeTransferFrom}.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) public override {
+        revert("!NON_TRANSFERRABLE");
+    }
+
 }

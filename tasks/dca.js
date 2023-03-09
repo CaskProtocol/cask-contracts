@@ -23,7 +23,7 @@ async function dcaLiquidity(taskArguments, hre) {
     const deployer = await ethers.provider.getSigner(deployerAddr);
     const governor = await ethers.provider.getSigner(governorAddr);
 
-    await router.connect(governor).initialize([usdc.address], [abc.address]);
+    await router.connect(governor).initialize();
 
     await usdc.connect(deployer).mint(router.address, usdcUnits('100000.0'));
     await abc.connect(deployer).mint(router.address, hre.ethers.utils.parseUnits('100000.0', 18));

@@ -30,6 +30,7 @@ interface ICaskP2P {
         uint32 createdAt;
         uint32 processAt;
         P2PStatus status;
+        uint256 currentFees;
     }
 
     function createP2P(
