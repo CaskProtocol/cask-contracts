@@ -346,14 +346,14 @@ IERC721Metadata
      * @dev See {IERC721Metadata-name}.
      */
     function name() public view override returns (string memory) {
-        return "Cask DCA";
+        return "Cask P2P";
     }
 
     /**
      * @dev See {IERC721Metadata-symbol}.
      */
     function symbol() public view override returns (string memory) {
-        return "CASKDCA";
+        return "CASKP2P";
     }
 
     /**

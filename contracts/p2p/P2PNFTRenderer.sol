@@ -47,11 +47,16 @@ contract P2PNFTRenderer is INFTRenderer {
     }
 
     function _generateDescription(uint256 _tokenId, ICaskP2P.P2P memory _p2p) private view returns (string memory) {
+        uint8 fromDecimals = baseAsset.decimals();
+        string memory fromSymbol = baseAsset.symbol();
+
         string memory _part1 = string(
             abi.encodePacked(
                 'This NFT represents a P2P position in Cask Protocol, where ',
                 _resolveAddress(_p2p.user),
-                ' is sending funds to ',
+                ' is sending ',
+                _amountToReadable(_p2p.amount, fromDecimals, fromSymbol),
+                ' to ',
                 _resolveAddress(_p2p.to),
                 '.\\n\\n'
             )
@@ -62,7 +67,7 @@ contract P2PNFTRenderer is INFTRenderer {
                 Strings.toHexString(uint160(_p2p.user), 20),
                 '\\nTo Address: ',
                 Strings.toHexString(uint160(_p2p.to), 20),
-                '\\Interval: ',
+                '\\nInterval: ',
                 _swapPeriodHuman(_p2p.period),
                 '\\n'
             )
