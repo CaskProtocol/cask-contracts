@@ -9,7 +9,6 @@ const {
 } = require("./_networks");
 
 
-
 // keep in sync with ICaskSubscriptions.sol
 const SubscriptionStatus = {
     None: 0,
@@ -140,6 +139,8 @@ const getNetworkAddresses = async (deployments) => {
                 (await deployments.get("MockChainlinkOracleFeedUSDT")).address,
             FRAX_USD: addresses[hre.network.name].FRAX_USD ||
                 (await deployments.get("MockChainlinkOracleFeedFRAX")).address,
+
+            ens_reverse_registry: addresses[hre.network.name].ens_reverse_registry || addresses.zero,
         };
     }
 };

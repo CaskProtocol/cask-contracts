@@ -8,15 +8,19 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+
 import "../interfaces/ICaskP2P.sol";
 import "../interfaces/ICaskP2PManager.sol";
+import "../interfaces/INFTRenderer.sol";
 
 contract CaskP2P is
 ICaskP2P,
 Initializable,
 OwnableUpgradeable,
 PausableUpgradeable,
-BaseRelayRecipient
+BaseRelayRecipient,
+IERC721Metadata
 {
     using SafeERC20 for IERC20Metadata;
 
@@ -33,6 +37,18 @@ BaseRelayRecipient
 
     /** @dev minimum period for a P2P. */
     uint32 public minPeriod;
+
+    /** @dev address of NFT renderer */
+    address public nftRenderer;
+
+    /** @dev mapping of user active token count */
+    mapping(address => uint256) private userBalances; // user => balance
+
+    /** for reentrancy guard impl */
+    uint256 private constant _RG_NOT_ENTERED = 1;
+    uint256 private constant _RG_ENTERED = 2;
+    uint256 private _rg_status;
+
 
     function initialize() public initializer {
         __Ownable_init();
@@ -72,7 +88,7 @@ BaseRelayRecipient
         uint256 _amount,
         uint256 _totalAmount,
         uint32 _period
-    ) external override whenNotPaused returns(bytes32) {
+    ) external override nonReentrant whenNotPaused returns(bytes32) {
         require(_amount >= minAmount, "!INVALID(amount)");
         require(_period >= minPeriod, "!INVALID(period)");
 
@@ -98,6 +114,9 @@ BaseRelayRecipient
         require(p2p.numPayments == 1, "!UNPROCESSABLE"); // make sure first P2P payment succeeded
 
         emit P2PCreated(p2pId, p2p.user, p2p.to, _amount, _totalAmount, _period);
+
+        userBalances[p2p.user] += 1;
+        emit Transfer(address(0), p2p.user, uint256(p2pId));
 
         return p2pId;
     }
@@ -140,6 +159,9 @@ BaseRelayRecipient
         p2p.status = P2PStatus.Canceled;
 
         emit P2PCanceled(_p2pId, p2p.user);
+
+        userBalances[p2p.user] -= 1;
+        emit Transfer(p2p.user, address(0), uint256(_p2pId));
     }
 
     function getP2P(
@@ -190,6 +212,8 @@ BaseRelayRecipient
 
             emit P2PCanceled(_p2pId, p2p.user);
 
+            userBalances[p2p.user] -= 1;
+            emit Transfer(p2p.user, address(0), uint256(_p2pId));
         }
     }
 
@@ -203,12 +227,16 @@ BaseRelayRecipient
         p2p.processAt = p2p.processAt + p2p.period;
         p2p.currentAmount += _amount;
         p2p.numPayments += 1;
+        p2p.currentFees += _fee;
 
         emit P2PProcessed(_p2pId, p2p.user, _amount, _fee);
 
         if (p2p.totalAmount > 0 && p2p.currentAmount >= p2p.totalAmount) {
             p2p.status = P2PStatus.Complete;
             emit P2PCompleted(_p2pId, p2p.user);
+
+            userBalances[p2p.user] -= 1;
+            emit Transfer(p2p.user, address(0), uint256(_p2pId));
         }
 
     }
@@ -246,4 +274,159 @@ BaseRelayRecipient
     ) external onlyOwner {
         minPeriod = _minPeriod;
     }
+
+    function setNFTRenderer(
+        address _nftRenderer
+    ) external onlyOwner {
+        nftRenderer = _nftRenderer;
+    }
+
+    /******* ReentrancyGuard *********/
+
+    function __ReentrancyGuard_init() internal onlyInitializing {
+        __ReentrancyGuard_init_unchained();
+    }
+
+    function __ReentrancyGuard_init_unchained() internal onlyInitializing {
+        _rg_status = _RG_NOT_ENTERED;
+    }
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and making it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(_rg_status != _RG_ENTERED, "ReentrancyGuard: reentrant call");
+
+        // Any calls to nonReentrant after this point will fail
+        _rg_status = _RG_ENTERED;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        _rg_status = _RG_NOT_ENTERED;
+    }
+
+
+    /******* ERC721 *********/
+
+    /**
+      * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+        return
+        interfaceId == type(IERC721).interfaceId ||
+        interfaceId == type(IERC721Metadata).interfaceId;
+    }
+
+    /**
+     * @dev See {IERC721-balanceOf}.
+     */
+    function balanceOf(address owner) public view override returns (uint256) {
+        require(owner != address(0), "ERC721: balance query for the zero address");
+        return userBalances[owner];
+    }
+
+    /**
+     * @dev See {IERC721-ownerOf}.
+     */
+    function ownerOf(uint256 tokenId) public view override returns (address) {
+        require(p2pMap[bytes32(tokenId)].user != address(0), "ERC721: owner query for nonexistent token");
+        require(p2pMap[bytes32(tokenId)].status == ICaskP2P.P2PStatus.Active ||
+                p2pMap[bytes32(tokenId)].status == ICaskP2P.P2PStatus.Paused, "ERC721: owner query for nonexistent token");
+        return p2pMap[bytes32(tokenId)].user;
+    }
+
+    /**
+     * @dev See {IERC721Metadata-name}.
+     */
+    function name() public view override returns (string memory) {
+        return "Cask P2P";
+    }
+
+    /**
+     * @dev See {IERC721Metadata-symbol}.
+     */
+    function symbol() public view override returns (string memory) {
+        return "CASKP2P";
+    }
+
+    /**
+     * @dev See {IERC721Metadata-tokenURI}.
+     */
+    function tokenURI(uint256 _p2pId) public view override returns (string memory) {
+        require(p2pMap[bytes32(_p2pId)].user != address(0), "URI query for nonexistent token");
+        if (nftRenderer == address(0)) {
+            return "";
+        }
+        return INFTRenderer(nftRenderer).tokenURI(address(this), _p2pId);
+    }
+
+    /**
+     * @dev See {IERC721-approve}.
+     */
+    function approve(address to, uint256 tokenId) public override {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-getApproved}.
+     */
+    function getApproved(uint256 tokenId) public view override returns (address) {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-setApprovalForAll}.
+     */
+    function setApprovalForAll(address operator, bool approved) public override {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-isApprovedForAll}.
+     */
+    function isApprovedForAll(address owner, address operator) public view override returns (bool) {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-transferFrom}.
+     */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-safeTransferFrom}.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override {
+        revert("!NON_TRANSFERRABLE");
+    }
+
+    /**
+     * @dev See {IERC721-safeTransferFrom}.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) public override {
+        revert("!NON_TRANSFERRABLE");
+    }
+
 }
